@@ -3,8 +3,6 @@ name: Django CI
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build:
@@ -28,6 +26,9 @@ jobs:
     - name: Lint with Flake8
       run: |
         flake8 .
+    - name: Security check with Bandit
+      run: /
+        bandit -r .
     - name: Run Tests
       run: |
         python manage.py test
