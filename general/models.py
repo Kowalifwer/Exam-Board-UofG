@@ -1,11 +1,23 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
-import datetime
+from django.db import models
+
+
 # Create your models here.
+class AcademicYearSettings(models.Model):
+    level1_total_credits = models.IntegerField(default=120)
+    level2_total_credits = models.IntegerField(default=120)
+    level3_total_credits = models.IntegerField(default=120)
+    level4_total_credits = models.IntegerField(default=120)
+    level5_total_credits = models.IntegerField(default=120)
+
+
+class AcademicYear(models.Model):
+    year = models.IntegerField(unique=True)
+    is_current = models.BooleanField(default=True)  # TODO: Ensure that only 1 year is current at a time
+    settings = models.ForeignKey(AcademicYearSettings, null=True, blank=True, on_delete=models.SET_NULL)
 
 
 class User(AbstractUser):
-    # add additional fields in here
     level_choices = [
         (0, 'No levels'),
         (1, 'Level 1'),
@@ -41,15 +53,17 @@ class Student(models.Model):
         (7, 'PostDoc'),
     ]
 
-    # current_level = models.IntegerField(choices=level_choices, default=1)
     degree_level = models.IntegerField(choices=level_choices, default=4)
     is_faster_route = models.BooleanField()
-    start_year = models.IntegerField()
-    end_year = models.IntegerField()
+    start_academic_year = models.IntegerField()
+    end_academic_year = models.IntegerField()
+    current_academic_year = models.IntegerField(default=AcademicYear.objects.get(is_current=True).year)  # TODO: possibly make this a foreign key relationship.
+
+    comment = models.TextField(max_length=1000, null=True, blank=True)
 
     @property
-    def current_level(self):  # TODO Fix this, by taking current month into consideration (2022-2023 might still be first_year but calculation will return second_year). Also consider is_faster year.
-        return self.level_choices(datetime.date.today().year - self.start_year + 1)
+    def current_level_verbose(self):  # TODO Fix this, by taking current month into consideration (2022-2023 might still be first_year but calculation will return second_year). Also consider is_faster year.
+        return self.level_choices[self.current_academic_year - self.start_academic_year + 1][1]
 
     @property
     def is_masters(self):
@@ -66,12 +80,12 @@ class Student(models.Model):
 class Course(models.Model):
     code = models.CharField(max_length=11)
     name = models.CharField(max_length=255, null=True)
-    description = models.CharField(max_length=255, null=True, blank=True)
+    academic_year = models.PositiveIntegerField()
+    # description = models.CharField(max_length=255, null=True, blank=True)
 
     lecturer = models.ForeignKey('User', on_delete=models.SET_NULL, blank=True, null=True)
-    lecturer_comments = models.TextField(max_length=500, null=True)
+    lecturer_comment = models.TextField(max_length=500, null=True, blank=True)
 
-    start_year = models.PositiveIntegerField()
     credits = models.PositiveIntegerField()
 
     is_taught_now = models.BooleanField(default=True)
@@ -80,11 +94,11 @@ class Course(models.Model):
     class Meta:
         db_table = 'course'
         constraints = [
-            models.UniqueConstraint(fields=['code', 'start_year'], name='code_year_unique')
+            models.UniqueConstraint(fields=['code', 'academic_year'], name='code_year_unique')
         ]
 
     def __str__(self):
-        return (self.code + " - " + str(self.start_year))
+        return (self.code + " - " + str(self.academic_year))
 
     def fetch_assessments(self):
         return self.assessments.all()
@@ -109,7 +123,7 @@ class Assessment(models.Model):
 
 class AssessmentResult(models.Model):
     assessment = models.ForeignKey(Assessment, on_delete=models.SET_NULL, related_name="results", null=True, blank=True)
-    user = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True, related_name="results")
+    student = models.ForeignKey(Student, on_delete=models.SET_NULL, null=True, blank=True, related_name="results")
 
     grade_mark = models.IntegerField()
     preponderance_choices = [
