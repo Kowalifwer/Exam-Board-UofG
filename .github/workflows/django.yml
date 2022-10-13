@@ -27,7 +27,7 @@ jobs:
       run: |
         flake8 .
     - name: Security check with Bandit
-      run: /
+      run: |
         bandit -r .
     - name: Run Tests
       run: |
