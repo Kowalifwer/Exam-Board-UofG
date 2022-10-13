@@ -8,7 +8,4 @@ exclude =
     venv,
     .env
 
-ignore = 
-    E501,
-    F401, # ‘module’ imported but unused
-    F403, # ‘from module import *’ used; unable to detect undefined names
+max-line-length = 350
