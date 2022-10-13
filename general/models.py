@@ -57,7 +57,7 @@ class Student(models.Model):
     is_faster_route = models.BooleanField()
     start_academic_year = models.IntegerField()
     end_academic_year = models.IntegerField()
-    current_academic_year = models.IntegerField(default=AcademicYear.objects.get(is_current=True).year)  # TODO: possibly make this a foreign key relationship.
+    current_academic_year = models.IntegerField()  # TODO: possibly make this a foreign key relationship.
 
     comment = models.TextField(max_length=1000, null=True, blank=True)
 
