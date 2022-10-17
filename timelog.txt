@@ -1,0 +1,69 @@
+
+# Timelog
+
+* WEB APPLICATION FOR THE SCHOOL OF COMPUTING SCIENCE
+* ARTEM GRECHUSHKIN
+* 2381169G
+* DR. Gerardo Aragon Camarasa
+
+## Guidance
+
+* This file contains the time log for your project. It will be submitted along with your final dissertation.
+* **YOU MUST KEEP THIS UP TO DATE AND UNDER VERSION CONTROL.**
+* This timelog should be filled out honestly, regularly (daily) and accurately. It is for *your* benefit.
+* Follow the structure provided, grouping time by weeks.  Quantise time to the half hour.
+
+## Week 1
+
+--None
+
+## Week 2
+
+### Tue 27 Sep 2022
+
+* *2 hours* Looking through dissertation recieved from supervisor
+
+### Thur 29 Sep 2022
+
+* *2 hours* 1600-1800 project introductory lecture
+* *1 hour 30min* preparing for first meeting with supervisor
+
+### Fri 30 Sep 2022
+
+* *30 minutes* first meeting with supervisor
+
+## Week 2
+
+### Thur 6 Oct 2022
+
+* *1 hours* Playing around with existing Masters project files.
+
+### Sat 8 Oct 2022
+
+* *2 hours* Setting up the existing masters project to compile, downloading missing libraries etc.
+* *1 hours* Creating a questions, current progress and TODO template for supervior meeting on Monday
+
+## Week 3
+
+### Mon 10 Oct 2022
+
+* *40 minutes* meeting with supervisor
+
+* *2 hours* setting up django repo and version control
+
+### Tue 11 Oct 2022
+
+* *2 hours* planning database structure and CICD setup
+
+### Thur 13 Oct 2022
+
+* *1 hours* Planning the database design more thoroughly, trying to optimize for the given requirements.
+
+* *3 hours*
+Adding some logical models into the ORM, to get a better visual of how it will look like.
+
+### Fri 14 Oct 2022
+
+* *1 hours* 2 linters added and setup into the CICD pipeline - flake8 and bandit(security)
+
+
