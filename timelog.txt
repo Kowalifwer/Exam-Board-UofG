@@ -64,6 +64,6 @@ Adding some logical models into the ORM, to get a better visual of how it will l
 
 ### Fri 14 Oct 2022
 
-* *1 hours* 2 linters added and setup into the CICD pipeline - flake8 and bandit(security)
+* *1 hours* 2 linters added and fully integrated into the CICD pipeline - flake8 and bandit(security)
 
 
