@@ -42,32 +42,26 @@ class Student(models.Model):
     full_name = models.CharField(max_length=225)
     degree_title = models.CharField(max_length=100)
 
-    level_choices = [
-        (0, 'No levels'),
-        (1, 'Level 1'),
-        (2, 'Level 2'),
-        (3, 'Level 3'),
-        (4, 'Level 4'),
-        (5, 'Level 5(M)'),
-        (6, 'PhD'),
-        (7, 'PostDoc'),
-    ]
-
-    degree_level = models.IntegerField(choices=level_choices, default=4)
-    is_faster_route = models.BooleanField()
+    is_faster_route = models.BooleanField(default=False)
+    is_masters = models.BooleanField(default=False)
     start_academic_year = models.IntegerField()
     end_academic_year = models.IntegerField()
     current_academic_year = models.IntegerField()  # TODO: possibly make this a foreign key relationship.
 
-    comment = models.TextField(max_length=1000, null=True, blank=True)
+    level_choices = {
+        0: 'No levels',
+        1: 'Level 1',
+        2: 'Level 2',
+        3: 'Level 3',
+        4: 'Level 4',
+        5: 'Level 5(M)',
+        6: 'PhD',
+        7: 'PostDoc'
+    }
 
     @property
     def current_level_verbose(self):  # TODO Fix this, by taking current month into consideration (2022-2023 might still be first_year but calculation will return second_year). Also consider is_faster year.
-        return self.level_choices[self.current_academic_year - self.start_academic_year + 1][1]
-
-    @property
-    def is_masters(self):
-        return self.degree_level == 5
+        return self.level_choices.get(self.current_academic_year - self.start_academic_year + 1, "Unknown")
 
     @property
     def matriculation_number(self):
