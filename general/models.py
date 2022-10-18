@@ -3,6 +3,12 @@ from django.db import models
 
 
 # Create your models here.
+class UUIDModel(models.Model):
+    id = models.UUIDField(primary_key=True, editable=False, unique=True)
+
+    class Meta:
+        abstract = True
+
 class AcademicYearSettings(models.Model):
     level1_total_credits = models.IntegerField(default=120)
     level2_total_credits = models.IntegerField(default=120)
@@ -16,8 +22,11 @@ class AcademicYear(models.Model):
     is_current = models.BooleanField(default=True)  # TODO: Ensure that only 1 year is current at a time
     settings = models.ForeignKey(AcademicYearSettings, null=True, blank=True, on_delete=models.SET_NULL)
 
+    def __str__(self):
+        return f"{self.year} - {'Currently active' if self.is_current else 'Not current year'}"
 
-class User(AbstractUser):
+
+class User(AbstractUser, UUIDModel):
     level_choices = [
         (0, 'No levels'),
         (1, 'Level 1'),
@@ -37,7 +46,7 @@ class User(AbstractUser):
         return self.username
 
 
-class Student(models.Model):
+class Student(UUIDModel):
     GUID = models.CharField(max_length=8, unique=True)
     full_name = models.CharField(max_length=225)
     degree_title = models.CharField(max_length=100)
@@ -68,17 +77,16 @@ class Student(models.Model):
         return int(self.GUID[:-1]) if self.GUID[-1].isalpha() else int(self.GUID)
 
     def __str__(self):
-        return self.matriculation_with_letter
+        return f"{self.GUID} - {self.full_name}"
 
 
-class Course(models.Model):
+class Course(UUIDModel):
     code = models.CharField(max_length=11)
     name = models.CharField(max_length=255, null=True)
     academic_year = models.PositiveIntegerField()
     # description = models.CharField(max_length=255, null=True, blank=True)
 
-    lecturer = models.ForeignKey('User', on_delete=models.SET_NULL, blank=True, null=True)
-    lecturer_comment = models.TextField(max_length=500, null=True, blank=True)
+    lecturer_comments = models.TextField(max_length=500, null=True, blank=True)
 
     credits = models.PositiveIntegerField()
 
@@ -90,15 +98,16 @@ class Course(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['code', 'academic_year'], name='code_year_unique')
         ]
-
-    def __str__(self):
-        return (self.code + " - " + str(self.academic_year))
+        ordering = ['academic_year']
 
     def fetch_assessments(self):
         return self.assessments.all()
+    
+    def __str__(self):
+        return (f"{self.name} - {self.academic_year}")
 
 
-class Assessment(models.Model):
+class Assessment(UUIDModel):
     name = models.CharField(max_length=255, null=True, blank=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="assessments")
 
@@ -115,7 +124,7 @@ class Assessment(models.Model):
         return self.course.name + '- ' + self.start_date
 
 
-class AssessmentResult(models.Model):
+class AssessmentResult(UUIDModel):
     assessment = models.ForeignKey(Assessment, on_delete=models.SET_NULL, related_name="results", null=True, blank=True)
     student = models.ForeignKey(Student, on_delete=models.SET_NULL, null=True, blank=True, related_name="results")
 
@@ -136,14 +145,14 @@ class AssessmentResult(models.Model):
         return f'{self.assignment.course.name} - {self.start_date}'
 
 
-class Comment(models.Model):
+class Comment(UUIDModel):
     subject = models.CharField(max_length=100)
     comment = models.TextField(blank=False, null=False)
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
 
 
-class DegreeClassification(models.Model):
+class DegreeClassification(UUIDModel):
     classification_name = models.CharField(max_length=255)
     lower_GPA_standard = models.FloatField()
     lower_GPA_discretionary = models.FloatField()
