@@ -1,10 +1,11 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+import uuid
 
 
 # Create your models here.
 class UUIDModel(models.Model):
-    id = models.UUIDField(primary_key=True, editable=False, unique=True)
+    id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
 
     class Meta:
         abstract = True
@@ -91,7 +92,7 @@ class Course(UUIDModel):
     credits = models.PositiveIntegerField()
 
     is_taught_now = models.BooleanField(default=True)
-    enrolled_students = models.ManyToManyField(Student, blank=True, related_name="course_student_m2m")
+    enrolled_students = models.ManyToManyField(Student, blank=True, related_name="courses")
 
     class Meta:
         db_table = 'course'
@@ -109,7 +110,6 @@ class Course(UUIDModel):
 
 class Assessment(UUIDModel):
     name = models.CharField(max_length=255, null=True, blank=True)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="assessments")
 
     moderation = models.DecimalField(default=1.0, decimal_places=2, max_digits=5)
     weighting = models.IntegerField()
@@ -121,14 +121,15 @@ class Assessment(UUIDModel):
     type = models.CharField(choices=type_choices, max_length=1, default='A')
 
     def __str__(self):
-        return self.course.name + '- ' + self.start_date
+        return f"{self.name}"
 
 
 class AssessmentResult(UUIDModel):
-    assessment = models.ForeignKey(Assessment, on_delete=models.SET_NULL, related_name="results", null=True, blank=True)
-    student = models.ForeignKey(Student, on_delete=models.SET_NULL, null=True, blank=True, related_name="results")
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="results")
+    assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE, related_name="results")
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="results")
 
-    grade_mark = models.IntegerField()
+    grade = models.IntegerField()
     preponderance_choices = [
         ('NA', 'None'),
         ('MV', 'Medical Void'),
@@ -137,12 +138,13 @@ class AssessmentResult(UUIDModel):
     ]
     preponderance = models.CharField(choices=preponderance_choices, default='NA', max_length=2)
 
-    comment = models.TextField()
+    comment = models.TextField(null=True, blank=True)
 
-    start_date = models.DateField(auto_now_add=True)
+    date_submitted = models.DateField(auto_now_add=True)
+    date_updated = models.DateField(auto_now=True)
 
     def __str__(self):
-        return f'{self.assignment.course.name} - {self.start_date}'
+        return f'{self.student.full_name} - {self.assessment.name} - {self.grade}%'
 
 
 class Comment(UUIDModel):

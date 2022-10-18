@@ -1,5 +1,5 @@
 from django.test import TestCase
-
+from django.db import connection, reset_queries
 
 # Create your tests here.
 class BaseTestCase(TestCase):
