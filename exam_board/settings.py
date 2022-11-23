@@ -89,7 +89,7 @@ WSGI_APPLICATION = 'exam_board.wsgi.application'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 POSTGRES = False
-MYSQL = True
+MYSQL = False
 
 DATABASES = {
     'default': {
