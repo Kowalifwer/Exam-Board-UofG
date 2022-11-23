@@ -1,0 +1,10 @@
+{%extends 'base.html'%}
+
+{% block body %}
+    <h2>This is the testing page 4!</h2>
+
+    {%for result in assessment_results%}
+        <p>{{result.assessment}}({{result.course}})</p>
+        <p>{{result.student}}</p>
+    {%endfor%}
+{%endblock%}

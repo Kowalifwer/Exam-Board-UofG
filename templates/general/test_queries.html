@@ -1,0 +1,14 @@
+{%extends 'base.html'%}
+
+{% block body %}
+    <h2>This is the testing page!</h2>
+
+    {%for student in students%}
+        <p>{{student}}</p>
+        {%for course in student.courses.all%}
+            <p style="margin-left: 5px;">-{{course}}</p>
+        {%endfor%}
+        <p style="margin-left: 10px;">Total courses: {{student.courses.all|length}}</p>
+        <p style="margin-left: 10px;">Total assignments: {{student.results.all|length}}</p>
+    {%endfor%}
+{%endblock%}

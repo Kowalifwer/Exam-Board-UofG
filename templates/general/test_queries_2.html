@@ -1,0 +1,18 @@
+{%extends 'base.html'%}
+
+{% block body %}
+
+    <h2>This is the testing page 2!</h2>
+
+    {%for course in courses%}
+        <p>{{course.assessments.all}}</p>
+        {%for result in course.results.all%}
+            {%if result.assessment not in course.assessments.all%}
+                <p>{{result.student}} not have {{result.assessment}}</p>
+            {%endif%}
+        {%endfor%}
+        <p>{{course.results.all}}</p>
+        <p>{{course.results.all.10.student.full_name}}</p>
+    {%endfor%}
+
+{%endblock%}

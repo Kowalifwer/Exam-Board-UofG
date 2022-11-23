@@ -56,7 +56,9 @@ class Student(UUIDModel):
     is_masters = models.BooleanField(default=False)
     start_academic_year = models.IntegerField()
     end_academic_year = models.IntegerField()
-    current_academic_year = models.IntegerField()  # TODO: possibly make this a foreign key relationship.
+    current_academic_year = models.IntegerField()
+
+    courses = models.ManyToManyField("Course", related_name="students")
 
     level_choices = {
         0: 'No levels',
@@ -85,14 +87,14 @@ class Course(UUIDModel):
     code = models.CharField(max_length=11)
     name = models.CharField(max_length=255, null=True)
     academic_year = models.PositiveIntegerField()
-    # description = models.CharField(max_length=255, null=True, blank=True)
 
     lecturer_comments = models.TextField(max_length=500, null=True, blank=True)
 
     credits = models.PositiveIntegerField()
 
+    assessments = models.ManyToManyField("Assessment", related_name="courses")
+
     is_taught_now = models.BooleanField(default=True)
-    enrolled_students = models.ManyToManyField(Student, blank=True, related_name="courses")
 
     class Meta:
         db_table = 'course'
@@ -110,18 +112,19 @@ class Course(UUIDModel):
 
 class Assessment(UUIDModel):
     name = models.CharField(max_length=255, null=True, blank=True)
-
     moderation = models.DecimalField(default=1.0, decimal_places=2, max_digits=5)
     weighting = models.IntegerField()
 
     type_choices = [
         ('A', 'Assignment'),
         ('E', 'Exam'),
+        ('P', 'Project'),
+        ('Q', 'Quiz'),
     ]
     type = models.CharField(choices=type_choices, max_length=1, default='A')
 
     def __str__(self):
-        return f"{self.name}"
+        return f"{self.name} ({self.weighting}%)" 
 
 
 class AssessmentResult(UUIDModel):
@@ -130,6 +133,7 @@ class AssessmentResult(UUIDModel):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="results")
 
     grade = models.IntegerField()
+
     preponderance_choices = [
         ('NA', 'None'),
         ('MV', 'Medical Void'),
@@ -137,9 +141,7 @@ class AssessmentResult(UUIDModel):
         ('CR', 'Credit Refused'),
     ]
     preponderance = models.CharField(choices=preponderance_choices, default='NA', max_length=2)
-
     comment = models.TextField(null=True, blank=True)
-
     date_submitted = models.DateField(auto_now_add=True)
     date_updated = models.DateField(auto_now=True)
 

@@ -1,1 +1,6 @@
-<h2>This is the homepage!</h2>
+{%extends 'base.html'%}
+
+{% block body %}
+    <h2>This is the homepage!</h2>
+    <a href="{%url 'general:test_queries'%}">Test page!</a>
+{%endblock%}

@@ -1,0 +1,17 @@
+{%extends 'base.html'%}
+
+{% block body %}
+    <input type="hidden" id="page_data" data-all="{{student_data_json}}">
+    <h2>This is the testing page 3!</h2>
+    {%if student_data%}
+        {%for student in student_data.values%}
+            <p>{{student.student.full_name}}</p>
+            {%for course in student.courses.values%}
+                <p style="margin-left: 5px;">-{{course.course.name}}</p>
+                {%for assessment in course.assessments.values%}
+                    <p>--{{assessment.assessment.name}} ({{assessment.assessment.weight}}) - Mark obrainted: {{assessment.result.grade}}</p>
+                {%endfor%}      
+            {%endfor%}
+        {%endfor%}
+    {%endif%}
+{%endblock%}

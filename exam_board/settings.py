@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 import os
+import environ
+env = environ.Env()
+environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,7 +26,7 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-4ni69hr*kn)hwp58w*z&w25d3&1*(qv0c+v3io^@k9(ho1fj70'
+SECRET_KEY = env('SECRET_KEY')
 BASE_URL = "http://localhost:8000"
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -41,10 +44,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'general',
+    'debug_toolbar',
+    'template_timings_panel',
+    'django_extensions',
 ]
 AUTH_USER_MODEL = "general.User"
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -52,6 +59,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+INTERNAL_IPS = [
+    "127.0.0.1",
 ]
 
 ROOT_URLCONF = 'exam_board.urls'
@@ -74,9 +85,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'exam_board.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
+
+POSTGRES = False
+MYSQL = True
 
 DATABASES = {
     'default': {
@@ -84,6 +97,30 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+if POSTGRES:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': env("PG_DB_NAME"),
+            'USER': env("PG_DB_USER"),
+            'PASSWORD': env("PG_DB_PASSWORD"),
+            'HOST': env("PG_DB_HOST"),
+            'PORT': env("PG_DB_PORT"),
+        }
+    }
+
+if MYSQL:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': env("MYSQL_DB_NAME"),
+            'USER': env("MYSQL_DB_USER"),
+            'PASSWORD': env("MYSQL_DB_PASSWORD"),
+            'HOST': env("MYSQL_DB_HOST"),
+            'PORT': env("MYSQL_DB_PORT"),
+        }
+    }
 
 
 # Password validation
@@ -139,10 +176,35 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
+DEBUG_TOOLBAR_PANELS = [
+    'debug_toolbar.panels.history.HistoryPanel',
+    'debug_toolbar.panels.versions.VersionsPanel',
+    'debug_toolbar.panels.timer.TimerPanel',
+    # 'debug_toolbar.panels.settings.SettingsPanel',
+    # 'debug_toolbar.panels.headers.HeadersPanel',
+    'debug_toolbar.panels.request.RequestPanel',
+    'debug_toolbar.panels.sql.SQLPanel',
+    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+    'debug_toolbar.panels.templates.TemplatesPanel',
+    'debug_toolbar.panels.cache.CachePanel',
+    'debug_toolbar.panels.signals.SignalsPanel',
+    'debug_toolbar.panels.logging.LoggingPanel',
+    'template_timings_panel.panels.TemplateTimings.TemplateTimings',
+    # 'debug_toolbar.panels.redirects.RedirectsPanel',
+    # 'debug_toolbar.panels.profiling.ProfilingPanel',
+]
 
 STATIC_URL = 'static/'
-
+STATICFILES_DIRS = [STATIC_DIR,]
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+import mimetypes
+mimetypes.add_type("application/javascript", ".js", True)
+
+GRAPH_MODELS = {
+  'app_labels': ["general"],
+}
+

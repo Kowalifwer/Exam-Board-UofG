@@ -25,7 +25,7 @@ jobs:
         pip install -r requirements.txt
     - name: Lint with Flake8
       run: |
-        flake8 --verbose
+        # flake8 --verbose
     - name: Security Lint with Bandit
       run: |
         bandit -r .
