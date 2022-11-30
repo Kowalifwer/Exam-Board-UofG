@@ -1,7 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
-
+from django.shortcuts import reverse
+from django.db.models import Avg
 
 # Create your models here.
 class UUIDModel(models.Model):
@@ -81,6 +82,44 @@ class Student(UUIDModel):
 
     def __str__(self):
         return f"{self.GUID} - {self.full_name}"
+    
+    @property
+    def page_url(self):
+        return reverse('general:student', args=[self.GUID])
+    
+    def get_data_for_table(self, extra_data=None):
+        table_data = {
+            "GUID": self.GUID,
+            "name": self.full_name,
+            "degree_title": self.degree_title,
+            "is_masters": self.is_masters,
+            "start_year": self.start_academic_year,
+            "end_year": self.end_academic_year,
+            "page_url": self.page_url,
+        }
+        if extra_data:
+            extra_data = getattr(self, extra_data["method"])(*extra_data["args"])
+            table_data.update(extra_data)
+        
+        return table_data
+
+    def get_extra_data_course(self, assessments, course):
+        extra_data = {}
+        results = AssessmentResult.objects.filter(assessment__in=assessments, course=course, student=self).select_related("assessment")
+        final_grade = 0
+        exam_totals = [0, 0] #grade, total_weight
+        for result in results:
+            if result.assessment.type == "E":
+                exam_totals[0] += result.grade * result.assessment.weighting
+                exam_totals[1] += result.assessment.weighting
+            
+            extra_data[str(result.assessment.id)] = f"{result.grade}%" 
+            final_grade += result.grade * result.assessment.weighting / 100
+        
+        extra_data["exam_grade"] = f"{round(exam_totals[0] * (1 / exam_totals[1]), 2)}%"
+        extra_data["final_grade"] = f"{round(final_grade, 2)}%"
+        
+        return extra_data
 
 
 class Course(UUIDModel):
@@ -108,8 +147,85 @@ class Course(UUIDModel):
     
     def __str__(self):
         return (f"{self.name} - {self.academic_year}")
+    
+    @property
+    def verbose_name(self):
+        return f"{self.name} - {self.academic_year} ({'currently active' if self.is_taught_now else 'not active'})"
+    
+    def get_data_for_table(self, extra_data={}):
+        table_data = {
+            'code': self.code,
+            'name': self.name,
+            'academic_year': self.academic_year,
+            'lecturer_comments': self.lecturer_comments,
+            'credits': self.credits,
+            'is_taught_now': self.is_taught_now,
+            
+            #Extra properties
+            # 'average_coursework_data': self.average_coursework_data,
+            'page_url': self.page_url,
+        }
 
+        if extra_data:
+            extra_data = getattr(self, extra_data["method"])(*extra_data["args"])
+            table_data.update(extra_data)
+        
+        return table_data
+    
+    @property
+    def page_url(self):
+        return reverse('general:course', args=[self.code, self.academic_year])
 
+    def get_extra_data_student(self, results):
+        extra_data = {
+            'coursework_avg': [0, 0],
+            'exam_avg': [0, 0],
+            'overall_avg': [0, 0],
+            'final_grade': 0,
+        }
+
+        for result in results: ##tally up the averages and the final grade here
+            if result.assessment.type == 'E':
+                extra_data['exam_avg'][0] += result.grade
+                extra_data['exam_avg'][1] += 1
+            else:
+                extra_data['coursework_avg'][0] += result.grade
+                extra_data['coursework_avg'][1] += 1
+            extra_data['overall_avg'][0] += result.grade
+            extra_data['overall_avg'][1] += 1
+            extra_data['final_grade'] += result.grade * result.assessment.weighting / 100
+
+        ##get the averages, and round everything up.
+        extra_data['overall_avg'] = round(extra_data['overall_avg'][0] / extra_data['overall_avg'][1], 2)
+        extra_data['exam_avg'] = round(extra_data['exam_avg'][0] / extra_data['exam_avg'][1], 2)
+        extra_data['coursework_avg'] = round(extra_data['coursework_avg'][0] / extra_data['coursework_avg'][1], 2)
+        extra_data['final_grade'] = round(extra_data['final_grade'], 2)
+        return extra_data
+
+    def get_extra_data_general(self):
+        extra_data = {
+            'coursework_avg': [0, 0],
+            'exam_avg': [0, 0],
+            'overall_avg': [0, 0],
+            'final_grade': 0,
+        }
+
+        assessment_groups = {
+            'exam': [],
+            'coursework': [],
+        }
+
+        assessments = self.assessments.all()
+        results = self.results.all()
+        for assessment in assessments:
+            pass
+        len(assessments)
+        len(results)
+
+        # for result in results:
+        #     pass
+        return extra_data
+    
 class Assessment(UUIDModel):
     name = models.CharField(max_length=255, null=True, blank=True)
     moderation = models.DecimalField(default=1.0, decimal_places=2, max_digits=5)
@@ -124,7 +240,7 @@ class Assessment(UUIDModel):
     type = models.CharField(choices=type_choices, max_length=1, default='A')
 
     def __str__(self):
-        return f"{self.name} ({self.weighting}%)" 
+        return f"{self.name} ({self.weighting}%)"
 
 
 class AssessmentResult(UUIDModel):
@@ -132,7 +248,11 @@ class AssessmentResult(UUIDModel):
     assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE, related_name="results")
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="results")
 
-    grade = models.IntegerField()
+    grade = models.IntegerField() # 0 - 100
+
+    @property
+    def grade_with_weighting(self):
+        return round(self.grade * self.assessment.weighting / 100, 2)
 
     preponderance_choices = [
         ('NA', 'None'),

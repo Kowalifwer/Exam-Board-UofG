@@ -9,11 +9,31 @@
     <title>Exam Board App</title>
     <link rel="stylesheet" href="{% static 'css/global.css'%}">
     <script src="{% static 'js/global.js'%}"></script>
+    <link rel="stylesheet" href="{% static 'css/libraries/tabulator.min.css'%}">
+    <script src="{% static 'js/libraries/tabulator.min.js'%}"></script>
+    <script src="{% static 'js/libraries/chart.min.js'%}"></script>
     {%block head%}
     {%endblock%}
   </head>
 
   <body>
+    <div class="header">
+      <div class="header-sections">
+        <p>section 1</p>
+        <p>section 2</p>
+        <p>section 3</p>
+      </div>
+      <a href="{%url 'general:home'%}"><h1>Exam board app</h1></a>
+      <form action="{% url 'general:global_search'%}" method="POST">
+        {%csrf_token%}
+        <input type="text" name="global_search" placeholder="search student/course">
+      </form>
+      {%if request.user.is_authenticated%}
+        <a href="{%url 'general:logout'%}">Logout</a>
+      {%else%}
+        <a href="{%url 'general:login'%}">Login</a>
+      {%endif%}
+    </div>
     {%block body%}
     {%endblock%}
   </body>

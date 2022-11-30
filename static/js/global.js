@@ -7,19 +7,35 @@ function render_student_data(student_data){
     
 }
 
+pagination_size = 1000
+
 window.onload = function() {
-    var page_data = document.getElementById('page_data');
-    var page_data = (page_data.dataset.all);
     
-    for (var student in page_data) {
-        render_student_data(page_data[student]);
-    }
-
-    string_to_html_element(
-        `
-        <div>
-
-        </div>
-        `
-    )
 }
+
+function api(page_count, pagination_size) {
+    return new Promise((resolve, reject) => {
+        fetch(window.location.href + `?api_get=true&page=${page_count}&size=${pagination_size}`).then(response => {
+            if (response.status == 200) {
+                response.json().then(data => {
+                    resolve(data)
+                });
+            } else {
+                reject(response)
+            }
+        })
+    })
+    // return fetch(window.location.href, {
+    //     method: "POST",
+    //     headers: {
+    //         "Content-Type": "application/json",
+    //         "X-CSRFToken": csrf_token,
+    //     },
+    //     body: JSON.stringify({
+    //         "action": action,
+    //         "block_id": block_id,
+    //         "csrfmiddlewaretoken": csrf_token,
+    //     })
+    // })  
+}
+

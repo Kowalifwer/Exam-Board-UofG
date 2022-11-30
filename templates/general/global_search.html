@@ -1,0 +1,47 @@
+{%extends 'base.html'%}
+{%load static%}
+
+{% block head %}
+    <script src="{% static 'js/tables.js'%}"></script>
+{% endblock %}
+
+{% block body %}
+    <p>Search term: {{search_term}}</p>
+    {%if students%}
+        <p>STUDENTS</p>
+        <button id="table_action">Table stuff!</button>
+        <button id="table_action_2">reformat 2</button>
+        <div id="students_table" class="tabulator_table"></div>
+        <script>
+            var search_term = '{{search_term}}';
+            load_students_table(extra_constructor_params = {
+                "ajaxParams": {
+                    "search_term": search_term,
+                    "fetch_table_data": true,
+                    "students": true,
+                }
+            })
+        </script>
+    {%else%}
+        <p>No students found!</p>
+    {%endif%}
+
+    {%if courses%}
+        {{courses}}
+        <p>COURSES</p>
+        <div id="courses_table" class="tabulator_table"></div>
+        <script>
+            var search_term = '{{search_term}}';
+            load_courses_table(extra_constructor_params = {
+                "ajaxParams": {
+                    "search_term": search_term,
+                    "fetch_table_data": true,
+                    "courses": true,
+                }
+            })
+        </script>
+    {%else%}
+        <p>No relevant courses found</p>
+    {%endif%}
+    
+{%endblock%}

@@ -1,0 +1,14 @@
+{%extends 'base.html'%}
+{%load static%}
+
+{% block head %}
+    <script src="{% static 'js/tables.js'%}"></script>
+{% endblock %}
+
+{% block body %}
+    Student: {{student}}
+    <div class="tabulator_table" id="courses_table" style="max-width: 1200px;"></div>
+    <script>
+        load_courses_table()
+    </script>
+{%endblock%}
