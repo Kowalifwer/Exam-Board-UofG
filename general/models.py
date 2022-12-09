@@ -51,6 +51,7 @@ class User(AbstractUser, UUIDModel):
 class Student(UUIDModel):
     GUID = models.CharField(max_length=8, unique=True)
     full_name = models.CharField(max_length=225)
+    degree_name = models.CharField(max_length=225)
     degree_title = models.CharField(max_length=100)
 
     is_faster_route = models.BooleanField(default=False)
@@ -68,13 +69,19 @@ class Student(UUIDModel):
         3: 'Level 3',
         4: 'Level 4',
         5: 'Level 5(M)',
-        6: 'PhD',
-        7: 'PostDoc'
+
+        6: 'PhD', #6 onwards is phd
     }
 
     @property
+    def current_level(self):
+        return self.current_academic_year - self.start_academic_year + 1
+
+    @property
     def current_level_verbose(self):  # TODO Fix this, by taking current month into consideration (2022-2023 might still be first_year but calculation will return second_year). Also consider is_faster year.
-        return self.level_choices.get(self.current_academic_year - self.start_academic_year + 1, "Unknown")
+        if self.current_level >= 6:
+            return "PhD"
+        return self.level_choices.get(self.current_level, "N/A")
 
     @property
     def matriculation_number(self):
@@ -91,8 +98,10 @@ class Student(UUIDModel):
         table_data = {
             "GUID": self.GUID,
             "name": self.full_name,
+            "degree_name": self.degree_name,
             "degree_title": self.degree_title,
             "is_masters": self.is_masters,
+            "current_year": self.current_level_verbose,
             "start_year": self.start_academic_year,
             "end_year": self.end_academic_year,
             "page_url": self.page_url,
@@ -107,19 +116,25 @@ class Student(UUIDModel):
         extra_data = {}
         results = AssessmentResult.objects.filter(assessment__in=assessments, course=course, student=self).select_related("assessment")
         final_grade = 0
-        exam_totals = [0, 0] #grade, total_weight
+        totals = {}
         for result in results:
-            if result.assessment.type == "E":
-                exam_totals[0] += result.grade * result.assessment.weighting
-                exam_totals[1] += result.assessment.weighting
-            
-            extra_data[str(result.assessment.id)] = f"{result.grade}%" 
-            final_grade += result.grade * result.assessment.weighting / 100
+            result_assessment = result.assessment
+            if result_assessment.type not in totals:
+                totals[result_assessment.type] = [0, 0]
+            totals[result_assessment.type][0] += result.grade * result_assessment.weighting
+            totals[result_assessment.type][1] += result_assessment.weighting
+            extra_data[str(result_assessment.id)] = f"{result.grade}" 
+            final_grade += result.grade * result_assessment.weighting / 100
         
-        extra_data["exam_grade"] = f"{round(exam_totals[0] * (1 / exam_totals[1]), 2)}%"
-        extra_data["final_grade"] = f"{round(final_grade, 2)}%"
+        for key, totals in totals.items():
+            if totals[1] > 0:
+                extra_data[f"{key}_grade"] = f"{totals[0] / totals[1]:.2f}"
+        extra_data["final_grade"] = f"{round(final_grade, 2)}"
         
         return extra_data
+    
+    class Meta:
+        ordering = ['current_academic_year']
 
 
 class Course(UUIDModel):
@@ -180,25 +195,21 @@ class Course(UUIDModel):
         extra_data = {
             'coursework_avg': [0, 0],
             'exam_avg': [0, 0],
-            'overall_avg': [0, 0],
             'final_grade': 0,
         }
 
         for result in results: ##tally up the averages and the final grade here
             if result.assessment.type == 'E':
-                extra_data['exam_avg'][0] += result.grade
-                extra_data['exam_avg'][1] += 1
+                extra_data['exam_avg'][0] += result.grade * result.assessment.weighting
+                extra_data['exam_avg'][1] += result.assessment.weighting
             else:
-                extra_data['coursework_avg'][0] += result.grade
-                extra_data['coursework_avg'][1] += 1
-            extra_data['overall_avg'][0] += result.grade
-            extra_data['overall_avg'][1] += 1
+                extra_data['coursework_avg'][0] += result.grade * result.assessment.weighting
+                extra_data['coursework_avg'][1] += result.assessment.weighting
             extra_data['final_grade'] += result.grade * result.assessment.weighting / 100
 
         ##get the averages, and round everything up.
-        extra_data['overall_avg'] = round(extra_data['overall_avg'][0] / extra_data['overall_avg'][1], 2)
-        extra_data['exam_avg'] = round(extra_data['exam_avg'][0] / extra_data['exam_avg'][1], 2)
-        extra_data['coursework_avg'] = round(extra_data['coursework_avg'][0] / extra_data['coursework_avg'][1], 2)
+        extra_data['exam_avg'] = round(extra_data['exam_avg'][0] / extra_data['exam_avg'][1], 2) if extra_data["exam_avg"][1] > 0 else "N/A"
+        extra_data['coursework_avg'] = round(extra_data['coursework_avg'][0] / extra_data['coursework_avg'][1], 2) if extra_data["coursework_avg"][1] > 0 else "N/A"
         extra_data['final_grade'] = round(extra_data['final_grade'], 2)
         return extra_data
 
@@ -206,7 +217,6 @@ class Course(UUIDModel):
         extra_data = {
             'coursework_avg': [0, 0],
             'exam_avg': [0, 0],
-            'overall_avg': [0, 0],
             'final_grade': 0,
         }
 
@@ -232,15 +242,19 @@ class Assessment(UUIDModel):
     weighting = models.IntegerField()
 
     type_choices = [
-        ('A', 'Assignment'),
+        ('C', 'Coursework'),
+        ('I', 'Individual Project'),
+        ('G', 'Group Project'),
         ('E', 'Exam'),
-        ('P', 'Project'),
-        ('Q', 'Quiz'),
     ]
-    type = models.CharField(choices=type_choices, max_length=1, default='A')
+    type = models.CharField(choices=type_choices, max_length=1, default='C')
+
+    @property
+    def possible_choices(self):
+        return [i[0] for i in self.type_choices]
 
     def __str__(self):
-        return f"{self.name} ({self.weighting}%)"
+        return f"{self.name}({self.weighting}%)"
 
 
 class AssessmentResult(UUIDModel):
@@ -268,13 +282,12 @@ class AssessmentResult(UUIDModel):
     def __str__(self):
         return f'{self.student.full_name} - {self.assessment.name} - {self.grade}%'
 
-
 class Comment(UUIDModel):
-    subject = models.CharField(max_length=100)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="comments")
     comment = models.TextField(blank=False, null=False)
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
-
 
 class DegreeClassification(UUIDModel):
     classification_name = models.CharField(max_length=255)

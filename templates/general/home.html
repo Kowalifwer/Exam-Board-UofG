@@ -6,30 +6,26 @@
 {% endblock %}
 
 {% block body %}
-    <div></div>
-    <h2>This is the homepage!</h2>
-    <a href="{%url 'general:test_queries'%}">Test page!</a>
+    <h1>Dashboard</h1>
 
-    <button id="table_action">Table stuff!</button>
-    <button id="table_action_2">reformat 2</button>
-    <div style="width: 800px;"><canvas id="students"></canvas></div>
+    <div style="height: 25px"></div>
+
+    <h3>General Statistics (TODO: better and more data, more charts)</h3>
+    <p>Total number of students: {{students.count}}</p>
+    <p>Total number of courses: {{courses.count}}</p>
+
+    <div style="height: 25px"></div>
+
+    <h4>Student data for every level</h4>
     <div id="students_table" class="tabulator_table" style="max-width: 1200px;"></div>
     <script>
-        chart = new Chart(
-            document.getElementById('students'),
-            {
-                type: 'bar',
-                data: {
-                    labels: [],
-                    datasets: [
-                        {
-                            label: 'Number of students enrolled in a given year',
-                            data: [],
-                        }
-                    ]
-                }
-            }
-        );
         load_students_table()
+    </script>
+
+    <h3>Course breakdown</h3>
+    <h4>Course data for every level</h4>
+    <div id="courses_table" class="tabulator_table" style="max-width: 1200px;"></div>
+    <script>
+        load_courses_table(extra_constructor_params = {}, false)
     </script>
 {%endblock%}

@@ -3,6 +3,12 @@ function string_to_html_element(html_string) {
     return doc.body.firstChild
 }
 
+function wrap(el, wrapper) {
+    el.parentNode.insertBefore(wrapper, el);
+    wrapper.appendChild(el);
+    return wrapper;
+}
+
 function render_student_data(student_data){
     
 }

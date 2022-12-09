@@ -13,26 +13,6 @@ def is_fetching_table_data(request):
     return request.method == 'GET' and request.GET.get('fetch_table_data')
 
 # Create your views here.
-def home_view(request):
-    print("time taken to render home page: ", time.process_time())
-    all_students = Student.objects.all().order_by("full_name")
-    # print(request.META['REMOTE_ADDR'])
-    if is_fetching_table_data(request):
-        # page = request.GET.get('page', 1)
-        # size = request.GET.get('size', 200)
-        # paginator = Paginator(all_students, size)
-        
-        # try:
-        #     students = paginator.page(page)
-        # except EmptyPage:
-        #     students = []
-        # except PageNotAnInteger:
-        #     students = paginator.page(1)     
-        all_students_json = [student.get_data_for_table() for student in all_students]
-        # return JsonResponse({'data': all_students_json, 'last_page': paginator.num_pages})
-        return JsonResponse(all_students_json, safe=False)
-
-    return render(request, "general/home.html")
 
 def test_queries_view(request):
     context = {}
@@ -112,6 +92,56 @@ def logout_view(request):
     context = {}
     return render(request, "general/logout.html", context)
 
+def home_view(request):
+    all_students = Student.objects.all()
+    all_courses = Course.objects.all()
+
+    context = {
+        "students": all_students,
+        "courses": all_courses,
+    }
+
+    if is_fetching_table_data(request):  
+        all_data_json = {}
+        if "students" in request.GET:   
+            all_data_json = [student.get_data_for_table() for student in all_students]
+        if "courses" in request.GET:
+            all_data_json = [course.get_data_for_table() for course in all_courses]
+            
+        return JsonResponse(all_data_json, safe=False)
+
+    return render(request, "general/home.html", context)
+
+def all_students_view(request):
+    print("time taken to render home page: ", time.process_time())
+    all_students = Student.objects.all()
+    # print(request.META['REMOTE_ADDR'])
+    if is_fetching_table_data(request):
+        # page = request.GET.get('page', 1)
+        # size = request.GET.get('size', 200)
+        # paginator = Paginator(all_students, size)
+        
+        # try:
+        #     students = paginator.page(page)
+        # except EmptyPage:
+        #     students = []
+        # except PageNotAnInteger:
+        #     students = paginator.page(1)     
+        all_students_json = [student.get_data_for_table() for student in all_students]
+        # return JsonResponse({'data': all_students_json, 'last_page': paginator.num_pages})
+        return JsonResponse(all_students_json, safe=False)
+
+    return render(request, "general/all_students.html")
+
+def all_courses_view(request):
+    all_courses = Course.objects.all()
+    if is_fetching_table_data(request):
+        all_courses_json = [course.get_data_for_table() for course in all_courses]
+        # return JsonResponse({'data': all_students_json, 'last_page': paginator.num_pages})
+        return JsonResponse(all_courses_json, safe=False)
+
+    return render(request, "general/all_courses.html")
+
 def global_search_view(request):
     context = {}
 
@@ -125,21 +155,22 @@ def global_search_view(request):
     
     if is_fetching_table_data(request):
         search_term = request.GET["search_term"]
-        print("search term: ", search_term)
         if "students" in request.GET:
             data = [student.get_data_for_table() for student in Student.objects.filter(Q(full_name__icontains=search_term) | Q(GUID__icontains=search_term))]
         elif "courses" in request.GET:
-
-            data = [
-                course.get_data_for_table({
-                    "method": "get_extra_data_general",
-                    "args": []
-                }) for course in Course.objects.filter(
-                    Q(code__icontains=search_term) | Q(name__icontains=search_term)
-                )
-                # .prefetch_related("assessments", "results")
-            ]
-        # context["extra_cols"]
+            # data = [
+            #     course.get_data_for_table({
+            #         "method": "get_extra_data_general",
+            #         "args": []
+            #     }) for course in Course.objects.filter(
+            #         Q(code__icontains=search_term) | Q(name__icontains=search_term)
+            #     )
+            #     # .prefetch_related("assessments", "results")
+            # ]
+            #context[extra'cols ...]
+            data = [course.get_data_for_table() for course in Course.objects.filter(
+                Q(code__icontains=search_term) | Q(name__icontains=search_term)
+            )]
         get_query_count("Time to search finish")
         return JsonResponse(data, safe=False)
 
@@ -192,34 +223,28 @@ def course_view(request, code, year):
                 }
             ) for student in students
         ]
-        extra_col_grps = [
-            {
-                "title": 0,
-                "columns": [],
-                "headerHozAlign": "center",
-            },
-            {   
-                "title": 0,
-                "columns": [],
-                "headerHozAlign": "center",
-            }
-        ]
-        for assessment in course_assessments:
-            if assessment.type == "E":
-                extra_col_grps[1]["columns"].append({"title": str(assessment), "field": str(assessment.id)})
-                extra_col_grps[1]["title"] += assessment.weighting
-            else:
-                extra_col_grps[0]["columns"].append({"title": str(assessment), "field": str(assessment.id)})
-                extra_col_grps[0]["title"] += assessment.weighting
-        
-        extra_col_grps[0]["title"] = f"Assessment breakdown ({extra_col_grps[0]['title']}%)"
-        extra_col_grps[1]["title"] = f"Exam breakdown ({extra_col_grps[1]['title']}%)"
-        
-        if extra_col_grps[1]["columns"]:
-            extra_col_grps[1]["columns"].append({"title": "Exam Grade", "field": "exam_grade"})
+        extra_col_grps = {}
 
-        extra_cols = extra_col_grps
-        extra_cols.append({"title": "Final grade (weighted)", "field": "final_grade"})
+        for assessment in course_assessments:
+            if assessment.type not in extra_col_grps:
+                extra_col_grps[assessment.type] = {
+                    "title": f"{assessment.get_type_display()} breakdown",
+                    "columns": [],
+                    "weighting": 0,
+                    "headerHozAlign": "center",
+                }
+            extra_col_grps[assessment.type]["columns"].append({"title": str(assessment), "field": str(assessment.id), "cssClass": "format_grade"})
+            extra_col_grps[assessment.type]["weighting"] += assessment.weighting
+        
+        for key, value in extra_col_grps.items():
+            if value["columns"]:
+                value["title"] += f"({value['weighting']}%)"
+                if len(value["columns"]) > 1:
+                    value["columns"].append({"title": "Total", "field": f"{key}_grade", "cssClass": "format_grade"})
+                value.pop("weighting")
+
+        extra_cols = list(extra_col_grps.values())
+        extra_cols.append({"title": "Final grade(weighted)", "field": "final_grade", "cssClass": "format_grade"})
 
         get_query_count("after fetching course")
         response = JsonResponse({"data": all_students_json, "extra_cols":extra_cols}, safe=False)
@@ -227,6 +252,25 @@ def course_view(request, code, year):
 
     return render(request, "general/course.html", context)
 
-def api_view(request):
+def degree_classification_view(request):
     context = {}
-    return render(request, "general/api.html", context)
+    get_query_count("before fetching degree classification", False)
+    if is_fetching_table_data(request):
+        students = Student.objects.all().prefetch_related("results__course", "results__assessment", "courses")[:50]
+        all_students_json = [
+            student.get_data_for_table(
+                {
+                    "method": "get_extra_data_degree_classification",
+                    "args": []
+                }
+            ) for student in students
+        ]
+        get_query_count("after fetching degree classification")
+        response = JsonResponse({"data": all_students_json}, safe=False)
+        return response
+
+    return render(request, "general/degree_classification.html", context)
+
+# def api_view(request):
+#     context = {}
+#     return render(request, "general/api.html", context)

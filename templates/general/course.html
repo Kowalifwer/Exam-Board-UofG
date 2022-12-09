@@ -10,17 +10,16 @@
     {%if course_other_years%}
         <p>other years:</p>
         {%for course in course_other_years%}
-            <p><a href="{{course.page_url}}">{{course.verbose_name}}</a></p>
+            <p><a class="underline" href="{{course.page_url}}">{{course.verbose_name}}</a></p>
         {%endfor%}
     {%else%}
         <p>Unfortunately, this course does not exist in other years!</p>
     {%endif%}
 
-    Course: {{course}}
-    <button id="change_format">reformat</button>
-    <button id="reset_format">reset formatters</button>
+    <p>Students enrolled onto course</p>
     <div class="tabulator_table" id="students_table" style="max-width: 1200px;"></div>
     <script>
         load_students_table()
     </script>
+    <p>Assessment breakdown for the course.</p>
 {%endblock%}

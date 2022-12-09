@@ -12,29 +12,41 @@
     <link rel="stylesheet" href="{% static 'css/libraries/tabulator.min.css'%}">
     <script src="{% static 'js/libraries/tabulator.min.js'%}"></script>
     <script src="{% static 'js/libraries/chart.min.js'%}"></script>
+
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.20/jspdf.plugin.autotable.min.js"></script>
+
     {%block head%}
     {%endblock%}
   </head>
 
   <body>
     <div class="header">
-      <div class="header-sections">
-        <p>section 1</p>
-        <p>section 2</p>
-        <p>section 3</p>
-      </div>
       <a href="{%url 'general:home'%}"><h1>Exam board app</h1></a>
-      <form action="{% url 'general:global_search'%}" method="POST">
+      <div class="header-sections">
+        <a class="underline" href="{%url 'general:all_students'%}"><p>Students</p></a>
+        <a class="underline" href="{%url 'general:all_courses'%}"><p>Courses</p></a>
+        <a><p>Grade breakdown</p></a>
+      </div>
+      <form class="header-search" action="{% url 'general:global_search'%}" method="POST">
         {%csrf_token%}
         <input type="text" name="global_search" placeholder="search student/course">
+        <button type="submit">
+          <img class="grow" src="{% static 'icons/search.png' %}" alt="submit" />
+        </button>
       </form>
-      {%if request.user.is_authenticated%}
-        <a href="{%url 'general:logout'%}">Logout</a>
-      {%else%}
-        <a href="{%url 'general:login'%}">Login</a>
-      {%endif%}
+      <button class="button-30">
+        {%if request.user.is_authenticated%}
+          <a href="{%url 'general:logout'%}">Logout</a>
+        {%else%}
+          <a href="{%url 'general:login'%}">Login</a>
+        {%endif%}
+      </button>
     </div>
-    {%block body%}
-    {%endblock%}
+    <div class="content-wrapper">
+      {%block body%}
+      {%endblock%}
+    </div>
   </body>
 </html>

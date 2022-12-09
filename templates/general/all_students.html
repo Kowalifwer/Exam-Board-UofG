@@ -1,0 +1,30 @@
+{%extends 'base.html'%}
+{%load static%}
+
+{% block head %}
+    <script src="{% static 'js/tables.js'%}"></script>
+{% endblock %}
+
+{% block body %}
+    <h2>All students</h2>
+    <div style="width: 800px;"><canvas id="students"></canvas></div>
+    <div id="students_table" class="tabulator_table" style="max-width: 1200px;"></div>
+    <script>
+        chart = new Chart(
+            document.getElementById('students'),
+            {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Number of students enrolled in a given year',
+                            data: [],
+                        }
+                    ]
+                }
+            }
+        );
+        load_students_table()
+    </script>
+{%endblock%}

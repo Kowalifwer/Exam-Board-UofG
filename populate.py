@@ -11,7 +11,7 @@ from django.db import connection, reset_queries
 import time
 import traceback
 
-random.seed(0)
+# random.seed(0)
 
 def decision(probability):
     return random.random() < probability
@@ -43,16 +43,28 @@ class Populator:
         last_name = random.choice(self.last_names)
         guid = f"{random.randint(1000000, 9000000)}{last_name[0]}"
 
-        degree_title = random.choices(self.degree_titles, weights=[0.45, 0.3, 0.1, 0.1, 0.05])[0]
-        is_faster_route = decision(0.1)
+        degree_title = random.choices(self.degree_titles, weights=[0.40, 0.25, 0.20, 0.10, 0.05])[0]
+        if "Eng" in degree_title:
+            degree_name = "Software Engineering"
+        else:
+            degree_name = "Computing Science"
+
         is_masters = degree_title in ["Msc", "MEng"]
-        start_academic_year = random.randint(2019, 2020)
-        end_academic_year = start_academic_year + 4 if degree_title.startswith("B") else start_academic_year + 5
-        current_academic_year = random.randint(start_academic_year, self.current_academic_year)
+        is_faster_route = decision(0.1)
+        start_academic_year = random.randint(2017, 2020)
+        end_academic_year = start_academic_year + 3
+        if degree_title.startswith("M"):
+            end_academic_year += 1
+        if degree_title == "PhD":
+            end_academic_year += random.randint(3,5)
+        if is_faster_route:
+            end_academic_year -= 1
+        current_academic_year = min(random.randint(start_academic_year, self.current_academic_year), end_academic_year)
         
         return {
             "full_name": f"{first_name} {last_name}",
             "GUID": guid,
+            "degree_name": degree_name,
             "degree_title": degree_title,
             "is_faster_route": is_faster_route,
             "is_masters": is_masters,
@@ -63,17 +75,18 @@ class Populator:
     
     @property
     def random_course_data(self):
-        academic_year = random.randint(2019, 2022)
-        course_code = f"COMPSCI{random.randint(1,5)}{random.randint(100, 999)}"
-
-        name = f"Computing Science {course_code[-4:]}"
+        academic_year = random.randint(2017, 2022)
+        course_level = random.randint(1, 5)
+        course_code = f"COMPSCI{course_level}{random.randint(100, 999)}"
+        name = f"Computing science {course_code[-4:]}"
         lecturer_comments = "".join(lorem_ipsum.paragraphs(random.randint(0,2), False))
-
-        credits = random.choices([10, 20, 40, 60], weights=[0.70, 0.20, 0.075, 0.025])[0]
+        credits = random.choices([10, 20, 40], weights=[0.75, 0.20, 0.05])[0]
         if credits == 40:
             name = f"{random.choice(['Individual', 'Group'])} PROJECT - {course_code}"
-        elif credits == 60:
-            name = f"{random.choice(['Individual', 'Group'])} PROJECT (MSC) - {course_code}"
+
+        if course_level == 5:
+            name += "(M)"
+        
         is_taught_now = academic_year == self.current_academic_year
         
         return {
@@ -85,31 +98,50 @@ class Populator:
             "is_taught_now": is_taught_now,
         }
     
-    
     def generate_assessment_groups(self):
         self.assessment_groups.append([   
-            Assessment(name="Assignment 1", type="A", weighting=10),
-            Assessment(name="Assignment 2", type="A", weighting=20),
-            Assessment(name="Exam question 1", type="E", weighting=35),
-            Assessment(name="Exam question 2", type="E", weighting=35)
+            Assessment(name="Assignment 1", type="C", weighting=10),
+            Assessment(name="Assignment 2", type="C", weighting=20),
+            Assessment(name="Question 1", type="E", weighting=35),
+            Assessment(name="Question 2", type="E", weighting=35)
         ])
         self.assessment_groups.append([   
-            Assessment(name="Quizzes", type="Q", weighting=5),
-            Assessment(name="Assignment 1", type="A", weighting=15),
+            Assessment(name="Moodle quizzes", type="C", weighting=5),
+            Assessment(name="Assignment 1", type="C", weighting=15),
+            Assessment(name="Question 1", type="E", weighting=25),
+            Assessment(name="Question 2", type="E", weighting=25),
+            Assessment(name="Question 3", type="E", weighting=30)
+        ])
+        self.assessment_groups.append([   
+            Assessment(name="Assignment 1", type="C", weighting=10),
+            Assessment(name="Project", type="G", weighting=35),
+            Assessment(name="Presentation", type="G", weighting=5),
+            Assessment(name="Question 1", type="E", weighting=25),
+            Assessment(name="Question 2", type="E", weighting=25)
+        ])
+        self.assessment_groups.append([  
+            Assessment(name="Web application (frontend)", type="G", weighting=25),
+            Assessment(name="Web application (backend)", type="G", weighting=30),
+            Assessment(name="Presentation", type="G", weighting=5),
+            Assessment(name="Question 1", type="E", weighting=10),
+            Assessment(name="Question 2", type="E", weighting=10),
+            Assessment(name="Question 3", type="E", weighting=10),
+        ])
+        self.assessment_groups.append([   
+            Assessment(name="Quizzes", type="C", weighting=10),
+            Assessment(name="Research poster", type="C", weighting=40),
             Assessment(name="Exam question 1", type="E", weighting=25),
             Assessment(name="Exam question 2", type="E", weighting=25),
-            Assessment(name="Exam question 3", type="E", weighting=30)
         ])
-        self.assessment_groups.append([   
-            Assessment(name="Assignment 1", type="A", weighting=10),
-            Assessment(name="Group project", type="G", weighting=40),
-            Assessment(name="Exam question 1", type="E", weighting=25),
-            Assessment(name="Exam question 2", type="E", weighting=25)
+        self.assessment_groups.append([ #Individual project
+            Assessment(name="Dissertation", type="I", weighting=85),
+            Assessment(name="Profesional conduct", type="I", weighting=10),
+            Assessment(name="Presentation", type="I", weighting=5),
         ])
-        self.assessment_groups.append([   
-            Assessment(name="Quizzes", type="A", weighting=10),
-            Assessment(name="Poster", type="A", weighting=40),
-            Assessment(name="Exam", type="E", weighting=50),
+        self.assessment_groups.append([ #Group project
+            Assessment(name="Dissertation", type="G", weighting=70),
+            Assessment(name="Profesional conduct", type="G", weighting=20),
+            Assessment(name="Presentation", type="G", weighting=10),
         ])
         # exam grade = grade of all Assessments with type E, including their weightings
 
@@ -122,10 +154,10 @@ class Populator:
         courses = []
         while i < n:
             course_data = self.random_course_data
+            i+=1
             courses.append(Course(**course_data))
-            i += 1
-            for j in range(2019, 2023):  # add the same course across other years as well (75% chance)
-                if not course_data["academic_year"] == j and i < n and decision(0.75):
+            for j in range(2017, 2023):  # add the same course across other years as well (80% chance)
+                if not course_data["academic_year"] == j and i < n and decision(0.80):
                     course_data_copy = course_data.copy()
                     course_data_copy["academic_year"] = j
                     course_data_copy["is_taught_now"] = course_data_copy["academic_year"] == self.current_academic_year
@@ -140,12 +172,28 @@ class Populator:
             User.objects.create_superuser("admin", "admin@gmail.com", "1234")
     
     def generate_assessment_results(self):
+        def get_assessment_list(course):
+            if "Individual" in course.name:
+                assessment_list = self.assessment_groups[-2]
+            elif "Group" in course.name:
+                assessment_list = self.assessment_groups[-1]
+            else:
+                assessment_list = random.choice(self.assessment_groups[:-2])
+            return assessment_list
+        
         start = time.process_time()
         reset_queries()
-        courses = Course.objects.all().prefetch_related("students")
+        courses = Course.objects.all().prefetch_related("students").order_by("code")
+        prev_course_code = courses[0].code
+        assessment_list = get_assessment_list(courses[0])
+
         for course in courses:
+            if course.code != prev_course_code: #new course found!
+                prev_course_code = course.code
+                assessment_list = get_assessment_list(course)
+            
             course_students = course.students.all()
-            assessment_list = random.choice(self.assessment_groups)
+            
             course.assessments.set(assessment_list)  # course_assessment_m2m table has been populated
             for student in course_students:
                 for assessment in assessment_list:
@@ -176,7 +224,7 @@ class Populator:
             else:
                 attempts += 1
 
-            if (credits_total > total_credits/2 and decision(0.05)): # 5% chance of getting between 60-120 credits
+            if (credits_total >= (3*total_credits/4) and decision(0.05)): # 5% chance of getting between 90-120 credits (incomplete course selection)
                 return course_set
 
             if credits_total == total_credits or len(candidate_courses) == 0:
@@ -198,7 +246,7 @@ class Populator:
                 if decision(0.01):  # 99% of students will be enrolled into courses.
                     continue
                 for i in range(student.start_academic_year, student.current_academic_year + 1): ##add 120 credits worth of courses, or less, for each year of study.
-                    if decision(0.1):  # 90% chance of taking courses in a given year
+                    if decision(0.10):  # 90% chance of taking courses in a given year
                         continue
                     candidate_courses = [course for course in courses if course.academic_year == i]
                     student.courses.add(*self.fetch_courses_total_credits(candidate_courses, 120))
@@ -218,6 +266,7 @@ class Populator:
     def wipe_database(self):
         print("Wiping database...")
         try:
+            AcademicYear.objects.all().delete()
             Student.objects.all().delete()
             Course.objects.all().delete()
             Assessment.objects.all().delete()
@@ -232,8 +281,8 @@ def main():
     populator = Populator()
     populator.wipe_database()
     populator.create_admin()
-    populator.generate_students(1000)
-    populator.generate_courses(100)
+    populator.generate_students(500)
+    populator.generate_courses(125)
     populator.generate_assessment_groups()
 
     populator.populate_database()
