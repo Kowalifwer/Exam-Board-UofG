@@ -2,7 +2,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
 from django.shortcuts import reverse
-from django.db.models import Avg
+from exam_board.tools import default_degree_classification_settings_dict
+import json
 
 # Create your models here.
 class UUIDModel(models.Model):
@@ -11,17 +12,15 @@ class UUIDModel(models.Model):
     class Meta:
         abstract = True
 
-class AcademicYearSettings(models.Model):
-    level1_total_credits = models.IntegerField(default=120)
-    level2_total_credits = models.IntegerField(default=120)
-    level3_total_credits = models.IntegerField(default=120)
-    level4_total_credits = models.IntegerField(default=120)
-    level5_total_credits = models.IntegerField(default=120)
-
 class AcademicYear(models.Model):
     year = models.IntegerField(unique=True)
     is_current = models.BooleanField(default=True)  # TODO: Ensure that only 1 year is current at a time
-    settings = models.ForeignKey(AcademicYearSettings, null=True, blank=True, on_delete=models.SET_NULL)
+    degree_classification_settings = models.JSONField(null=False, blank=False, default=default_degree_classification_settings_dict)
+
+    #create a getter for degree_classification_settings that returns the default settings in JSON
+    @property
+    def degree_classification_settings_for_table(self):
+        return json.dumps(list(self.degree_classification_settings.values()))
 
     def __str__(self):
         return f"{self.year} - {'Currently active' if self.is_current else 'Not current year'}"
@@ -286,13 +285,3 @@ class Comment(UUIDModel):
     comment = models.TextField(blank=False, null=False)
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
-
-class DegreeClassification(UUIDModel):
-    classification_name = models.CharField(max_length=255)
-    lower_GPA_standard = models.FloatField()
-    lower_GPA_discretionary = models.FloatField()
-    percentage_above_for_discretionary = models.IntegerField(default=50)
-    char_band_for_discretionary = models.CharField(max_length=5)
-
-    def __str__(self):
-        return self.classification_name

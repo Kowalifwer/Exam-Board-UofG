@@ -87,7 +87,7 @@ class Populator:
         if course_level == 5:
             name += "(M)"
         
-        is_taught_now = academic_year == self.current_academic_year
+        is_taught_now = (academic_year == self.current_academic_year)
         
         return {
             "code": course_code,
@@ -231,6 +231,9 @@ class Populator:
                 return course_set
             attempt_course = random.choice(candidate_courses)
         return course_set
+    
+    #course -> enrolled students.
+    #iterate over all students, 
 
     def populate_database(self):
         print("Transferring current state into database")
