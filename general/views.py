@@ -252,11 +252,18 @@ def course_view(request, code, year):
 
     return render(request, "general/course.html", context)
 
-def degree_classification_view(request):
-    context = {}
+def degree_classification_view(request, year=None):
+    context = {'other_years': []}
+    all_years = AcademicYear.objects.all()
+    for academic_year in all_years:
+        if academic_year.year == year:
+            context['current_year'] = academic_year
+        else:
+            context['other_years'].append(academic_year)
+
     get_query_count("before fetching degree classification", False)
     if is_fetching_table_data(request):
-        students = Student.objects.all().prefetch_related("results__course", "results__assessment", "courses")[:50]
+        students = Student.objects.filter(current_academic_year=context['current_year'].year).prefetch_related("results__course", "results__assessment", "courses")
         all_students_json = [
             student.get_data_for_table(
                 {
@@ -270,6 +277,8 @@ def degree_classification_view(request):
         return response
 
     return render(request, "general/degree_classification.html", context)
+
+#GUID, FULL_NAME, FINAL BAND, FINAL GPA, L4 BAND, L4 GPA, L3 BAND, L3 GPA, >A, >B, >C, >D, ... Project, Team ...
 
 # def api_view(request):
 #     context = {}

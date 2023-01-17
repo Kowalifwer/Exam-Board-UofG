@@ -13,7 +13,7 @@
         <p>COURSES</p>
         <div id="courses_table" class="tabulator_table"></div>
         <script>
-            search_term = '{{search_term}}';
+            search_term = '{{search_term}}'
             load_courses_table(extra_constructor_params = {}, false)
         </script>
     {%else%}
@@ -24,6 +24,7 @@
         <p>STUDENTS</p>
         <div id="students_table" class="tabulator_table"></div>
         <script>
+            search_term = '{{search_term}}'
             load_students_table()
         </script>
     {%else%}

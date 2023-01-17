@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.db import connection, reset_queries
 
+print("RUNNING DJANGO VIEW TESTS")
 # Create your tests here.
 class BaseTestCase(TestCase):
     def setUp(self):
@@ -8,6 +9,6 @@ class BaseTestCase(TestCase):
         super().setUp()
 
     def test_placeholder(self):
-        x = 2
-        y = 3
-        self.assertEqual(x + y, 5)
+        x = 5
+        y = 8
+        self.assertEqual(x + y, 13)

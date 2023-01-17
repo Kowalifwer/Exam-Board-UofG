@@ -235,6 +235,10 @@ class Populator:
     def populate_database(self):
         print("Transferring current state into database")
         try:
+            for i in range(2017, 2023):
+                AcademicYear.objects.create(year=i, is_current=i==self.current_academic_year)
+            print("Populated academic years")
+
             students = Student.objects.bulk_create(self.students, ignore_conflicts=True)
             print(f"Transferred {len(students)} students succesfully")
             courses = Course.objects.bulk_create(self.courses, ignore_conflicts=True)

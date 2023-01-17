@@ -18,7 +18,6 @@ class AcademicYearSettings(models.Model):
     level4_total_credits = models.IntegerField(default=120)
     level5_total_credits = models.IntegerField(default=120)
 
-
 class AcademicYear(models.Model):
     year = models.IntegerField(unique=True)
     is_current = models.BooleanField(default=True)  # TODO: Ensure that only 1 year is current at a time
@@ -26,7 +25,6 @@ class AcademicYear(models.Model):
 
     def __str__(self):
         return f"{self.year} - {'Currently active' if self.is_current else 'Not current year'}"
-
 
 class User(AbstractUser, UUIDModel):
     level_choices = [
