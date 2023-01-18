@@ -20,7 +20,11 @@ class AcademicYear(models.Model):
     #create a getter for degree_classification_settings that returns the default settings in JSON
     @property
     def degree_classification_settings_for_table(self):
-        return json.dumps(list(self.degree_classification_settings.values()))
+        try:
+            return json.dumps(list(self.degree_classification_settings.values()))
+        except:
+            print("Error in degree_classification_settings_for_table")
+            return json.dumps([])
 
     def __str__(self):
         return f"{self.year} - {'Currently active' if self.is_current else 'Not current year'}"

@@ -27,7 +27,8 @@
       <div class="header-sections">
         <a class="underline" href="{%url 'general:all_students'%}"><p>Students</p></a>
         <a class="underline" href="{%url 'general:all_courses'%}"><p>Courses</p></a>
-        <a class="underline" href="{%url 'general:degree_classification' 2022%}"><p>Degree Classification</p></a>
+        <a class="underline" href="{%url 'general:degree_classification'%}"><p>Degree Classification</p></a>
+        <a class="underline" href="{%url 'general:grading_rules'%}"><p>Grading Rules</p></a>
       </div>
       <form class="header-search" action="{% url 'general:global_search'%}" method="POST">
         {%csrf_token%}

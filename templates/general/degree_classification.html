@@ -9,7 +9,7 @@
     Degree classification page for the Academic year {{current_year.year}}-{{current_year.year|add:1}}
     <p>view other years</p>
     {%for year in other_years%}
-        <a class="underline" href="{%url 'general:degree_classification' year.year%}">{{year.year}}-{{year.year|add:1}}</a>
+        <a class="underline" href="{%url 'general:degree_classification_exact' year.year%}">{{year.year}}-{{year.year|add:1}}</a>
     {%endfor%}
 
     <p>BSc/BEng (Level 4)</p>

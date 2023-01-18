@@ -19,6 +19,50 @@ window.onload = function() {
     
 }
 
+function get_cookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function api_post(action, data) {
+    return new Promise((resolve, reject) => {
+        var form_data = new FormData();
+        form_data.append("action", action)
+        document.querySelectorAll(".api_prefill").forEach(element => {
+            console.log(element.name, element.value)
+            form_data.append(element.name, element.value)
+        })
+
+        form_data.append("data", JSON.stringify(data))
+        if (form_data.get("csrfmiddlewaretoken") == null) {
+            form_data.append("csrfmiddlewaretoken", get_cookie("csrftoken"))
+        }
+        fetch("/api/", {
+            method: "POST",
+            body: form_data,
+        }).then(response => {
+            if (response.status == 200) {
+                response.json().then(data => {
+                    resolve(data)
+                });
+            } else {
+                reject(response)
+            }
+        })
+    })
+}
+
 function api(page_count, pagination_size) {
     return new Promise((resolve, reject) => {
         fetch(window.location.href + `?api_get=true&page=${page_count}&size=${pagination_size}`).then(response => {

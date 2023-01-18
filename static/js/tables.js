@@ -114,7 +114,7 @@ formatter_to_percentage = function(cell, formatterParams, onRendered){
 
 const default_formatter = formatter_to_percentage
 
-function init_table(table_id, columns, prefil_data = null, extra_constructor_params = {}) {
+function init_table(table_id, columns, prefil_data = null, extra_constructor_params = {}, settings = {}) {
     let table_constructor = {
         // layout:"fitColumns",
         // responsiveLayout:"hide",
@@ -124,7 +124,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         paginationMode: "local",
         columnHeaderVertAlign:"middle",
 
-        selectable:true,
+        // selectable:true,
 
         paginationSize: 100,
         paginationSizeSelector:[25, 50, 100, 1000],
@@ -139,6 +139,9 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         },
         downloadRowRange:"selected", //download selected rows
     }
+
+    if (settings.no_selectable)
+        table_constructor.selectable = false
 
     if (prefil_data){
         table_constructor.data = prefil_data
@@ -165,6 +168,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     }
 
     let table_element = document.getElementById(table_id)
+    table_element.dataset.edit_mode = 0
     let table = new Tabulator(table_element, table_constructor)
     table.extra_cols = []
     // table.get_cols = columns
@@ -433,5 +437,75 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
             chart.data.datasets[0].data = Object.values(chart_data);
             chart.update('active');
         }
+    })
+}
+
+function load_grading_rules_table(data_json){
+    let columns = [
+        // {formatter:"rowSelection", titleFormatter:"rowSelection", align:"center", headerSort:false},
+        {title: "Name", field: "name", editor: false},
+        {title: "Standard lower GPA", field: "std_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1},},
+        {title: "Discretionary lower GPA", field: "disc_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1},},
+        {title: "Character Band", field: "char_band", visible: false, editor: "list",
+            editorParams: {
+                values: ["A", "B", "C", "D", "F"]
+            }
+        },
+        {title: "Percentage above", field: "percentage_above", formatter: "money", visible: false, editor:"number", formatterParams: {precision: 0, symbol: "%", symbolAfter: true},
+            editorParams: {
+                min: 0,
+                max: 100,
+                step: 1,
+            }
+        },
+    ]
+
+    let final_extra_constructor_params = {}
+    let settings = {"no_selectable": true}
+    
+    let table = init_table("grading_rules_table", columns.map(
+        col => {
+            return {...col, editor: false}
+        }
+    ), data_json, final_extra_constructor_params)
+
+    table.on("dataLoaded", function(data){
+        let wrapper = table.getWrapper()
+        let footer = wrapper.querySelector('.tabulator-footer-contents')
+        let edit_button = document.createElement('button')
+        let table_element = table.getElement()
+        edit_button.innerHTML = "Edit mode"
+        edit_button.addEventListener('click', function(){
+            if (table_element.dataset.edit_mode == 1) {
+                this.innerHTML = "Edit mode"
+                table_element.dataset.edit_mode = 0
+                table.setColumns(columns.map(col => {
+                    return {...col, editor: false}
+                }))
+                let table_data = table.getData()
+                if (JSON.stringify(table_data) === JSON.stringify(data_json)) {
+                    console.log("no changes")
+                } else {
+                    console.log("changes")
+                }
+
+                //api call here to save the data.
+                let posted_data = {}
+                for (i = 1; i < table_data.length + 1; i++) {
+                    posted_data[i] = table_data[i - 1]
+                }
+                api_post("save_grading_rules", posted_data).then(response => {
+                    alert(response.status)
+                })
+            } else {
+                this.innerHTML = "Save"
+                table_element.dataset.edit_mode = 1
+                table.setColumns(columns.map(col => {
+                    return {...col, visible: true}
+                }))
+            }
+        })
+        footer.prepend(edit_button)
+        //
     })
 }

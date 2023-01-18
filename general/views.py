@@ -7,7 +7,7 @@ from django.db.models import Prefetch
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
 import json
-from exam_board.logging import server_print, get_query_count
+from exam_board.tools import server_print, get_query_count
 
 def is_fetching_table_data(request):
     return request.method == 'GET' and request.GET.get('fetch_table_data')
@@ -256,7 +256,9 @@ def degree_classification_view(request, year=None):
     context = {'other_years': []}
     all_years = AcademicYear.objects.all()
     for academic_year in all_years:
-        if academic_year.year == year:
+        if year and year == academic_year.year:
+            context['current_year'] = academic_year
+        elif academic_year.is_current and 'current_year' not in context:
             context['current_year'] = academic_year
         else:
             context['other_years'].append(academic_year)
@@ -278,8 +280,38 @@ def degree_classification_view(request, year=None):
 
     return render(request, "general/degree_classification.html", context)
 
+def grading_rules_view(request, year=None):
+    context = {'other_years': []}
+    all_years = AcademicYear.objects.all()
+    for academic_year in all_years:
+        if year and year == academic_year.year:
+            context['current_year'] = academic_year
+        elif academic_year.is_current and 'current_year' not in context:
+            context['current_year'] = academic_year
+        else:
+            context['other_years'].append(academic_year)
+    return render(request, "general/grading_rules.html", context)
+
 #GUID, FULL_NAME, FINAL BAND, FINAL GPA, L4 BAND, L4 GPA, L3 BAND, L3 GPA, >A, >B, >C, >D, ... Project, Team ...
 
-# def api_view(request):
-#     context = {}
-#     return render(request, "general/api.html", context)
+def api_view(request):
+    response = {"status": None}
+    if request.method == "POST":
+        action = request.POST.get("action", None)
+        if action:
+            data = json.loads(request.POST.get("data", "{}"))
+            if action == "save_grading_rules":
+                year_id = request.POST.get("year_id", None)
+                if year_id:
+                    year = AcademicYear.objects.filter(id=year_id).first()
+                    if year.degree_classification_settings != data:
+                        print(data)
+                        year.degree_classification_settings = data
+                        year.save()
+                        response["status"] = "Degree classification updated succesfully!"
+                    else:
+                        response["status"] = "No changes detected."
+            else:
+                print("Unknown action")
+    
+    return JsonResponse(response)
