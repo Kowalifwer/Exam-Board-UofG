@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
                 ('code', models.CharField(max_length=11)),
                 ('name', models.CharField(max_length=255, null=True)),
                 ('academic_year', models.PositiveIntegerField()),
-                ('lecturer_comments', models.TextField(blank=True, max_length=500, null=True)),
+                ('lecturer_comment', models.TextField(blank=True, max_length=500, null=True)),
                 ('credits', models.PositiveIntegerField()),
                 ('is_taught_now', models.BooleanField(default=True)),
                 ('assessments', models.ManyToManyField(related_name='courses', to='general.assessment')),

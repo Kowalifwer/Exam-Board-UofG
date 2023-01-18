@@ -176,7 +176,7 @@ class Course(UUIDModel):
             'code': self.code,
             'name': self.name,
             'academic_year': self.academic_year,
-            'lecturer_comments': self.lecturer_comments,
+            'lecturer_comment': self.lecturer_comment,
             'credits': self.credits,
             'is_taught_now': self.is_taught_now,
             

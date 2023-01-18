@@ -204,7 +204,7 @@ def course_view(request, code, year):
         'course_other_years': []
     }
     get_query_count("before fetching course", False)
-    for course in Course.objects.filter(code=code):
+    for course in Course.objects.filter(code=code).select_related("lecturer"):
         if course.academic_year == year:
             context['current_course'] = course
         else:

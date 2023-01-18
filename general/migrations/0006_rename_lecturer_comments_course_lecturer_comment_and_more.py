@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RenameField(
             model_name='course',
-            old_name='lecturer_comments',
+            old_name='lecturer_comment',
             new_name='lecturer_comment',
         ),
         migrations.AddField(

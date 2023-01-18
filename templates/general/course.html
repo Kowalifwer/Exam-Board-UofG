@@ -6,7 +6,11 @@
 {% endblock %}
 
 {% block body %}
-    currently viewing: {{current_course.verbose_name}}
+    <p>currently viewing: {{current_course.verbose_name}}</p>
+    <p>Lecturer: {{current_course.lecturer}}</p>
+    {%if current_course.lecturer_comment%}
+        <p>Lecturer comment: {{current_course.lecturer_comment}}</p>
+    {%endif%}
     {%if course_other_years%}
         <p>other years:</p>
         {%for course in course_other_years%}
