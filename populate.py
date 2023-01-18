@@ -18,6 +18,7 @@ def decision(probability):
 
 class Populator:
     def __init__(self):
+        self.users = []
         self.students = []
         self.courses = []
         self.assessment_groups = []  # will store groups of assessments that weigh up to 100%
@@ -36,6 +37,21 @@ class Populator:
     @property
     def random_full_name(self):
         return f"{random.choice(self.first_names)} {random.choice(self.last_names)}"
+    
+    @property
+    def random_user_data(self):
+        first_name = random.choice(self.first_names)
+        last_name = random.choice(self.last_names)
+        username = f"{first_name.lower()}.{last_name.lower()}{random.randint(100, 999)}"
+        return {
+            "username": username,
+            "password": "password",
+            "email": f"{username}@example.com",
+            "first_name": first_name,
+            "last_name": last_name,
+            "title": random.choices(["Dr", "Prof"], weights=[0.65, 0.35])[0],
+            "class_head_level": random.choice([0,1,2,3,4,5,10]),
+        }
     
     @property
     def random_student_data(self):
@@ -79,7 +95,7 @@ class Populator:
         course_level = random.randint(1, 5)
         course_code = f"COMPSCI{course_level}{random.randint(100, 999)}"
         name = f"Computing science {course_code[-4:]}"
-        lecturer_comments = "".join(lorem_ipsum.paragraphs(random.randint(0,2), False))
+        lecturer_comment = "".join(lorem_ipsum.paragraphs(random.randint(0,2), False))
         credits = random.choices([10, 20, 40], weights=[0.75, 0.20, 0.05])[0]
         if credits == 40:
             name = f"{random.choice(['Individual', 'Group'])} PROJECT - {course_code}"
@@ -93,10 +109,14 @@ class Populator:
             "code": course_code,
             "name": name,
             "academic_year": academic_year,
-            "lecturer_comments": lecturer_comments,
+            "lecturer_comment": lecturer_comment,
             "credits": credits,
             "is_taught_now": is_taught_now,
         }
+    
+    def generate_users(self, n):
+        self.users = [User(**self.random_user_data) for _ in range(n)]
+        print(f"Generated {len(self.users)} users")
     
     def generate_assessment_groups(self):
         self.assessment_groups.append([   
@@ -154,6 +174,11 @@ class Populator:
         courses = []
         while i < n:
             course_data = self.random_course_data
+            if decision(0.95):
+                course_data["lecturer"] = random.choice(self.users)
+            else:
+                course_data["lecturer_comment"] = "No lecturer assigned to the course yet!"
+
             i+=1
             courses.append(Course(**course_data))
             for j in range(2017, 2023):  # add the same course across other years as well (80% chance)
@@ -242,9 +267,11 @@ class Populator:
                 AcademicYear.objects.create(year=i, is_current=i==self.current_academic_year)
             print("Populated academic years")
 
+            User.objects.bulk_create(self.users, ignore_conflicts=True)
             students = Student.objects.bulk_create(self.students, ignore_conflicts=True)
             print(f"Transferred {len(students)} students succesfully")
             courses = Course.objects.bulk_create(self.courses, ignore_conflicts=True)
+
             print(f"Transferred {len(courses)} courses succesfully")
             
             reset_queries()
@@ -273,6 +300,7 @@ class Populator:
     def wipe_database(self):
         print("Wiping database...")
         try:
+            User.objects.all().delete()
             AcademicYear.objects.all().delete()
             Student.objects.all().delete()
             Course.objects.all().delete()
@@ -288,6 +316,7 @@ def main():
     populator = Populator()
     populator.wipe_database()
     populator.create_admin()
+    populator.generate_users(20)
     populator.generate_students(500)
     populator.generate_courses(125)
     populator.generate_assessment_groups()

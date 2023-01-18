@@ -41,12 +41,14 @@ class User(AbstractUser, UUIDModel):
     ]
     class_head_level = models.IntegerField(choices=level_choices, default=0)
 
+    title = models.CharField(max_length=20, blank=True, null=True)
+
     @property
     def is_classhead(self):
         return self.level > 0
 
     def __str__(self):
-        return self.username
+        return f"{self.title}. {self.first_name} {self.last_name}"
 
 
 class Student(UUIDModel):
@@ -143,7 +145,8 @@ class Course(UUIDModel):
     name = models.CharField(max_length=255, null=True)
     academic_year = models.PositiveIntegerField()
 
-    lecturer_comments = models.TextField(max_length=500, null=True, blank=True)
+    lecturer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="courses_taught")
+    lecturer_comment = models.TextField(max_length=500, null=True, blank=True)
 
     credits = models.PositiveIntegerField()
 
