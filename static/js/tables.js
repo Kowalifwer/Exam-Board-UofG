@@ -114,7 +114,7 @@ formatter_to_percentage = function(cell, formatterParams, onRendered){
 
 const default_formatter = formatter_to_percentage
 
-function init_table(table_id, columns, prefil_data = null, extra_constructor_params = {}, settings = {}) {
+function init_table(table_id, columns, prefil_data = null, extra_constructor_params = {}) {
     let table_constructor = {
         // layout:"fitColumns",
         // responsiveLayout:"hide",
@@ -124,7 +124,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         paginationMode: "local",
         columnHeaderVertAlign:"middle",
 
-        // selectable:true,
+        selectable:true,
 
         paginationSize: 100,
         paginationSizeSelector:[25, 50, 100, 1000],
@@ -139,9 +139,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         },
         downloadRowRange:"selected", //download selected rows
     }
-
-    if (settings.no_selectable)
-        table_constructor.selectable = false
 
     if (prefil_data){
         table_constructor.data = prefil_data
@@ -158,8 +155,10 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                 table.extra_cols = response.extra_cols
                 table.dispatchEvent("extra_cols_loaded")
                 return response.data
-            } else
-                return response;
+            } else {
+                table.dispatchEvent("dataLoadedInitial")
+                return response
+            }
         }
     }
 
@@ -216,7 +215,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     table_components.classList.add('tabulator-components')
     wrapper.prepend(table_components)
 
-    table.on("dataLoaded", function(){
+    table.on("dataLoadedInitial", function(){
         table.reformatTable(default_formatter, "format_grade")
         //handle formatting stuff
         var select_element = string_to_html_element(
@@ -267,7 +266,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     return table
 }
 
-var headerMenu = [
+let headerMenu = [
     {
         label:"Hide Column",
         action:function(e, column){
@@ -335,7 +334,8 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
             },
         ],
         groupBy: 'current_year',
-        initialSort: [{column: 'current_year', dir: 'dsc'}]
+        initialSort: [{column: 'current_year', dir: 'dsc'}],
+        placeholder: "Student data loading...",
     }
     let table = init_table("students_table", columns, null, final_extra_constructor_params)
     
@@ -413,7 +413,8 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
             },
         ],
         groupBy: ['academic_year'],
-        initialSort: [{column: 'academic_year', dir: 'dsc'}]
+        initialSort: [{column: 'academic_year', dir: 'dsc'}],
+        placeholder: "Course data loading...",
     }
     let table = init_table("courses_table", columns, null, final_extra_constructor_params)
 
@@ -460,8 +461,7 @@ function load_grading_rules_table(data_json){
         },
     ]
 
-    let final_extra_constructor_params = {}
-    let settings = {"no_selectable": true}
+    let final_extra_constructor_params = {"selectable": false, "placeholder": "Grading rules loading..."}
     
     let table = init_table("grading_rules_table", columns.map(
         col => {
@@ -506,6 +506,80 @@ function load_grading_rules_table(data_json){
             }
         })
         footer.prepend(edit_button)
-        //
+    })
+}
+
+function load_student_comments_table(data_json){
+    let columns = [
+        // {formatter:"rowSelection", titleFormatter:"rowSelection", align:"center", headerSort:false},
+        {title: "Comment", field: "comment"},
+        {title: "Lecturer", field: "added_by"},
+        {title: "Date added", field: "timestamp"},
+        {title: "Comment ID", field: "id", visible: false}
+    ]
+
+    let footer_element = 
+        `<div>
+            <textarea type="text" id="comment_input" placeholder="Write your comment here.."></textarea>
+            <button id="add_comment_button">Add comment</button>
+        </div>`
+    let final_extra_constructor_params = {
+        "selectable": true,
+        "pagination": false,
+        "layout": "fitColumns",
+        "footerElement": footer_element,
+        "index": "id",
+        rowContextMenu:[
+            {
+                label:"Hide Comment",
+                action:function(e, row){
+                    row.delete();
+                }
+            },
+            {
+                label:"Delete comment",
+                    action:function(e, row){
+                        if(row.getData().added_by == user_full_name) {
+                            if (confirm("Are you sure you want to delete this comment?")) {
+                                api_post("delete_student_comment", row.getData().id).then(response => {
+                                    if (response.data) {
+                                        table.setData(response.data).then(function () {
+                                            setTimeout(() => {alert(response.status)}, 10)
+                                        })
+                                    } else {
+                                        alert(response.status)
+                                    }
+                                })
+                            }
+                        } else {
+                            alert("You can only delete your own comments")
+                        }
+                    }
+            },
+        ],
+    }
+    
+    let table = init_table("student_comments_table", columns, data_json, final_extra_constructor_params)
+    table.on("tableBuilt", function(){
+        let footer = table.getWrapper().querySelector('.tabulator-footer-contents')
+        let add_comment_button = footer.querySelector('#add_comment_button')
+        let comment_input = footer.querySelector('#comment_input')
+        add_comment_button.addEventListener('click', function(){
+            let comment = comment_input.value
+            if (comment.length > 0) {
+                api_post("add_student_comment", comment).then(response => {
+                    if (response.data) {
+                        table.setData(response.data).then(function () {
+                            comment_input.value = ""
+                            setTimeout(() => {alert(response.status)}, 10)
+                        })
+                    } else {
+                        alert(response.status)
+                    }
+                })
+            } else {
+                alert("Please enter a non empty comment.")
+            }
+        })
     })
 }

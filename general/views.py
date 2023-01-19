@@ -1,6 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
-from general.models import Student, Course, Assessment, AssessmentResult, User, AcademicYear
+from general.models import Student, Course, Assessment, AssessmentResult, User, AcademicYear, Comment
 from django.db import connection, reset_queries
 import time
 from django.db.models import Prefetch
@@ -8,9 +8,11 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
 import json
 from exam_board.tools import server_print, get_query_count
+from django.db import transaction
 
 def is_fetching_table_data(request):
     return request.method == 'GET' and request.GET.get('fetch_table_data')
+    
 
 # Create your views here.
 
@@ -177,7 +179,6 @@ def global_search_view(request):
     return render(request, "general/global_search.html", context)
 
 def student_view(request, GUID):
-    context = {"student": Student.objects.filter(GUID=GUID).first()}
     get_query_count("before student query")
     if is_fetching_table_data(request):
         student = Student.objects.filter(GUID=GUID).prefetch_related("results__assessment", "results__course").first()
@@ -197,19 +198,11 @@ def student_view(request, GUID):
         get_query_count("after student query")
         return JsonResponse(all_courses_json, safe=False)
 
+    context = {"student": Student.objects.filter(GUID=GUID).first()}
     return render(request, "general/student.html", context)
 
 def course_view(request, code, year):
-    context = {
-        'course_other_years': []
-    }
     get_query_count("before fetching course", False)
-    for course in Course.objects.filter(code=code).select_related("lecturer"):
-        if course.academic_year == year:
-            context['current_course'] = course
-        else:
-            context['course_other_years'].append(course)
-
     if is_fetching_table_data(request):
         course = Course.objects.filter(code=code, academic_year=year).prefetch_related("assessments").first()
         students = course.students.all().prefetch_related("results__course", "results__assessment", "courses")[:50]
@@ -247,8 +240,17 @@ def course_view(request, code, year):
         extra_cols.append({"title": "Final grade(weighted)", "field": "final_grade", "cssClass": "format_grade"})
 
         get_query_count("after fetching course")
-        response = JsonResponse({"data": all_students_json, "extra_cols":extra_cols}, safe=False)
-        return response
+        return JsonResponse({"data": all_students_json, "extra_cols":extra_cols}, safe=False)
+    
+    context = {
+        'course_other_years': []
+    }
+    
+    for course in Course.objects.filter(code=code).select_related("lecturer"):
+        if course.academic_year == year:
+            context['current_course'] = course
+        else:
+            context['course_other_years'].append(course)
 
     return render(request, "general/course.html", context)
 
@@ -295,23 +297,69 @@ def grading_rules_view(request, year=None):
 #GUID, FULL_NAME, FINAL BAND, FINAL GPA, L4 BAND, L4 GPA, L3 BAND, L3 GPA, >A, >B, >C, >D, ... Project, Team ...
 
 def api_view(request):
-    response = {"status": None}
+    response = {"status": "Uknown error occurred.", "data": None}
+    student_id = request.POST.get("student_id", None)
+
     if request.method == "POST":
         action = request.POST.get("action", None)
         if action:
             data = json.loads(request.POST.get("data", "{}"))
+            
+            #GRADING RULES
             if action == "save_grading_rules":
                 year_id = request.POST.get("year_id", None)
                 if year_id:
                     year = AcademicYear.objects.filter(id=year_id).first()
-                    if year.degree_classification_settings != data:
-                        print(data)
-                        year.degree_classification_settings = data
-                        year.save()
-                        response["status"] = "Degree classification updated succesfully!"
+                    if year:
+                        if year.degree_classification_settings != data:
+                            year.degree_classification_settings = data
+                            year.save()
+                            response["status"] = "Degree classification updated succesfully!"
+                        else:
+                            response["status"] = "No changes detected."
                     else:
-                        response["status"] = "No changes detected."
+                        response["status"] = "Server error. Academic year not found."
+
+            #STUDENT COMMENTS
+            elif action in ["add_student_comment", "delete_student_comment"]:
+                student_id = request.POST.get("student_id", None)
+                if student_id:
+                    student = Student.objects.filter(id=student_id).first()
+                    if student:
+                        if action == "add_student_comment":
+                            comment = data
+                            if comment != "" and type(comment) == str and len(comment) <= 200:
+                                comment_instance = Comment.objects.create(student=student, comment=comment, added_by=request.user)
+                                student.comments.add(comment_instance)
+
+                                response["status"] = "Comment added succesfully!"
+                                response["data"] = student.student_comments_for_table
+                            else:
+                                response["status"] = "Invalid comment."
+                        elif action == "delete_student_comment":
+                            comment_id = data
+                            if comment_id:
+                                comment = Comment.objects.filter(id=comment_id).select_related("added_by").first()
+                                if comment:
+                                    if comment.added_by != request.user:
+                                        response["status"] = "You are not allowed to delete this comment."
+                                    else:
+                                        comment.delete()
+                                        response["status"] = "Comment deleted succesfully!"
+                                        response["data"] = student.student_comments_for_table
+                                else:
+                                    response["status"] = "Comment not found."
+                            else:
+                                response["status"] = "No comment id provided."
+                    else:
+                        response["status"] = "Student not found."
+                else:
+                    response["status"] = "No student id provided."
+            
+
             else:
-                print("Unknown action")
+                response["status"] = "Invalid action."
+        else:
+            response["status"] = "No action provided."
     
     return JsonResponse(response)

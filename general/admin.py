@@ -1,5 +1,5 @@
 from django.contrib import admin
-from general.models import Student, Course, Assessment, AssessmentResult, User, AcademicYear
+from general.models import Student, Course, Assessment, AssessmentResult, User, AcademicYear, Comment
 from django.contrib.auth import admin as auth_admin
 from django.db import connection, reset_queries
 from django.utils.safestring import mark_safe
@@ -19,6 +19,11 @@ class Course_Admin(admin.ModelAdmin):
     def assessment_data(self, obj):
         return mark_safe('<br>'.join([str(assessment) for assessment in obj.assessments.all().order_by('weighting')]))
 
+#create Comment inline
+class CommentInline(admin.TabularInline):
+    model = Comment
+    extra = 0
+
 @admin.register(Student)
 class Student_Admin(admin.ModelAdmin):
     list_display = ('GUID', 'full_name', 'degree_title', 'current_academic_year', 'is_faster_route', 'is_masters', 'start_academic_year', 'end_academic_year')
@@ -26,6 +31,7 @@ class Student_Admin(admin.ModelAdmin):
     search_fields = ('GUID', 'full_name', 'degree_title')
     readonly_fields = ('course_data',)
     exclude = ('courses',)
+    inlines = [CommentInline]
 
     def course_data(self, obj):
         # return ""
@@ -60,3 +66,4 @@ class AssessmentResult_Admin(admin.ModelAdmin):
 
 #register default models with all fields
 admin.site.register(AcademicYear)
+admin.site.register(Comment)

@@ -6,7 +6,16 @@
 {% endblock %}
 
 {% block body %}
-    Student: {{student}}
+    <input type="hidden" name="student_id" value="{{student.id}}" class="api_prefill">
+
+
+    <p>Student: {{student}}</p>
+    Comments:
+    <div class="tabulator_table" id="student_comments_table" style="max-width: 1200px;"></div>
+    <script>
+        let user_full_name = '{{user}}'
+        load_student_comments_table(`{{student.student_comments_for_table|safe}}`)
+    </script>
 
     <p>Course grades for student:</p>
     <div class="tabulator_table" id="courses_table" style="max-width: 1200px;"></div>

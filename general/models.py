@@ -97,6 +97,15 @@ class Student(UUIDModel):
     def page_url(self):
         return reverse('general:student', args=[self.GUID])
     
+    @property
+    def student_comments_for_table(self):
+        return json.dumps([{
+            "comment": comment.comment,
+            "added_by": comment.added_by.__str__(),
+            "timestamp": comment.timestamp.strftime("%d/%m/%Y %H:%M"),
+            "id": str(comment.id),
+        } for comment in self.comments.all().select_related('added_by')])
+    
     def get_data_for_table(self, extra_data=None):
         table_data = {
             "GUID": self.GUID,
@@ -287,8 +296,14 @@ class AssessmentResult(UUIDModel):
         return f'{self.student.full_name} - {self.assessment.name} - {self.grade}%'
 
 class Comment(UUIDModel):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
+    added_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="comments")
+
     comment = models.TextField(blank=False, null=False)
-    date_created = models.DateTimeField(auto_now_add=True)
-    date_updated = models.DateTimeField(auto_now=True)
+    timestamp = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['-timestamp']),
+        ]
+        ordering = ['-timestamp']
