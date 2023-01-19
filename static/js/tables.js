@@ -1,10 +1,12 @@
 //helper functions
-const preponderance_list = ["N/A", "MV", "CW", "CR"]
+const preponderance_list = ["NA", "MV", "CW", "CR"]
 
 const preponderance_formatter = function (cell) {
     let value = cell.getValue()
     if (value == "N/A"){
         cell.getElement().style.backgroundColor = "#E06666"
+    } else if (value == "NA") {
+        cell.getElement().style.backgroundColor = "#00FF00"
     } else if (value == "MV"){
         cell.getElement().style.backgroundColor = "#000080"
     } else if (value == "CW"){
@@ -188,7 +190,8 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table_constructor[key] = extra_constructor_params[key]
     }
 
-    let table_element = (isElement(table_id)) ? table_id : document.getElementById(table_id) 
+    let table_element = (isElement(table_id)) ? table_id : document.getElementById(table_id)
+    console.log(table_element)
     table_element.dataset.edit_mode = 0
     let table = new Tabulator(table_element, table_constructor)
     table.extra_cols = []
@@ -288,6 +291,12 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     //         window.location.href = row.getData().page_url
     //     }
     // });
+    table.reloadTable = (reload_function, reload_function_parameter_list) => {
+        let table_wrapper = table.getWrapper()
+        //delete all children in wrapper, except for the tabulator element
+        table_wrapper.querySelectorAll(":scope *:not(.tabulator)").forEach(child => child.remove())
+        reload_function(...reload_function_parameter_list)
+    }
 
     return table
 }
@@ -361,7 +370,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
             {
                 label: "Detailed assessment breakdown popup",
                 action: function(e, row){
-                    create_student_course_detailed_table_popup(row.getData().GUID, backend_course_id)
+                    create_student_course_detailed_table_popup(row.getData().GUID, backend_course_id, row.getTable(), load_students_table, [extra_constructor_params, extra_cols])
                 }
             }
         ],
@@ -393,7 +402,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
     })
 }
 
-function create_student_course_detailed_table_popup(student_GUID=null, course_id=null){
+function create_student_course_detailed_table_popup(student_GUID=null, course_id=null, parent_table_to_reload=null, reload_function=null, reload_function_parameter_list=null){
     if (student_GUID && course_id) {
         let columns = [
             // {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
@@ -401,7 +410,10 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
             {title: "Assessment name", field: "name"},
             {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},
             {title: "Grade", field: "grade", cssClass: "format_grade"},
-            {title: "Preponderance", field: "preponderance", formatter: preponderance_formatter},
+            {title: "Preponderance", field: "preponderance", formatter: preponderance_formatter, editor: "list", editorParams: {
+                values: preponderance_list
+            }},
+            {title: "AssessmentResult ID", field: "result_id", visible: false},
         ]
     
         let ajaxParams = {
@@ -413,6 +425,7 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
     
         let final_extra_constructor_params = {
             "ajaxParams": ajaxParams,
+            "selectable": false,
             // rowContextMenu:[
             //     {
             //         label:"Hide Student",
@@ -442,9 +455,11 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
         
         let elt = document.createElement("div")
         document.body.appendChild(elt)
-        let table = init_table(elt, columns, null, final_extra_constructor_params)
+        let table = init_table(elt, columns.map((col) => {
+            return {...col, editor: false}
+        }), null, final_extra_constructor_params)
+
         popup_wrapper = table.getWrapper()
-        console.log(popup_wrapper)
 
         //make the popup wrapper be absolutely positioned, in the middle of the screen
         popup_wrapper.style.position = "fixed"
@@ -482,12 +497,54 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
         popup_wrapper.appendChild(close_button)
 
         window.onclick = function(event) {
+            //if event.target is not a child of the popup wrapper, remove the popup wrapper
             if (event.target == popup_wrapper) {
                 popup_wrapper.remove()
+                main_body.classList.remove("disabled")
             }
         }
     
         document.body.prepend(popup_wrapper)
+
+        let edit_button = document.createElement("button")
+        let table_element = table.getElement()
+        edit_button.innerHTML = "Edit preponderance"
+        edit_button.addEventListener('click', function(){
+            if (table_element.dataset.edit_mode == 1) {
+                if (confirm("Are you sure you want to save the changes? - this will overwrite the current preponderance values for this student, and reload the tables on the page.")) {
+                    this.innerHTML = "Edit preponderance"
+                    table_element.dataset.edit_mode = 0
+                    table.setColumns(columns.map(col => {
+                        return {...col, editor: false}
+                    }))
+                    let table_data = table.getData()
+                    // if (JSON.stringify(table_data) === JSON.stringify(data_json)) {
+                    //     console.log("no changes")
+                    // } else {
+                    //     console.log("changes")
+                    // }
+                    //api call here to save the data.
+                    api_post("update_preponderance", table_data).then(response => {
+                        if (response.data) {
+                            alert(response.status)
+                            if (reload_function && reload_function_parameter_list) {
+                                parent_table_to_reload.reloadTable(reload_function, reload_function_parameter_list)
+                                popup_wrapper.remove()
+                                main_body.classList.remove("disabled")
+                            }
+                        } else {
+                            alert(response.status)
+                        }
+                    })
+                }
+            } else {
+                this.innerHTML = "Save changes!"
+                table.setColumns(columns)
+                console.log(columns)
+                table_element.dataset.edit_mode = 1
+            }
+        })
+        popup_wrapper.appendChild(edit_button)
     
     } else {
         alert("Please select a student first!")

@@ -219,6 +219,7 @@ def course_view(request, code, year):
                     'weighting': assessment.weighting,
                     'grade': result.grade if result else "Not completed",
                     'preponderance': result.preponderance if result else "Not completed",
+                    'result_id': result.id if result else "Not completed",
                 })
             
             return JsonResponse(data_for_student_course_table, safe=False)
@@ -339,6 +340,33 @@ def api_view(request):
                             response["status"] = "No changes detected."
                     else:
                         response["status"] = "Server error. Academic year not found."
+            
+            #PREPONDERANCE
+            elif action == "update_preponderance":
+                print(data)
+                results_to_save = [] ##make sure we save at the very end, to make sure all data is valid
+                for row in data:
+                    result_id = row.get("result_id", "")
+                    if not result_id:
+                        return JsonResponse({"status": "Server error. Result id not found.", "data": None}, safe=False)
+                    result = AssessmentResult.objects.filter(id=result_id).first()
+                    if not result:
+                        return JsonResponse({"status": "Server error. Result not found.", "data": None}, safe=False)
+                    preponderance = row.get("preponderance", "")
+                    if preponderance not in [tuple[0] for tuple in AssessmentResult.preponderance_choices]:
+                        return JsonResponse({"status": "Server error. Invalid preponderance.", "data": None}, safe=False)
+                    
+                    if result.preponderance != preponderance:
+                        result.preponderance = preponderance
+                        results_to_save.append(result)
+                
+                if results_to_save:
+                    AssessmentResult.objects.bulk_update(results_to_save, ["preponderance"])
+                    response["status"] = "Preponderance(s) updated succesfully!"
+                else:
+                    response["status"] = "No changes detected."
+                
+                response["data"] = True
 
             #STUDENT COMMENTS
             elif action in ["add_student_comment", "delete_student_comment"]:
