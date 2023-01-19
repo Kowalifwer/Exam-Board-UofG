@@ -304,6 +304,6 @@ class Comment(UUIDModel):
 
     class Meta:
         indexes = [
-            models.Index(fields=['-timestamp']),
+            models.Index(fields=['timestamp']),
         ]
-        ordering = ['-timestamp']
+        ordering = ['timestamp']
