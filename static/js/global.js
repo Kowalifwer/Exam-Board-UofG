@@ -3,6 +3,10 @@ function string_to_html_element(html_string) {
     return doc.body.firstChild
 }
 
+function isElement(element) {
+    return element instanceof Element || element instanceof HTMLDocument;  
+}
+
 function wrap(el, wrapper) {
     el.parentNode.insertBefore(wrapper, el);
     wrapper.appendChild(el);

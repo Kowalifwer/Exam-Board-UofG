@@ -131,16 +131,31 @@ class Student(UUIDModel):
         totals = {}
         for result in results:
             result_assessment = result.assessment
-            if result_assessment.type not in totals:
-                totals[result_assessment.type] = [0, 0]
-            totals[result_assessment.type][0] += result.grade * result_assessment.weighting
-            totals[result_assessment.type][1] += result_assessment.weighting
-            extra_data[str(result_assessment.id)] = f"{result.grade}" 
+            type = result_assessment.type
+            weighting = result_assessment.weighting
+            grade = result.grade
+            if type not in totals:
+                totals[type] = [0, 0]
+
+            if result.preponderance == "NA":
+                extra_data[str(result_assessment.id)] = f"{grade}"
+            else:
+                extra_data[str(result_assessment.id)] = f"{result.preponderance}"
+                if result.preponderance == "MV": #if medical void - do not count
+                    weighting = 0
+                else: #if credit witheld or refused - count as 0
+                    grade = 0
+            
+            totals[type][0] += grade * weighting
+            totals[type][1] += weighting
+
             final_grade += result.grade * result_assessment.weighting / 100
         
         for key, totals in totals.items():
             if totals[1] > 0:
                 extra_data[f"{key}_grade"] = f"{totals[0] / totals[1]:.2f}"
+            else:
+                extra_data[f"{key}_grade"] = "N/A"
         extra_data["final_grade"] = f"{round(final_grade, 2)}"
         
         return extra_data
@@ -269,6 +284,8 @@ class Assessment(UUIDModel):
     def __str__(self):
         return f"{self.name}({self.weighting}%)"
 
+#steps to moderate a course/assessment.
+
 
 class AssessmentResult(UUIDModel):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="results")
@@ -288,7 +305,7 @@ class AssessmentResult(UUIDModel):
         ('CR', 'Credit Refused'),
     ]
     preponderance = models.CharField(choices=preponderance_choices, default='NA', max_length=2)
-    comment = models.TextField(null=True, blank=True)
+    # comment = models.TextField(null=True, blank=True)
     date_submitted = models.DateField(auto_now_add=True)
     date_updated = models.DateField(auto_now=True)
 

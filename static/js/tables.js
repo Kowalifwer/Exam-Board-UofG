@@ -1,4 +1,28 @@
 //helper functions
+const preponderance_list = ["N/A", "MV", "CW", "CR"]
+
+const preponderance_formatter = function (cell) {
+    let value = cell.getValue()
+    if (value == "N/A"){
+        cell.getElement().style.backgroundColor = "#E06666"
+    } else if (value == "MV"){
+        cell.getElement().style.backgroundColor = "#000080"
+    } else if (value == "CW"){
+        //set cell colour to dark gray
+        cell.getElement().style.backgroundColor = "#808080"
+    } else if (value == "CR"){
+        //set cell colour to dark red
+        cell.getElement().style.backgroundColor = "#800000"
+    }
+    return value
+}
+
+const is_preponderance = function (cell) {
+    if (preponderance_list.includes(cell.getValue()))
+        return true
+    return false
+}
+
 function percent_to_integer_band(percent) {
     const bound_check = (lower_bound, upper_bound) => {
         if (percent >= lower_bound && percent < upper_bound)
@@ -56,10 +80,10 @@ function percent_to_integer_band(percent) {
 
 //FORMATTERS
 formatter_to_band_letter = function(cell, formatterParams, onRendered){
-    if (cell.getValue() == "N/A"){
-        cell.getElement().style.backgroundColor = "#E06666"
-        return cell.getValue()
+    if (is_preponderance(cell)) {
+        return preponderance_formatter(cell)
     }
+
     let integer_band = percent_to_integer_band(cell.getValue())
     let boundary_map = {
         0: "H",
@@ -97,18 +121,16 @@ formatter_to_band_letter = function(cell, formatterParams, onRendered){
 }
 
 formatter_to_band_integer = function(cell, formatterParams, onRendered){
-    if (cell.getValue() == "N/A"){
-        cell.getElement().style.backgroundColor = "#E06666"
-        return cell.getValue()
+    if (is_preponderance(cell)) {
+        return preponderance_formatter(cell)
     }
     return percent_to_integer_band(cell.getValue())
 }
 
 formatter_to_percentage = function(cell, formatterParams, onRendered){
-    if (cell.getValue() == "N/A"){
-        cell.getElement().style.backgroundColor = "#E06666"
-        return cell.getValue()
-    } 
+    if (is_preponderance(cell)) {
+        return preponderance_formatter(cell)
+    }
     return cell.getValue() + "%"
 }
 
@@ -153,7 +175,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table_constructor.ajaxResponse = function(url, params, response) {
             if (typeof response.extra_cols !== 'undefined') {
                 table.extra_cols = response.extra_cols
-                table.dispatchEvent("extra_cols_loaded")
+                table.dispatchEvent("dataLoadedInitial")
                 return response.data
             } else {
                 table.dispatchEvent("dataLoadedInitial")
@@ -166,7 +188,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table_constructor[key] = extra_constructor_params[key]
     }
 
-    let table_element = document.getElementById(table_id)
+    let table_element = (isElement(table_id)) ? table_id : document.getElementById(table_id) 
     table_element.dataset.edit_mode = 0
     let table = new Tabulator(table_element, table_constructor)
     table.extra_cols = []
@@ -216,6 +238,10 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     wrapper.prepend(table_components)
 
     table.on("dataLoadedInitial", function(){
+        for (let i = 0; i < table.extra_cols.length; i++){
+            table.addColumn(table.extra_cols[i])
+        }
+        
         table.reformatTable(default_formatter, "format_grade")
         //handle formatting stuff
         var select_element = string_to_html_element(
@@ -278,7 +304,7 @@ let headerMenu = [
 //define various table setups below
 function load_students_table(extra_constructor_params = {}, extra_cols=true){
     let columns = [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", align:"center", headerSort:false},
+        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
         {title: "GUID", field: "GUID", topCalc: "count", headerFilter: "input", "frozen": true, headerContextMenu:headerMenu},
         {title: "Name", field: "name", headerFilter: "input"},
         {
@@ -300,7 +326,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
                 {title: "End year", field: "end_year"},
             ],
             "headerHozAlign": "center",
-        }
+        },
     ]
 
     let ajaxParams = {
@@ -325,13 +351,19 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
                 }
             },
             {
-                label:"View Student Page",
+                label:"View Student breakdown page",
                     action:function(e, row){
                         if (typeof row.getData().page_url !== 'undefined') {
                             window.location.href = row.getData().page_url
                         }
                     }
             },
+            {
+                label: "Detailed assessment breakdown popup",
+                action: function(e, row){
+                    create_student_course_detailed_table_popup(row.getData().GUID, backend_course_id)
+                }
+            }
         ],
         groupBy: 'current_year',
         initialSort: [{column: 'current_year', dir: 'dsc'}],
@@ -341,11 +373,6 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
     
     table.on("dataLoaded", function(data){
         // page_count += 1
-        console.log("data loaded");
-        
-        for (let i = 0; i < table.extra_cols.length; i++){
-            table.addColumn(table.extra_cols[i])
-        }
         // api(page_count, pagination_size).then(server_data => {
         //     table.addData(server_data.data)
         //     if (page_count < server_data.last_page) {
@@ -366,9 +393,111 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
     })
 }
 
+function create_student_course_detailed_table_popup(student_GUID=null, course_id=null){
+    if (student_GUID && course_id) {
+        let columns = [
+            // {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
+            {title: "Assessment type", field: "type", topCalc: "count"},
+            {title: "Assessment name", field: "name"},
+            {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},
+            {title: "Grade", field: "grade", cssClass: "format_grade"},
+            {title: "Preponderance", field: "preponderance", formatter: preponderance_formatter},
+        ]
+    
+        let ajaxParams = {
+            "fetch_table_data": true,
+            "students": true,
+            "student_GUID": student_GUID,
+            "course_id": course_id,
+        }
+    
+        let final_extra_constructor_params = {
+            "ajaxParams": ajaxParams,
+            // rowContextMenu:[
+            //     {
+            //         label:"Hide Student",
+            //         action:function(e, row){
+            //             row.delete();
+            //         }
+            //     },
+            //     {
+            //         label:"View Student breakdown page",
+            //             action:function(e, row){
+            //                 if (typeof row.getData().page_url !== 'undefined') {
+            //                     window.location.href = row.getData().page_url
+            //                 }
+            //             }
+            //     },
+            //     {
+            //         label: "Detailed assessment breakdown popup",
+            //         action: function(e, row){
+            //             create_student_course_detailed_table_popup()
+            //         }
+            //     }
+            // ],
+            // groupBy: 'current_year',
+            // initialSort: [{column: 'current_year', dir: 'dsc'}],
+            // placeholder: "Student data loading...",
+        }
+        
+        let elt = document.createElement("div")
+        document.body.appendChild(elt)
+        let table = init_table(elt, columns, null, final_extra_constructor_params)
+        popup_wrapper = table.getWrapper()
+        console.log(popup_wrapper)
+
+        //make the popup wrapper be absolutely positioned, in the middle of the screen
+        popup_wrapper.style.position = "fixed"
+        popup_wrapper.style.top = "50%"
+        popup_wrapper.style.left = "50%"
+        popup_wrapper.style.transform = "translate(-50%, -50%)"
+        popup_wrapper.style.backgroundColor = "white"
+        popup_wrapper.style.zIndex = "1000"
+        popup_wrapper.style.border = "1px solid black"
+        popup_wrapper.style.borderRadius = "5px"
+        popup_wrapper.style.padding = "5px"
+        popup_wrapper.style.maxHeight = "90%"
+        popup_wrapper.style.maxWidth = "90%"
+        popup_wrapper.style.overflow = "auto"
+        popup_wrapper.style.boxShadow = "0 0 10px 0 rgba(0,0,0,0.5)"
+        //make everythihing except the popup wrapper be blurred
+        let main_body = document.querySelector(".body-inner")
+        main_body.classList.add("disabled")
+        
+        let close_button = document.createElement("button")
+        close_button.innerHTML = "Close"
+        close_button.style.position = "absolute"
+        close_button.style.top = "0"
+        close_button.style.right = "0"
+        close_button.style.margin = "5px"
+        close_button.style.padding = "5px"
+        close_button.style.border = "1px solid black"
+        close_button.style.borderRadius = "5px"
+        close_button.style.backgroundColor = "white"
+        close_button.style.zIndex = "1001"
+        close_button.onclick = function(){
+            popup_wrapper.remove()
+            main_body.classList.remove("disabled")
+        }
+        popup_wrapper.appendChild(close_button)
+
+        window.onclick = function(event) {
+            if (event.target == popup_wrapper) {
+                popup_wrapper.remove()
+            }
+        }
+    
+        document.body.prepend(popup_wrapper)
+    
+    } else {
+        alert("Please select a student first!")
+    }
+    
+}
+
 function load_courses_table(extra_constructor_params = {}, extra_cols=true){
     let columns = [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", align:"center", headerSort:false},
+        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
         {title: "Name", field: "name", topCalc: "count", headerFilter: "input"},
         {title: "Code", field: "code", headerFilter: "input"},
         {title: "Academic year", field: "academic_year"},
@@ -420,7 +549,6 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
 
     table.on("dataLoaded", function(data){
         // page_count += 1
-        console.log("data loaded");
         // api(page_count, pagination_size).then(server_data => {
         //     table.addData(server_data.data)
         //     if (page_count < server_data.last_page) {
@@ -444,7 +572,7 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
 function load_grading_rules_table(data_json){
     let columns = [
         // {formatter:"rowSelection", titleFormatter:"rowSelection", align:"center", headerSort:false},
-        {title: "Name", field: "name", editor: false},
+        {title: "Name", field: "name", editor: false, clickPopup: "Hello",},
         {title: "Standard lower GPA", field: "std_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1},},
         {title: "Discretionary lower GPA", field: "disc_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1},},
         {title: "Character Band", field: "char_band", visible: false, editor: "list",

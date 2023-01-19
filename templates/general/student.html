@@ -10,12 +10,16 @@
 
 
     <p>Student: {{student}}</p>
-    Comments:
-    <div class="tabulator_table" id="student_comments_table" style="max-width: 1200px;"></div>
-    <script>
-        let user_full_name = '{{user}}'
-        load_student_comments_table(`{{student.student_comments_for_table|safe}}`)
-    </script>
+    {% with comments=student.student_comments_for_table|safe%}
+        {%if comments%}
+            Lecturer Comments:
+            <div class="tabulator_table" id="student_comments_table" style="max-width: 1200px;"></div>
+            <script>
+                let user_full_name = '{{user}}'
+                load_student_comments_table(`{{comments}}`)
+            </script>
+        {%endif%}
+    {%endwith%}
 
     <p>Course grades for student:</p>
     <div class="tabulator_table" id="courses_table" style="max-width: 1200px;"></div>

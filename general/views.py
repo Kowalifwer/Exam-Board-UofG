@@ -178,6 +178,7 @@ def global_search_view(request):
 
     return render(request, "general/global_search.html", context)
 
+
 def student_view(request, GUID):
     get_query_count("before student query")
     if is_fetching_table_data(request):
@@ -197,50 +198,69 @@ def student_view(request, GUID):
         ]
         get_query_count("after student query")
         return JsonResponse(all_courses_json, safe=False)
-
+    else:
+        print("NOT FETCHING TABLE DATA")
     context = {"student": Student.objects.filter(GUID=GUID).first()}
     return render(request, "general/student.html", context)
 
 def course_view(request, code, year):
     get_query_count("before fetching course", False)
     if is_fetching_table_data(request):
-        course = Course.objects.filter(code=code, academic_year=year).prefetch_related("assessments").first()
-        students = course.students.all().prefetch_related("results__course", "results__assessment", "courses")[:50]
-        course_assessments = course.assessments.all()
+        student_GUID = request.GET.get("student_GUID", "")
+        course_id = request.GET.get("course_id", "")
+        if student_GUID != "" and course_id != "":
+            data_for_student_course_table = []
+            all_course_assessments = Assessment.objects.filter(courses__id=course_id)
+            for assessment in all_course_assessments:
+                result = AssessmentResult.objects.filter(student__GUID=student_GUID, course__id=course_id, assessment=assessment).first()
+                data_for_student_course_table.append({
+                    'type': assessment.get_type_display(),
+                    'name': assessment.name,
+                    'weighting': assessment.weighting,
+                    'grade': result.grade if result else "Not completed",
+                    'preponderance': result.preponderance if result else "Not completed",
+                })
+            
+            return JsonResponse(data_for_student_course_table, safe=False)
 
-        all_students_json = [
-            student.get_data_for_table(
-                {
-                    "method": "get_extra_data_course",
-                    "args": [course_assessments, course]
-                }
-            ) for student in students
-        ]
-        extra_col_grps = {}
+        else:
+            course = Course.objects.filter(code=code, academic_year=year).prefetch_related("assessments").first()
+            students = course.students.all().prefetch_related("results__course", "results__assessment", "courses")[:50]
+            course_assessments = course.assessments.all()
 
-        for assessment in course_assessments:
-            if assessment.type not in extra_col_grps:
-                extra_col_grps[assessment.type] = {
-                    "title": f"{assessment.get_type_display()} breakdown",
-                    "columns": [],
-                    "weighting": 0,
-                    "headerHozAlign": "center",
-                }
-            extra_col_grps[assessment.type]["columns"].append({"title": str(assessment), "field": str(assessment.id), "cssClass": "format_grade"})
-            extra_col_grps[assessment.type]["weighting"] += assessment.weighting
-        
-        for key, value in extra_col_grps.items():
-            if value["columns"]:
-                value["title"] += f"({value['weighting']}%)"
-                if len(value["columns"]) > 1:
-                    value["columns"].append({"title": "Total", "field": f"{key}_grade", "cssClass": "format_grade"})
-                value.pop("weighting")
+            all_students_json = [
+                student.get_data_for_table(
+                    {
+                        "method": "get_extra_data_course",
+                        "args": [course_assessments, course]
+                    }
+                ) for student in students
+            ]
+            extra_col_grps = {}
 
-        extra_cols = list(extra_col_grps.values())
-        extra_cols.append({"title": "Final grade(weighted)", "field": "final_grade", "cssClass": "format_grade"})
+            for assessment in course_assessments:
+                if assessment.type not in extra_col_grps:
+                    extra_col_grps[assessment.type] = {
+                        "title": f"{assessment.get_type_display()} breakdown",
+                        "columns": [],
+                        "weighting": 0,
+                        "headerHozAlign": "center",
+                    }
+                extra_col_grps[assessment.type]["columns"].append({"title": str(assessment), "field": str(assessment.id), "cssClass": "format_grade"})
+                extra_col_grps[assessment.type]["weighting"] += assessment.weighting
+            
+            for key, value in extra_col_grps.items():
+                if value["columns"]:
+                    value["title"] += f"({value['weighting']}%)"
+                    if len(value["columns"]) > 1:
+                        value["columns"].append({"title": "Total", "field": f"{key}_grade", "cssClass": "format_grade"})
+                    value.pop("weighting")
 
-        get_query_count("after fetching course")
-        return JsonResponse({"data": all_students_json, "extra_cols":extra_cols}, safe=False)
+            extra_cols = list(extra_col_grps.values())
+            extra_cols.append({"title": "Final grade(weighted)", "field": "final_grade", "cssClass": "format_grade"})
+
+            get_query_count("after fetching course")
+            return JsonResponse({"data": all_students_json, "extra_cols":extra_cols}, safe=False)
     
     context = {
         'course_other_years': []
