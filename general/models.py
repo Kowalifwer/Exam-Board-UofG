@@ -46,9 +46,23 @@ class User(AbstractUser, UUIDModel):
     @property
     def is_classhead(self):
         return self.level > 0
+    
+    @property
+    def get_name_verbose(self):
+        full_name_string = self.get_full_name()
+        if self.title:
+            full_name_string = f"{self.title}. {full_name_string}"
+        
+        if not full_name_string:
+            if self.is_superuser:
+                full_name_string = "SUPER-ADMIN"
+            else:
+                full_name_string = self.email
+        
+        return full_name_string
 
     def __str__(self):
-        return f"{self.title}. {self.first_name} {self.last_name}"
+        return f"{self.title + '.' if self.title else ''} {self.get_full_name()}"
 
 
 class Student(UUIDModel):
@@ -101,7 +115,7 @@ class Student(UUIDModel):
     def student_comments_for_table(self):
         return json.dumps([{
             "comment": comment.comment,
-            "added_by": comment.added_by.__str__(),
+            "added_by": comment.added_by.get_name_verbose,
             "timestamp": comment.timestamp.strftime("%d/%m/%Y %H:%M"),
             "id": str(comment.id),
         } for comment in self.comments.all().select_related('added_by')])

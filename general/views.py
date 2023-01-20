@@ -363,10 +363,9 @@ def api_view(request):
                 if results_to_save:
                     AssessmentResult.objects.bulk_update(results_to_save, ["preponderance"])
                     response["status"] = "Preponderance(s) updated succesfully!"
+                    response["data"] = True
                 else:
                     response["status"] = "No changes detected."
-                
-                response["data"] = True
 
             #STUDENT COMMENTS
             elif action in ["add_student_comment", "delete_student_comment"]:

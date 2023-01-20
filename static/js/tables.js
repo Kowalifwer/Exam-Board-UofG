@@ -6,20 +6,22 @@ const preponderance_formatter = function (cell) {
     if (value == "N/A"){
         cell.getElement().style.backgroundColor = "#E06666"
     } else if (value == "NA") {
-        cell.getElement().style.backgroundColor = "#00FF00"
+        cell.getElement().style.backgroundColor = "#BBDBB4"
     } else if (value == "MV"){
-        cell.getElement().style.backgroundColor = "#000080"
+        cell.getElement().style.backgroundColor = "#648DE5"
     } else if (value == "CW"){
         //set cell colour to dark gray
-        cell.getElement().style.backgroundColor = "#808080"
+        cell.getElement().style.backgroundColor = "#EFF2F1"
     } else if (value == "CR"){
         //set cell colour to dark red
-        cell.getElement().style.backgroundColor = "#800000"
+        cell.getElement().style.backgroundColor = "#A64253"
     }
     return value
 }
 
 const is_preponderance = function (cell) {
+    if (cell.getValue() == "N/A")
+        return true
     if (preponderance_list.includes(cell.getValue()))
         return true
     return false
@@ -161,7 +163,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             rowGroups:false, //do not include row groups in downloaded table
             columnCalcs:false, //do not include column calcs in downloaded table
         },
-        downloadRowRange:"selected", //download selected rows
+        //downloadRowRange:"selected", //download selected rows
     }
 
     if (prefil_data){
@@ -426,31 +428,8 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
         let final_extra_constructor_params = {
             "ajaxParams": ajaxParams,
             "selectable": false,
-            // rowContextMenu:[
-            //     {
-            //         label:"Hide Student",
-            //         action:function(e, row){
-            //             row.delete();
-            //         }
-            //     },
-            //     {
-            //         label:"View Student breakdown page",
-            //             action:function(e, row){
-            //                 if (typeof row.getData().page_url !== 'undefined') {
-            //                     window.location.href = row.getData().page_url
-            //                 }
-            //             }
-            //     },
-            //     {
-            //         label: "Detailed assessment breakdown popup",
-            //         action: function(e, row){
-            //             create_student_course_detailed_table_popup()
-            //         }
-            //     }
-            // ],
-            // groupBy: 'current_year',
-            // initialSort: [{column: 'current_year', dir: 'dsc'}],
-            // placeholder: "Student data loading...",
+            "placeholder": "Popup loading...",
+            "pagination": false,
         }
         
         let elt = document.createElement("div")
@@ -458,6 +437,8 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
         let table = init_table(elt, columns.map((col) => {
             return {...col, editor: false}
         }), null, final_extra_constructor_params)
+        table.getElement().style.marginTop = "10px"
+        table.getElement().style.marginBottom = "10px"
 
         popup_wrapper = table.getWrapper()
 
@@ -470,7 +451,7 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
         popup_wrapper.style.zIndex = "1000"
         popup_wrapper.style.border = "1px solid black"
         popup_wrapper.style.borderRadius = "5px"
-        popup_wrapper.style.padding = "5px"
+        popup_wrapper.style.padding = "10px"
         popup_wrapper.style.maxHeight = "90%"
         popup_wrapper.style.maxWidth = "90%"
         popup_wrapper.style.overflow = "auto"
@@ -490,6 +471,7 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
         close_button.style.borderRadius = "5px"
         close_button.style.backgroundColor = "white"
         close_button.style.zIndex = "1001"
+        close_button.style.cursor = "pointer"
         close_button.onclick = function(){
             popup_wrapper.remove()
             main_body.classList.remove("disabled")
@@ -526,11 +508,13 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
                     //api call here to save the data.
                     api_post("update_preponderance", table_data).then(response => {
                         if (response.data) {
-                            alert(response.status)
                             if (reload_function && reload_function_parameter_list) {
                                 parent_table_to_reload.reloadTable(reload_function, reload_function_parameter_list)
                                 popup_wrapper.remove()
                                 main_body.classList.remove("disabled")
+                                console.log(response.status)
+                                //TODO: add a success message here
+                                //TODO: fix popup wrapper close.
                             }
                         } else {
                             alert(response.status)
@@ -646,7 +630,12 @@ function load_grading_rules_table(data_json){
         },
     ]
 
-    let final_extra_constructor_params = {"selectable": false, "placeholder": "Grading rules loading..."}
+    let final_extra_constructor_params = {
+        "selectable": false, 
+        "placeholder": "Grading rules loading...",
+        "pagination": false,
+        footerElement: "<div></div>",
+    }
     
     let table = init_table("grading_rules_table", columns.map(
         col => {
@@ -659,10 +648,10 @@ function load_grading_rules_table(data_json){
         let footer = wrapper.querySelector('.tabulator-footer-contents')
         let edit_button = document.createElement('button')
         let table_element = table.getElement()
-        edit_button.innerHTML = "Edit mode"
+        edit_button.innerHTML = "Edit Classification rules"
         edit_button.addEventListener('click', function(){
             if (table_element.dataset.edit_mode == 1) {
-                this.innerHTML = "Edit mode"
+                this.innerHTML = "Edit Classification rules"
                 table_element.dataset.edit_mode = 0
                 table.setColumns(columns.map(col => {
                     return {...col, editor: false}
@@ -696,23 +685,27 @@ function load_grading_rules_table(data_json){
 
 function load_student_comments_table(data_json){
     let columns = [
-        // {formatter:"rowSelection", titleFormatter:"rowSelection", align:"center", headerSort:false},
-        {title: "Comment", field: "comment"},
-        {title: "Lecturer", field: "added_by"},
-        {title: "Date added", field: "timestamp"},
-        {title: "Comment ID", field: "id", visible: false}
+        {title: "Comment", field: "comment", tooltip:true},
+        {title: "Lecturer", field: "added_by", vertAlign:"middle"},
+        {title: "Date added", field: "timestamp", vertAlign:"middle"},
+        {title: "Comment ID", field: "id", visible: false, vertAlign:"middle"}
     ]
 
     let footer_element = 
-        `<div>
+        `<div style='display: flex; align-items: center; gap: 5px;'>
             <textarea type="text" id="comment_input" placeholder="Write your comment here.."></textarea>
             <button id="add_comment_button">Add comment</button>
         </div>`
     let final_extra_constructor_params = {
         "selectable": true,
+        selectableCheck:function(row){
+            //row - row component
+            return row.getData().added_by == user_full_name; //allow selection of rows where the age is greater than 18
+        },
         "pagination": false,
         "layout": "fitColumns",
         "footerElement": footer_element,
+        "rowHeight": 30,
         "index": "id",
         rowContextMenu:[
             {

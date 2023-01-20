@@ -106,7 +106,7 @@ a {
 /* HELPER */
 
 /* GENERAL */
-input {
+input, textarea {
     border-radius: 5px;
 }
 /* GENERAL */
@@ -228,6 +228,8 @@ body {
 .tabulator {
     max-height: 600px !important;
     max-width: 100% !important;
+    border-radius: 5px;
+    box-shadow: 0 0 10px 0 rgba(0,0,0,0.5);
 }
 
 .tabulator-wrapper {
