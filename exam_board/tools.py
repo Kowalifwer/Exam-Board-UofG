@@ -62,3 +62,36 @@ class default_degree_classification_settings_dict(dict):
                 "percentage_above": 0,
             },
         })
+
+band_integer_to_band_letter_map = {
+        0: "H",
+
+        1: "G2",
+        2: "G1",
+
+        3: "F3",
+        4: "F2",
+        5: "F1",
+
+        6: "E3",
+        7: "E2",
+        8: "E1",
+
+        9: "D3",
+        10: "D2",
+        11: "D1",
+
+        12: "C3",
+        13: "C2",
+        14: "C1",
+        
+        15: "B3",
+        16: "B2",
+        17: "B1",
+ 
+        18: "A5",
+        19: "A4",
+        20: "A3",
+        21: "A2",
+        22: "A1",
+    }

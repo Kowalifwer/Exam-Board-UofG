@@ -4,6 +4,9 @@ import uuid
 from django.shortcuts import reverse
 from exam_board.tools import default_degree_classification_settings_dict
 import json
+from math import ceil as math_ceil
+from exam_board.tools import band_integer_to_band_letter_map
+
 
 # Create your models here.
 class UUIDModel(models.Model):
@@ -137,6 +140,134 @@ class Student(UUIDModel):
             table_data.update(extra_data)
         
         return table_data
+    
+    def get_extra_data_degree_classification(self, lvl4_courses, lvl4_results, lvl3_courses, lvl3_results):
+        extra_data = {
+            "final_band": 0,
+            "final_gpa": 0,
+            "l4_band": 0,
+            "l4_gpa": 0,
+            "l3_band": 0,
+            "l3_gpa": 0,
+            "greater_than_a": 0,
+            "greater_than_b": 0,
+            "greater_than_c": 0,
+            "greater_than_d": 0,
+            "greater_than_e": 0,
+            "greater_than_f": 0,
+            "greater_than_g": 0,
+            "greater_than_h": 0,
+            "project": 0,
+            "team": 0,
+        }
+        
+        #student -> courses -> expected_assessments -> assessment_result
+        # for course in courses:
+        #     expected_assessments = course...
+        #     for assessment in expected_assessments:
+
+        #if its a project, we need to sum the grades
+
+        final_l4_grade_adder_tuples = [0,0]
+        final_l3_grade_adder_tuples = [0,0]
+        
+        def calculate_level_data(courses, results, grade_adder_tuples, update_greater_than=False):
+            for course in courses:
+                credits = course.credits
+                expected_assessments = course.assessments.all()
+                course_grade = 0
+                for assessment in expected_assessments:
+                    result = [result for result in results if result.assessment == assessment]
+                    grade = 0
+                    if result:
+                        grade = result[0].grade
+                    course_grade += grade * assessment.weighting / 100
+
+                grade_adder_tuples[0] += course_grade * credits
+                grade_adder_tuples[1] += credits
+                
+                if update_greater_than:
+                    if course_grade >= 70:
+                        extra_data["greater_than_a"] += credits
+                        extra_data["greater_than_b"] += credits
+                        extra_data["greater_than_c"] += credits
+                        extra_data["greater_than_d"] += credits
+                        extra_data["greater_than_e"] += credits
+                        extra_data["greater_than_f"] += credits
+                        extra_data["greater_than_g"] += credits
+                        extra_data["greater_than_h"] += credits
+                    
+                    elif course_grade >= 60:
+                        extra_data["greater_than_b"] += credits
+                        extra_data["greater_than_c"] += credits
+                        extra_data["greater_than_d"] += credits
+                        extra_data["greater_than_e"] += credits
+                        extra_data["greater_than_f"] += credits
+                        extra_data["greater_than_g"] += credits
+                        extra_data["greater_than_h"] += credits
+                    
+                    elif course_grade >= 50:
+                        extra_data["greater_than_c"] += credits
+                        extra_data["greater_than_d"] += credits
+                        extra_data["greater_than_e"] += credits
+                        extra_data["greater_than_f"] += credits
+                        extra_data["greater_than_g"] += credits
+                        extra_data["greater_than_h"] += credits
+                    
+                    elif course_grade >= 40:
+                        extra_data["greater_than_d"] += credits
+                        extra_data["greater_than_e"] += credits
+                        extra_data["greater_than_f"] += credits
+                        extra_data["greater_than_g"] += credits
+                        extra_data["greater_than_h"] += credits
+                    
+                    elif course_grade >= 30:
+                        extra_data["greater_than_e"] += credits
+                        extra_data["greater_than_f"] += credits
+                        extra_data["greater_than_g"] += credits
+                        extra_data["greater_than_h"] += credits
+                    
+                    elif course_grade >= 20:
+                        extra_data["greater_than_f"] += credits
+                        extra_data["greater_than_g"] += credits
+                        extra_data["greater_than_h"] += credits
+                    
+                    elif course_grade >= 10:
+                        extra_data["greater_than_g"] += credits
+                        extra_data["greater_than_h"] += credits
+                    
+                    elif course_grade >= 0:
+                        extra_data["greater_than_h"] += credits
+                
+            return grade_adder_tuples
+        
+        final_l4_grade_adder_tuples = calculate_level_data(lvl4_courses, lvl4_results, final_l4_grade_adder_tuples, update_greater_than=True)
+        final_l3_grade_adder_tuples = calculate_level_data(lvl3_courses, lvl3_results, final_l3_grade_adder_tuples)
+        final_gpa = 0
+
+        if final_l4_grade_adder_tuples[1] == 0: ##no courses taken at level 4
+            extra_data["l4_gpa"] = "N/A"
+            extra_data["l4_band"] = "N/A"
+        else:
+            final_l4_grade = final_l4_grade_adder_tuples[0] / final_l4_grade_adder_tuples[1]
+            extra_data["l4_gpa"] = math_ceil(final_l4_grade / (100/22))
+            extra_data["l4_band"] = band_integer_to_band_letter_map[extra_data["l4_gpa"]]
+            final_gpa += final_l4_grade * 0.6
+        
+        if final_l3_grade_adder_tuples[1] == 0: ##no courses taken at level 3
+            extra_data["l3_gpa"] = "N/A"
+            extra_data["l3_band"] = "N/A"
+        else:
+            final_l3_grade = final_l3_grade_adder_tuples[0] / final_l3_grade_adder_tuples[1]
+            extra_data["l3_gpa"] = math_ceil(final_l3_grade / (100/22))
+            extra_data["l3_band"] = band_integer_to_band_letter_map[extra_data["l3_gpa"]]
+            final_gpa += final_l3_grade * 0.4
+        
+        ##calculate final band and final gpa: level3 is worth 40% and level 4 is worth 60%
+        extra_data["final_gpa"] = math_ceil(final_gpa / (100/22))
+        extra_data["final_band"] = band_integer_to_band_letter_map[extra_data["final_gpa"]]
+
+        return extra_data
 
     def get_extra_data_course(self, assessments, course):
         extra_data = {}
@@ -208,6 +339,10 @@ class Course(UUIDModel):
     @property
     def verbose_name(self):
         return f"{self.name} - {self.academic_year} ({'currently active' if self.is_taught_now else 'not active'})"
+    
+    @property
+    def level_integer(self):
+        return int(self.code[-4])
     
     def get_data_for_table(self, extra_data={}):
         table_data = {
@@ -298,7 +433,24 @@ class Assessment(UUIDModel):
     def __str__(self):
         return f"{self.name}({self.weighting}%)"
 
+
+#possible lvl 1,2 subjects = [STATS, MATHS, PHYS, PSYCH, CHEM, GEOG, ECON, BIO, CSC, ENG, HIST, POLS]
+#when populating courses for a given student: check which years they should have courses in.
+#steps - generate some lvl 1 courses, then generate lvl 2 courses, then lvl 3, then lvl 4, then lvl 5
+#lvl 1 courses should be 
+
 #steps to moderate a course/assessment.
+##lvl 1 - 12 courses, across 3 subjects
+##lvl 2 - 12 courses, across 2 or 3 subjects (40,40,40) or (60,60)
+##lvl 3 - 8 courses, 1 group project (10x8,40)
+##lvl 4 - 8 courses, 1 individual project (10x8, 40)
+##lvl 5 - 8 courses, 1 group project (10x8, 60)
+##8 courses 1 project
+##12 courses
+##course_assessments_json = {
+#    "CSC101": {
+# }
+
 
 
 class AssessmentResult(UUIDModel):

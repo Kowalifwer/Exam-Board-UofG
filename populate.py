@@ -12,6 +12,14 @@ import time
 import traceback
 
 # random.seed(0)
+##SETUP
+FIRST_YEAR_OF_COURSES = 2018
+LAST_YEAR_OF_COURSES = 2022
+CURRENT_YEAR = 2022
+COMPUTER_SCIENCE_COURSE_CODE_PREFIX = 'COMPSCI'
+REQUIRED_CREDITS_PER_COURSE = 120
+TOTAL_NUMBER_OF_COURSES = 7*12
+TOTAL_NUMBER_OF_STUDENTS = 500
 
 def decision(probability):
     return random.random() < probability
@@ -26,7 +34,7 @@ class Populator:
 
         academic_year = AcademicYear.objects.filter(is_current=True).first()
         if not academic_year:
-            academic_year = AcademicYear.objects.create(year=2022, is_current=True)
+            academic_year = AcademicYear.objects.create(year=CURRENT_YEAR, is_current=True)
         self.current_academic_year = academic_year.year
     
     #https://catonmat.net/tools/generate-random-names - names generated from here
@@ -67,15 +75,16 @@ class Populator:
 
         is_masters = degree_title in ["Msc", "MEng"]
         is_faster_route = decision(0.1)
-        start_academic_year = random.randint(2017, 2020)
+        start_year_padding_for_more_frequent_higher_years = 3
+        start_academic_year = random.randint(FIRST_YEAR_OF_COURSES - start_year_padding_for_more_frequent_higher_years, LAST_YEAR_OF_COURSES)
         end_academic_year = start_academic_year + 3
         if degree_title.startswith("M"):
             end_academic_year += 1
         if degree_title == "PhD":
-            end_academic_year += random.randint(3,5)
+            end_academic_year += random.randint(3,4)
         if is_faster_route:
             end_academic_year -= 1
-        current_academic_year = min(random.randint(start_academic_year, self.current_academic_year), end_academic_year)
+        current_academic_year = min(random.randint(min(start_academic_year + start_year_padding_for_more_frequent_higher_years, self.current_academic_year), self.current_academic_year), end_academic_year)
         
         return {
             "full_name": f"{first_name} {last_name}",
@@ -89,16 +98,13 @@ class Populator:
             "current_academic_year": current_academic_year,
         }
     
-    @property
-    def random_course_data(self):
-        academic_year = random.randint(2017, 2022)
-        course_level = random.randint(1, 5)
-        course_code = f"COMPSCI{course_level}{random.randint(100, 999)}"
-        name = f"Computing science {course_code[-4:]}"
-        lecturer_comment = "".join(lorem_ipsum.paragraphs(random.randint(0,2), False))
-        credits = random.choices([10, 20, 40], weights=[0.75, 0.20, 0.05])[0]
-        if credits == 40:
-            name = f"{random.choice(['Individual', 'Group'])} PROJECT - {course_code}"
+    def random_course_data(self, level):
+        academic_year = random.randint(FIRST_YEAR_OF_COURSES, LAST_YEAR_OF_COURSES)
+        course_level = level
+        course_code = f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}{course_level}{random.randint(100, 999)}"
+        name = f"Computing Science {course_code[-4:]}"
+        lecturer_comment = f"Welcome to {name} !"
+        credits = random.choices([10, 20], weights=[0.80, 0.20])[0]
 
         if course_level == 5:
             name += "(M)"
@@ -172,25 +178,34 @@ class Populator:
     def generate_courses(self, n):
         i = 0
         courses = []
+        ##hardcode generate lvl 3 group and level 4 individual project courses for all the years
+        lecturers = random.choices(self.users, k=3)
+        random_numbers = random.sample(range(100, 999), 3)
+        for j in range(FIRST_YEAR_OF_COURSES, LAST_YEAR_OF_COURSES+1):
+            courses.append(Course(academic_year=j, code=f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}3{random_numbers[0]} - Group project", name="Level 3 Group project", credits=40, lecturer_comment="Welcome to the level 3 group project!", is_taught_now=(j == self.current_academic_year), lecturer=lecturers[0]))
+            courses.append(Course(academic_year=j, code=f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}4{random_numbers[1]} - Individual project", name="Level 4 Individual project", credits=40, lecturer_comment="Welcome to the level 4 individual project!", is_taught_now=(j == self.current_academic_year), lecturer=lecturers[1]))
+            courses.append(Course(academic_year=j, code=f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}5{random_numbers[2]} - Individual project", name="Level 5 (M) Individual project", credits=60, lecturer_comment="Welcome to the level 5 (M) individual project!", is_taught_now=(j == self.current_academic_year), lecturer=lecturers[2]))
+
+        level_pattern = [1,2,3,3,4,4,5] ##this pattern will determine the level of the course generated. this is to balance and make the courses more realistic.
         while i < n:
-            course_data = self.random_course_data
+            i+=1
+            level = level_pattern[i%len(level_pattern) - 1]
+            course_data = self.random_course_data(level)
             if decision(0.95):
                 course_data["lecturer"] = random.choice(self.users)
             else:
                 course_data["lecturer_comment"] = "No lecturer assigned to the course yet!"
 
-            i+=1
             courses.append(Course(**course_data))
-            for j in range(2017, 2023):  # add the same course across other years as well (80% chance)
-                if not course_data["academic_year"] == j and i < n and decision(0.80):
+            for j in range(FIRST_YEAR_OF_COURSES, LAST_YEAR_OF_COURSES + 1):  # add the same course across other years as well (80% chance)
+                if not course_data["academic_year"] == j:
                     course_data_copy = course_data.copy()
                     course_data_copy["academic_year"] = j
                     course_data_copy["is_taught_now"] = course_data_copy["academic_year"] == self.current_academic_year
                     courses.append(Course(**course_data_copy))
-                    i += 1
         
         self.courses=courses
-        print(f"Generated {n} courses")
+        print(f"Generated {i} courses")
 
     def create_admin(self):
         if not User.objects.filter(username="admin").exists():
@@ -227,7 +242,7 @@ class Populator:
                         course=course,
                         assessment=assessment,
                         grade=random.randint(0, 100),
-                        preponderance=random.choices(['NA', 'MV', 'CW', 'CR'], weights=[0.80, 0.10, 0.05, 0.05])[0],
+                        preponderance=random.choices(['NA', 'MV', 'CW', 'CR'], weights=[0.85, 0.1, 0.025, 0.025])[0],
                     ))
         
         print(f"Generated {len(self.assessment_results)} assessment results in {time.process_time() - start} seconds and {len(connection.queries)} queries")
@@ -263,7 +278,7 @@ class Populator:
     def populate_database(self):
         print("Transferring current state into database")
         try:
-            for i in range(2017, 2023):
+            for i in range(FIRST_YEAR_OF_COURSES, LAST_YEAR_OF_COURSES + 1):
                 AcademicYear.objects.create(year=i, is_current=i==self.current_academic_year)
             print("Populated academic years")
 
@@ -276,16 +291,45 @@ class Populator:
             
             reset_queries()
             start = time.process_time()
+            candidate_courses = list(Course.objects.filter(credits__lte=20, credits__gte=10).all())
             for student in students:
                 if decision(0.01):  # 99% of students will be enrolled into courses.
                     continue
+                level = 0
+                final_courses_for_all_years = []
                 for i in range(student.start_academic_year, student.current_academic_year + 1): ##add 120 credits worth of courses, or less, for each year of study.
-                    if decision(0.10):  # 90% chance of taking courses in a given year
-                        continue
-                    candidate_courses = [course for course in courses if course.academic_year == i]
-                    student.courses.add(*self.fetch_courses_total_credits(candidate_courses, 120))
+                    level += 1  
+                    must_have_course = None 
+
+                    if level in [1,2]:
+                        allowed_levels = [1,2]
+                    elif level == 3:
+                        must_have_course = Course.objects.filter(academic_year=i, name__contains="Group", credits=40).first()
+                        allowed_levels = [3, 4]
+                    elif level == 4:
+                        allowed_levels = [3, 4, 5]
+                        must_have_course = Course.objects.filter(academic_year=i, name__contains="Individual", credits=40).first()
+                    elif level == 5:
+                        allowed_levels = [5]
+                        must_have_course = Course.objects.filter(academic_year=i, name__contains="Individual", credits=60).first()
+                    else:
+                        allowed_levels = [5]
+
+                    required_credits = REQUIRED_CREDITS_PER_COURSE - must_have_course.credits if must_have_course else REQUIRED_CREDITS_PER_COURSE
+                    course_setup = [must_have_course] if must_have_course else []
+                    candidate_courses_for_year = [course for course in candidate_courses if course.academic_year == i and course.level_integer in allowed_levels]
+                    course_setup.extend(self.fetch_courses_total_credits(candidate_courses_for_year, required_credits))
+
+                    final_courses_for_all_years.extend(course_setup)
+                
+                student.courses.add(*final_courses_for_all_years)
             print(f"Ran {len(connection.queries)} queries and took {time.process_time() - start} seconds to enroll {len(self.students)} students to {len(self.courses)} courses")
 
+            #remove courses that have no students enrolled in them.
+            courses_no_students = Course.objects.filter(students=None)
+            print(f"Number of courses deleted, with no students enrolled in them: {courses_no_students.count()}")
+            courses_no_students.delete()
+            
             assessments = Assessment.objects.bulk_create([assessment for assessment_group in self.assessment_groups for assessment in assessment_group], ignore_conflicts=True)
             print(f"Transferred {len(assessments)} assessments succesfully")
 
@@ -306,6 +350,7 @@ class Populator:
             Course.objects.all().delete()
             Assessment.objects.all().delete()
             AssessmentResult.objects.all().delete()
+            
             print("Wiped database succesfully")
         except Exception as e:
             print("Failed to wipe database", e)
@@ -317,8 +362,8 @@ def main():
     populator.wipe_database()
     populator.create_admin()
     populator.generate_users(20)
-    populator.generate_students(500)
-    populator.generate_courses(125)
+    populator.generate_students(TOTAL_NUMBER_OF_STUDENTS)
+    populator.generate_courses(TOTAL_NUMBER_OF_COURSES)
     populator.generate_assessment_groups()
 
     populator.populate_database()

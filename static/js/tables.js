@@ -138,7 +138,7 @@ formatter_to_percentage = function(cell, formatterParams, onRendered){
     return cell.getValue() + "%"
 }
 
-const default_formatter = formatter_to_percentage
+const default_formatter = formatter_to_band_letter
 
 function init_table(table_id, columns, prefil_data = null, extra_constructor_params = {}) {
     let table_constructor = {
@@ -193,7 +193,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     }
 
     let table_element = (isElement(table_id)) ? table_id : document.getElementById(table_id)
-    console.log(table_element)
     table_element.dataset.edit_mode = 0
     let table = new Tabulator(table_element, table_constructor)
     table.extra_cols = []
@@ -250,10 +249,10 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table.reformatTable(default_formatter, "format_grade")
         //handle formatting stuff
         var select_element = string_to_html_element(
-            `   
+            `
                 <select>
-                    <option value="P">percent</option>
                     <option value="B">band</option>
+                    <option value="P">percent</option>
                     <option value="I">band integer</option>
                 </select>
             `
@@ -402,6 +401,54 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
             chart.update('active');
         }
     })
+}
+
+function load_degree_classification_table() {
+    let columns = [
+        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
+        {title: "GUID", field: "GUID", topCalc: "count", headerFilter: "input", "frozen": true, headerContextMenu:headerMenu},
+        {title: "Name", field: "name", headerFilter: "input"},
+        {
+            title: "Degree info",
+            headerMenu: headerMenu,
+            columns: [
+                {title: "Title", field: "degree_title"},
+                {title: "Name", field: "degree_name"},
+                {title: "Masters?", field: "is_masters", formatter: "tickCross"},
+            ],
+            "headerHozAlign": "center",
+        },
+        {
+            title: "Year data",
+            headerMenu: headerMenu,
+            columns: [
+                {title: "Current level", field: "current_year"},
+                {title: "Start year", field: "start_year"},
+                {title: "End year", field: "end_year"},
+            ],
+            "headerHozAlign": "center",
+        },
+        // Final band, Final GPA, L4 BAND, L4 GPA, L3 band, L3 gpa, >A, >b... Project, Team
+        {title: "Final band", field: "final_band"},
+        {title: "Final GPA", field: "final_gpa"},
+        {title: "L4 band", field: "l4_band"},
+        {title: "L4 GPA", field: "l4_gpa"},
+        {title: "L3 band", field: "l3_band"},
+        {title: "L3 GPA", field: "l3_gpa"},
+        {title: "> A", field: "greater_than_a"},
+        {title: "> B", field: "greater_than_b"},
+        {title: "> C", field: "greater_than_c"},
+        {title: "> D", field: "greater_than_d"},
+        {title: "> E", field: "greater_than_e"},
+        {title: "> F", field: "greater_than_f"},
+        {title: "> G", field: "greater_than_g"},
+        {title: "> H", field: "greater_than_h"},
+        {title: "Project", field: "project"},
+        {title: "Team", field: "team"},
+    ]
+
+    let table = init_table("degree_classification_table", columns, null, {})
+
 }
 
 function create_student_course_detailed_table_popup(student_GUID=null, course_id=null, parent_table_to_reload=null, reload_function=null, reload_function_parameter_list=null){

@@ -226,7 +226,7 @@ def course_view(request, code, year):
 
         else:
             course = Course.objects.filter(code=code, academic_year=year).prefetch_related("assessments").first()
-            students = course.students.all().prefetch_related("results__course", "results__assessment", "courses")[:50]
+            students = course.students.all().prefetch_related("results__course", "results__assessment", "courses")
             course_assessments = course.assessments.all()
 
             all_students_json = [
@@ -288,18 +288,30 @@ def degree_classification_view(request, year=None):
 
     get_query_count("before fetching degree classification", False)
     if is_fetching_table_data(request):
-        students = Student.objects.filter(current_academic_year=context['current_year'].year).prefetch_related("results__course", "results__assessment", "courses")
+        ##courses__isnull=False
+        students = Student.objects.filter(end_academic_year=context['current_year'].year, current_academic_year=context['current_year'].year).prefetch_related("results__course", "results__assessment", "courses", "courses__assessments")
+        student_course_map_lvl4 = {}
+        student_results_map_lvl4 = {}
+        student_course_map_lvl3 = {}
+        student_results_map_lvl3 = {}
+        for student in students:
+            student_course_map_lvl4[student] = [course for course in student.courses.all() if course.academic_year == context['current_year'].year]
+            student_results_map_lvl4[student] = [result for result in student.results.all() if result.course.academic_year == context['current_year'].year]
+
+            student_course_map_lvl3[student] = [course for course in student.courses.all() if course.academic_year == context['current_year'].year - 1]
+            student_results_map_lvl3[student] = [result for result in student.results.all() if result.course.academic_year == context['current_year'].year - 1]
+
         all_students_json = [
             student.get_data_for_table(
                 {
                     "method": "get_extra_data_degree_classification",
-                    "args": []
+                    "args": [student_course_map_lvl4[student], student_results_map_lvl4[student], student_course_map_lvl3[student], student_results_map_lvl3[student]]
                 }
             ) for student in students
         ]
         get_query_count("after fetching degree classification")
-        response = JsonResponse({"data": all_students_json}, safe=False)
-        return response
+
+        return JsonResponse(all_students_json, safe=False)
 
     return render(request, "general/degree_classification.html", context)
 
@@ -313,6 +325,7 @@ def grading_rules_view(request, year=None):
             context['current_year'] = academic_year
         else:
             context['other_years'].append(academic_year)
+    print(context)
     return render(request, "general/grading_rules.html", context)
 
 #GUID, FULL_NAME, FINAL BAND, FINAL GPA, L4 BAND, L4 GPA, L3 BAND, L3 GPA, >A, >B, >C, >D, ... Project, Team ...
