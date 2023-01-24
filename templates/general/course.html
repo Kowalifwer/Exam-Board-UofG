@@ -6,6 +6,9 @@
 {% endblock %}
 
 {% block body %}
+    <input type="hidden" name="course_id" value="{{current_course.id}}" class="api_prefill">
+
+
     <p>currently viewing: {{current_course.verbose_name}}</p>
     <p>Lecturer: {{current_course.lecturer}}</p>
     {%if current_course.lecturer_comment%}
@@ -24,7 +27,7 @@
     <div class="tabulator_table" id="students_table" style="max-width: 1200px;"></div>
     <script>
         let backend_course_id = "{{current_course.id}}"
-        load_students_table()
+        load_students_table({},true,{backend_course_id:backend_course_id})
     </script>
     <p>Assessment breakdown for the course.</p>
 {%endblock%}

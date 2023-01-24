@@ -263,3 +263,11 @@ body {
 .popup-close-button:hover {
     background-color: #FF0000;
 }
+
+.moderation-popup {
+
+}
+
+.moderation-input-area {
+    margin: 20px 0;
+}

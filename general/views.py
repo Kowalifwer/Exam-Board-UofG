@@ -9,6 +9,8 @@ from django.db.models import Q
 import json
 from exam_board.tools import server_print, get_query_count
 from django.db import transaction
+from django.utils import timezone
+
 
 def is_fetching_table_data(request):
     return request.method == 'GET' and request.GET.get('fetch_table_data')
@@ -218,7 +220,6 @@ def fetch_student_course_table_data_if_relevant(request):
         all_course_assessments = Assessment.objects.filter(courses__id=course_id)
         for assessment in all_course_assessments:
             result = AssessmentResult.objects.filter(student__GUID=student_GUID, course__id=course_id, assessment=assessment).first()
-            print(result)
             data_for_student_course_table.append({
                 'type': assessment.get_type_display(),
                 'name': assessment.name,
@@ -232,51 +233,67 @@ def fetch_student_course_table_data_if_relevant(request):
     
     return JsonResponse(data_for_student_course_table, safe=False)
 
+def fetch_assessment_data_if_relevant(request):
+    is_assessments = request.GET.get("assessments", None)
+    course_id = request.GET.get("course_id", None)
+    print(is_assessments, course_id)
+    if course_id and is_assessments:
+        course = Course.objects.filter(id=course_id).first()
+        if course:
+            data = [{"type": assessment.get_type_display(), "name": assessment.name, "weighting": assessment.weighting, "moderation": f"{'' if assessment.moderation <= 0 else '+'}{assessment.moderation} bands.", "id": str(assessment.id)} for assessment in course.assessments.all()]
+            return JsonResponse(data, safe=False)
+    return None
+
+
 def course_view(request, code, year):
     get_query_count("before fetching course", False)
     if is_fetching_table_data(request):
-        student_table = fetch_student_course_table_data_if_relevant(request)
-        if student_table:
-            return student_table
+        ##extra tables fetching
+        student_course_table = fetch_student_course_table_data_if_relevant(request)
+        if student_course_table:
+            return student_course_table
+        course_assessmets_table = fetch_assessment_data_if_relevant(request)
+        if course_assessmets_table:
+            return course_assessmets_table
+        ##end of extra tables fetching
 
-        else:
-            course = Course.objects.filter(code=code, academic_year=year).prefetch_related("assessments").first()
-            students = course.students.all().prefetch_related("results__course", "results__assessment", "courses")
-            course_assessments = course.assessments.all()
+        course = Course.objects.filter(code=code, academic_year=year).prefetch_related("assessments").first()
+        students = course.students.all().prefetch_related("results__course", "results__assessment", "courses")
+        course_assessments = course.assessments.all()
 
-            all_students_json = [
-                student.get_data_for_table(
-                    {
-                        "method": "get_extra_data_course",
-                        "args": [course_assessments, course]
-                    }
-                ) for student in students
-            ]
-            extra_col_grps = {}
+        all_students_json = [
+            student.get_data_for_table(
+                {
+                    "method": "get_extra_data_course",
+                    "args": [course_assessments, course]
+                }
+            ) for student in students
+        ]
+        extra_col_grps = {}
 
-            for assessment in course_assessments:
-                if assessment.type not in extra_col_grps:
-                    extra_col_grps[assessment.type] = {
-                        "title": f"{assessment.get_type_display()} breakdown",
-                        "columns": [],
-                        "weighting": 0,
-                        "headerHozAlign": "center",
-                    }
-                extra_col_grps[assessment.type]["columns"].append({"title": str(assessment), "field": str(assessment.id), "cssClass": "format_grade"})
-                extra_col_grps[assessment.type]["weighting"] += assessment.weighting
-            
-            for key, value in extra_col_grps.items():
-                if value["columns"]:
-                    value["title"] += f"({value['weighting']}%)"
-                    if len(value["columns"]) > 1:
-                        value["columns"].append({"title": "Total", "field": f"{key}_grade", "cssClass": "format_grade"})
-                    value.pop("weighting")
+        for assessment in course_assessments:
+            if assessment.type not in extra_col_grps:
+                extra_col_grps[assessment.type] = {
+                    "title": f"{assessment.get_type_display()} breakdown",
+                    "columns": [],
+                    "weighting": 0,
+                    "headerHozAlign": "center",
+                }
+            extra_col_grps[assessment.type]["columns"].append({"title": str(assessment), "field": str(assessment.id), "cssClass": "format_grade"})
+            extra_col_grps[assessment.type]["weighting"] += assessment.weighting
+        
+        for key, value in extra_col_grps.items():
+            if value["columns"]:
+                value["title"] += f"({value['weighting']}%)"
+                if len(value["columns"]) > 1:
+                    value["columns"].append({"title": "Total", "field": f"{key}_grade", "cssClass": "format_grade"})
+                value.pop("weighting")
 
-            extra_cols = list(extra_col_grps.values())
-            extra_cols.append({"title": "Final grade(weighted)", "field": "final_grade", "cssClass": "format_grade"})
+        extra_cols = list(extra_col_grps.values())
+        extra_cols.append({"title": "Final grade(weighted)", "field": "final_grade", "cssClass": "format_grade"})
 
-            get_query_count("after fetching course")
-            return JsonResponse({"data": all_students_json, "extra_cols":extra_cols}, safe=False)
+        get_query_count("after fetching course")
+        return JsonResponse({"data": all_students_json, "extra_cols":extra_cols}, safe=False)
     
     context = {
         'course_other_years': []
@@ -382,12 +399,69 @@ def grading_rules_view(request, year=None):
 def api_view(request):
     response = {"status": "Uknown error occurred.", "data": None}
     student_id = request.POST.get("student_id", None)
+    course_id = request.POST.get("course_id", None)
 
-    if request.method in ["POST", "GET"]:
-        action = getattr(request, request.method).get("action", None)
-        print(action)
+    if request.method == "POST":
+        action = request.POST.get("action", None)
         if action:
             data = json.loads(request.POST.get("data", "{}"))
+
+            #MODERATION
+            if action == "moderation":
+                mode = data.get("mode", None)
+                value = data.get("value", 0)
+                assessment_ids = data.get("assessment_ids", None)
+                ##need to create new assessments, and update course_assessment_map, and all the grade results
+                assessments_db = Assessment.objects.filter(id__in=assessment_ids)
+                new_assessment_refs = []
+                new_to_create = []
+                assessments_to_delete = []
+
+                if not value or not mode or not assessment_ids or not assessments_db:
+                    return JsonResponse({"status": "Server error. Invalid data.", "data": None}, safe=False)
+                
+                value = int(value)
+                print("value", value)
+                ass_result_to_update_map = {}
+                course = Course.objects.filter(id=course_id).first()
+    
+                ##think about REPLACEMENT edge case. we can only delete if assessment is not used in any other course.
+                for assessment_db in assessments_db:
+                    instance = Assessment.objects.filter(name=assessment_db.name, weighting=assessment_db.weighting, type=assessment_db.type, moderation=assessment_db.moderation + (value if mode == "increase" else value*-1)).first()
+                    if not instance:
+                        instance = Assessment(name=assessment_db.name, weighting=assessment_db.weighting, type=assessment_db.type, moderation=(value if mode == "increase" else value*-1))
+                        new_to_create.append(instance)
+
+                    instance.moderated_by = request.user
+                    instance.moderation_datetime = timezone.now()
+                    new_assessment_refs.append(instance)
+
+                    ass_results = AssessmentResult.objects.filter(assessment=assessment_db, course=course)
+                    ass_result_to_update_map[instance] = ass_results
+                
+                print(course)
+                print("NEW", new_assessment_refs)
+                print("OLD DB", assessments_db)
+
+                # print(course.assessments.all())
+
+                course.assessments.remove(*assessments_db)
+                print("REMOVED")
+                Assessment.objects.bulk_create(new_to_create)
+                print("CREATED")
+                course.assessments.add(*new_assessment_refs)
+                print("ADDED")
+                # print(ass_result_to_update_map)
+                for key, value in ass_result_to_update_map.items():
+                    print(key, value)
+                    value.update(assessment=key)
+                print("UPDATED")
+                Assessment.objects.filter(courses=None).exclude(moderation=0).delete()
+                print("DELETED")
+                
+                return JsonResponse({"status": "Moderation successful.", "data": None}, safe=False)
+
+                # return JsonResponse({"status": "Moderation not implemented yet.", "data": None}, safe=False)
 
             #GRADING RULES
             if action == "save_grading_rules":
@@ -405,7 +479,7 @@ def api_view(request):
                         response["status"] = "Server error. Academic year not found."
             
             #PREPONDERANCE
-            elif action == "update_preponderance":
+            if action == "update_preponderance":
                 print(data)
                 results_to_save = [] ##make sure we save at the very end, to make sure all data is valid
                 for row in data:
@@ -431,7 +505,7 @@ def api_view(request):
                     response["status"] = "No changes detected."
 
             #STUDENT COMMENTS
-            elif action in ["add_student_comment", "delete_student_comment"]:
+            if action in ["add_student_comment", "delete_student_comment"]:
                 student_id = request.POST.get("student_id", None)
                 if student_id:
                     student = Student.objects.filter(id=student_id).first()
@@ -465,10 +539,6 @@ def api_view(request):
                         response["status"] = "Student not found."
                 else:
                     response["status"] = "No student id provided."
-            
-
-            else:
-                response["status"] = "Invalid action."
         else:
             response["status"] = "No action provided."
     

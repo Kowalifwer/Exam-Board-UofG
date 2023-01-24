@@ -140,7 +140,7 @@ formatter_to_percentage = function(cell, formatterParams, onRendered){
 
 const default_formatter = formatter_to_band_letter
 
-function init_table(table_id, columns, prefil_data = null, extra_constructor_params = {}, table_settings={}) {
+function init_table(table_id, columns, prefil_data = null, extra_constructor_params = {}, settings={}) {
     let table_constructor = {
         // layout:"fitColumns",
         // responsiveLayout:"hide",
@@ -196,6 +196,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     table_element.dataset.edit_mode = 0
     let table = new Tabulator(table_element, table_constructor)
     table.extra_cols = []
+    table.settings = settings
     // table.get_cols = columns
 
     table.getElement = () => table_element
@@ -287,6 +288,15 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table_wrapper.querySelector(".tabulator-components").prepend(select_element)
         table_wrapper.querySelector(".tabulator-components").appendChild(download_excel)
         table_wrapper.querySelector(".tabulator-components").appendChild(download_pdf)
+
+        console.log(settings)
+        let moderate_course_button = string_to_html_element(`<button class="tabulator-moderate">Moderate course</button>`)
+        if (settings.backend_course_id) {
+            moderate_course_button.addEventListener("click", function(e){
+                render_course_moderation_section(settings.backend_course_id)
+            })
+            table_wrapper.querySelector(".tabulator-components").appendChild(moderate_course_button)
+        }       
     })
 
     // table.on("rowClick", function(e, row){
@@ -350,7 +360,7 @@ var headerMenu = function(){
 };
 
 //define various table setups below
-function load_students_table(extra_constructor_params = {}, extra_cols=true){
+function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={}){
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
         {title: "GUID", field: "GUID", topCalc: "count", headerFilter: "input", "frozen": true, headerContextMenu:headerMenu},
@@ -406,7 +416,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
         rowContextMenu.push({
             label: "Detailed Student assessment breakdown popup",
             action: function(e, row){
-                create_student_course_detailed_table_popup(row.getData().GUID, backend_course_id, row.getTable(), load_students_table, [extra_constructor_params, extra_cols])
+                create_student_course_detailed_table_popup(row.getData().GUID, backend_course_id, row.getTable(), load_students_table, [extra_constructor_params, extra_cols, settings])
             }   
         }) 
     }
@@ -423,7 +433,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
         initialSort: [{column: 'current_year', dir: 'dsc'}],
         placeholder: "Student data loading...",
     }
-    let table = init_table("students_table", columns, null, final_extra_constructor_params)
+    let table = init_table("students_table", columns, null, final_extra_constructor_params, settings)
     
     table.on("dataLoaded", function(data){
         // page_count += 1
@@ -599,12 +609,6 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
     
 }
 
-function render_student_data(student_data){
-    let table = document.createElement("div")
-    
-    
-}
-
 function load_courses_table(extra_constructor_params = {}, extra_cols=true){
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
@@ -690,14 +694,75 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
     })
 }
 
-
-function render_course_moderation_section(course_data) {
+function render_course_moderation_section(course_id) {
     //course_data.assessments
-    let final_extra_constructor_params = {}
-    let table_placeholder = document.createElement("div")
-    document.body.appendChild(table_placeholder)
-    api_get("get_assessment_data_for_course").then(data => {
-        console.log(data)
+    let final_extra_constructor_params = {
+        ajaxParams: {
+            "fetch_table_data": true,
+            "assessments": true,
+            "course_id": course_id,
+        },
+        pagination: false,
+        placeholder: "Assessment data loading...",
+    }
+    
+    let wrapper = string_to_html_element(`
+        <div class="moderation-popup">
+            <p>Please select one or multiple assignments, to moderate</p>
+            <div id="assessments_table"></div>
+            <div id="moderation-input-area" class="disabled moderation-input-area">
+                <button id="moderation-increase">Increase bands</button>
+                <button id="moderation-decrease">Decrease bands</button>
+                <select id="moderation-value">
+                    <option value="0" default>--Select number of bands--</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                </select>
+            </div>
+        </div>
+    `)
+    
+    document.body.appendChild(wrapper)
+    
+    let columns = [
+        {formatter:"rowSelection", titleFormatter:"rowSelection", align:"center", headerSort:false},
+        {title: "Assessment type", field: "type"},
+        {title: "Assessment name", field: "name"},
+        {title: "Current moderation", field: "moderation", headerHozAlign: "center"},
+        {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},
+    ]
+    let table = init_table(document.getElementById("assessments_table"), columns, null, final_extra_constructor_params)
+    let popup = Popup.init(wrapper)
+
+    
+
+    document.getElementById("moderation-increase").addEventListener("click", function(){
+        let moderation_value_elt = document.getElementById("moderation-value")
+        let moderation_value = moderation_value_elt.options[moderation_value_elt.selectedIndex].value
+        api_post("moderation", {"mode": "increase", "value": moderation_value, "assessment_ids": table.getSelectedData().map(x => x.id)}).then(data => {
+            console.log(data)
+        })
+    })
+
+    document.getElementById("moderation-decrease").addEventListener("click", function(){
+        let moderation_value_elt = document.getElementById("moderation-value")
+        let moderation_value = moderation_value_elt.options[moderation_value_elt.selectedIndex].value
+        api_post("moderation", {"mode": "decrease", "value": moderation_value, "assessment_ids": table.getSelectedData().map(x => x.id)}).then(data => {
+            console.log(data)
+        })
+    })
+
+    table.on("rowSelectionChanged", function(data, rows){
+        let input_area = document.getElementById("moderation-input-area")
+        if (rows.length > 0) {
+            input_area.classList.remove("disabled")
+        } else {
+            input_area.classList.add("disabled")
+        }
     })
     // let table = init_table(table_placeholder, xd, null, final_extra_constructor_params)
     //Please select the assessments that you would like to moderate. You can select one, or  multiple.

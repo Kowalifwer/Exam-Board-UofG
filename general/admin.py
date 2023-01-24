@@ -67,3 +67,4 @@ class AssessmentResult_Admin(admin.ModelAdmin):
 #register default models with all fields
 admin.site.register(AcademicYear)
 admin.site.register(Comment)
+admin.site.register(Assessment)

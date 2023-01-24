@@ -44,23 +44,42 @@ function api_factory(method) {
                 console.log(element.name, element.value)
                 form_data.append(element.name, element.value)
             })
-
-            form_data.append("data", JSON.stringify(data))
+            
+            if (data)
+                form_data.append("data", JSON.stringify(data))
             if (form_data.get("csrfmiddlewaretoken") == null) {
                 form_data.append("csrfmiddlewaretoken", get_cookie("csrftoken"))
             }
-            fetch("/api/", {
-                method: method,
-                body: form_data,
-            }).then(response => {
-                if (response.status == 200) {
-                    response.json().then(data => {
-                        resolve(data)
-                    });
-                } else {
-                    reject(response)
-                }
-            })
+            
+            if (method == "GET") {
+                const queryString = new URLSearchParams(form_data).toString()
+                fetch("/api/?" + queryString, {
+                    method: method,
+                }).then(response => {
+                    if (response.status == 200) {
+                        response.json().then(data => {
+                            resolve(data)
+                        });
+                    } else {
+                        reject(response)
+                    }
+                })
+                return
+            } else if (method == "POST") {
+                fetch("/api/", {
+                    method: method,
+                    body: form_data,
+                }).then(response => {
+                    if (response.status == 200) {
+                        response.json().then(data => {
+                            resolve(data)
+                        });
+                    } else {
+                        reject(response)
+                    }
+                })
+                return
+            }
         })
     }
     return api
