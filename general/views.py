@@ -383,8 +383,9 @@ def api_view(request):
     response = {"status": "Uknown error occurred.", "data": None}
     student_id = request.POST.get("student_id", None)
 
-    if request.method == "POST":
-        action = request.POST.get("action", None)
+    if request.method in ["POST", "GET"]:
+        action = getattr(request, request.method).get("action", None)
+        print(action)
         if action:
             data = json.loads(request.POST.get("data", "{}"))
 

@@ -235,6 +235,8 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     }
 
     let wrapper = wrap(table_element, document.createElement('div'))
+    wrapper.style.display = "flex"
+    wrapper.style.flexDirection = "column"
     wrapper.classList.add('tabulator-wrapper')
     table.getWrapper = () => wrapper
     let table_components = document.createElement('div')
@@ -546,54 +548,9 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
         }), null, final_extra_constructor_params)
         table.getElement().style.marginTop = "10px"
         table.getElement().style.marginBottom = "10px"
-
-        popup_wrapper = table.getWrapper()
-
-        //make the popup wrapper be absolutely positioned, in the middle of the screen
-        popup_wrapper.style.position = "fixed"
-        popup_wrapper.style.top = "50%"
-        popup_wrapper.style.left = "50%"
-        popup_wrapper.style.transform = "translate(-50%, -50%)"
-        popup_wrapper.style.backgroundColor = "white"
-        popup_wrapper.style.zIndex = "1000"
-        popup_wrapper.style.border = "1px solid black"
-        popup_wrapper.style.borderRadius = "5px"
-        popup_wrapper.style.padding = "10px"
-        popup_wrapper.style.maxHeight = "90%"
-        popup_wrapper.style.maxWidth = "90%"
-        popup_wrapper.style.overflow = "auto"
-        popup_wrapper.style.boxShadow = "0 0 10px 0 rgba(0,0,0,0.5)"
-        //make everythihing except the popup wrapper be blurred
-        let main_body = document.querySelector(".body-inner")
-        main_body.classList.add("disabled")
         
-        let close_button = document.createElement("button")
-        close_button.innerHTML = "Close"
-        close_button.style.position = "absolute"
-        close_button.style.top = "0"
-        close_button.style.right = "0"
-        close_button.style.margin = "5px"
-        close_button.style.padding = "5px"
-        close_button.style.border = "1px solid black"
-        close_button.style.borderRadius = "5px"
-        close_button.style.backgroundColor = "white"
-        close_button.style.zIndex = "1001"
-        close_button.style.cursor = "pointer"
-        close_button.onclick = function(){
-            popup_wrapper.remove()
-            main_body.classList.remove("disabled")
-        }
-        popup_wrapper.appendChild(close_button)
-
-        window.onclick = function(event) {
-            //if event.target is not a child of the popup wrapper, remove the popup wrapper
-            if (event.target == popup_wrapper) {
-                popup_wrapper.remove()
-                main_body.classList.remove("disabled")
-            }
-        }
-    
-        document.body.prepend(popup_wrapper)
+        let wrapper = table.getWrapper()
+        let popup = Popup.init(wrapper)
 
         let edit_button = document.createElement("button")
         let table_element = table.getElement()
@@ -617,8 +574,7 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
                         if (response.data) {
                             if (reload_function && reload_function_parameter_list) {
                                 parent_table_to_reload.reloadTable(reload_function, reload_function_parameter_list)
-                                popup_wrapper.remove()
-                                main_body.classList.remove("disabled")
+                                popup.close()
                                 console.log(response.status)
                                 //TODO: add a success message here
                                 //TODO: fix popup wrapper close.
@@ -635,11 +591,17 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
                 table_element.dataset.edit_mode = 1
             }
         })
-        popup_wrapper.appendChild(edit_button)
+        popup.content.appendChild(edit_button)
     
     } else {
         alert("Please select a student first!")
     }
+    
+}
+
+function render_student_data(student_data){
+    let table = document.createElement("div")
+    
     
 }
 
@@ -686,8 +648,8 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
                     }
                 }
         },
-        
     ]
+
     if (typeof backend_student_GUID !== "undefined") {
         rowContextMenu.push({
             label: "Detailed Student assessment breakdown popup",
@@ -728,6 +690,27 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
     })
 }
 
+
+function render_course_moderation_section(course_data) {
+    //course_data.assessments
+    let final_extra_constructor_params = {}
+    let table_placeholder = document.createElement("div")
+    document.body.appendChild(table_placeholder)
+    api_get("get_assessment_data_for_course").then(data => {
+        console.log(data)
+    })
+    // let table = init_table(table_placeholder, xd, null, final_extra_constructor_params)
+    //Please select the assessments that you would like to moderate. You can select one, or  multiple.
+    //selected.getRows()...
+    //Step 1: select the assessments from the table that you would like to moderate. click next.
+    //Step 2: select the moderation rules you would like to apply. click next.
+    //Step 3: review page: shows the moderated grades. Are you sure you want to apply these grades? click next.
+    string_to_html_element(`
+
+    `)
+}
+
+
 function load_grading_rules_table(data_json){
     let columns = [
         // {formatter:"rowSelection", titleFormatter:"rowSelection", align:"center", headerSort:false},
@@ -767,6 +750,7 @@ function load_grading_rules_table(data_json){
         let edit_button = document.createElement('button')
         let table_element = table.getElement()
         edit_button.innerHTML = "Edit Classification rules"
+        edit_button.style.maxWidth = "150px"
         edit_button.addEventListener('click', function(){
             if (table_element.dataset.edit_mode == 1) {
                 this.innerHTML = "Edit Classification rules"
@@ -780,7 +764,6 @@ function load_grading_rules_table(data_json){
                 } else {
                     console.log("changes")
                 }
-
                 //api call here to save the data.
                 let posted_data = {}
                 for (i = 1; i < table_data.length + 1; i++) {
