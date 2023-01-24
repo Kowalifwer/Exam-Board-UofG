@@ -13,10 +13,16 @@
     {%endfor%}
 
     <p>BSc/BEng (Level 4)</p>
-    <div class="tabulator_table" id="degree_classification_table" style="max-width: 1200px;"></div>
+    <div class="tabulator_table" id="degree_classification_table_4" style="max-width: 1200px;"></div>
     <script>
-        load_degree_classification_table()
+        load_degree_classification_table(level=4)
     </script>
 
-    <p>Msc/MEng (level 5)</p>
+    <p>MSc/MEng (Level 5)</p>
+    <div class="tabulator_table" id="degree_classification_table_5" style="max-width: 1200px;"></div>
+    <script>
+        load_degree_classification_table(level=5)
+    </script>
+
+
 {%endblock%}
