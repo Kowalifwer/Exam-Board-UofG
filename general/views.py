@@ -182,47 +182,62 @@ def global_search_view(request):
 def student_view(request, GUID):
     get_query_count("before student query")
     if is_fetching_table_data(request):
-        student = Student.objects.filter(GUID=GUID).prefetch_related("results__assessment", "results__course").first()
-        courses = student.courses.all()
-        results = student.results.all()
+        student_table = fetch_student_course_table_data_if_relevant(request)
+        if student_table:
+            return student_table
+        else:
+            student = Student.objects.filter(GUID=GUID).prefetch_related("results__assessment", "results__course").first()
+            courses = student.courses.all()
+            results = student.results.all()
 
-        ##note that this is heavily optimized for less executed queries.
-        def filter_results(course):
-            return [result for result in results if result.course == course]
+            ##note that this is heavily optimized for less executed queries.
+            def filter_results(course):
+                return [result for result in results if result.course == course]
 
-        all_courses_json = [
-            course.get_data_for_table({
-                "method": "get_extra_data_student",
-                "args": [filter_results(course)]
-            }) for course in courses
-        ]
-        get_query_count("after student query")
-        return JsonResponse(all_courses_json, safe=False)
+            all_courses_json = [
+                course.get_data_for_table({
+                    "method": "get_extra_data_student",
+                    "args": [filter_results(course)]
+                }) for course in courses
+            ]
+            get_query_count("after student query")
+            return JsonResponse(all_courses_json, safe=False)
     else:
         print("NOT FETCHING TABLE DATA")
     context = {"student": Student.objects.filter(GUID=GUID).first()}
     return render(request, "general/student.html", context)
 
+def course_student_view(request):
+    pass
+
+def fetch_student_course_table_data_if_relevant(request):
+    student_GUID = request.GET.get("student_GUID", "")
+    course_id = request.GET.get("course_id", "")
+    if student_GUID != "" and course_id != "":
+        data_for_student_course_table = []
+        all_course_assessments = Assessment.objects.filter(courses__id=course_id)
+        for assessment in all_course_assessments:
+            result = AssessmentResult.objects.filter(student__GUID=student_GUID, course__id=course_id, assessment=assessment).first()
+            print(result)
+            data_for_student_course_table.append({
+                'type': assessment.get_type_display(),
+                'name': assessment.name,
+                'weighting': assessment.weighting,
+                'grade': result.grade if result else "Not completed",
+                'preponderance': result.preponderance if result else "Not completed",
+                'result_id': result.id if result else "Not completed",
+            })
+    else:
+        return None
+    
+    return JsonResponse(data_for_student_course_table, safe=False)
+
 def course_view(request, code, year):
     get_query_count("before fetching course", False)
     if is_fetching_table_data(request):
-        student_GUID = request.GET.get("student_GUID", "")
-        course_id = request.GET.get("course_id", "")
-        if student_GUID != "" and course_id != "":
-            data_for_student_course_table = []
-            all_course_assessments = Assessment.objects.filter(courses__id=course_id)
-            for assessment in all_course_assessments:
-                result = AssessmentResult.objects.filter(student__GUID=student_GUID, course__id=course_id, assessment=assessment).first()
-                data_for_student_course_table.append({
-                    'type': assessment.get_type_display(),
-                    'name': assessment.name,
-                    'weighting': assessment.weighting,
-                    'grade': result.grade if result else "Not completed",
-                    'preponderance': result.preponderance if result else "Not completed",
-                    'result_id': result.id if result else "Not completed",
-                })
-            
-            return JsonResponse(data_for_student_course_table, safe=False)
+        student_table = fetch_student_course_table_data_if_relevant(request)
+        if student_table:
+            return student_table
 
         else:
             course = Course.objects.filter(code=code, academic_year=year).prefetch_related("assessments").first()
@@ -288,30 +303,64 @@ def degree_classification_view(request, year=None):
 
     get_query_count("before fetching degree classification", False)
     if is_fetching_table_data(request):
-        ##courses__isnull=False
-        students = Student.objects.filter(end_academic_year=context['current_year'].year, current_academic_year=context['current_year'].year).prefetch_related("results__course", "results__assessment", "courses", "courses__assessments")
+        level = request.GET.get("level")
+        if level not in ("4", "5"):
+            return JsonResponse([], safe=False)
+        
+        masters = level == "5"
+        students = set(Student.objects.filter(end_academic_year=context['current_year'].year, current_academic_year=context['current_year'].year, is_masters=False if not masters else True).prefetch_related("results__course", "results__assessment", "courses", "courses__assessments"))
+        student_course_map_lvl5 = {}
+        student_results_map_lvl5 = {}
         student_course_map_lvl4 = {}
         student_results_map_lvl4 = {}
         student_course_map_lvl3 = {}
         student_results_map_lvl3 = {}
+        no_course_students = set()
+        base_year = context['current_year'].year - 1 if not masters else context['current_year'].year - 2
         for student in students:
-            student_course_map_lvl4[student] = [course for course in student.courses.all() if course.academic_year == context['current_year'].year]
-            student_results_map_lvl4[student] = [result for result in student.results.all() if result.course.academic_year == context['current_year'].year]
+            if student.current_level != int(level):
+                no_course_students.add(student)
+                continue
 
-            student_course_map_lvl3[student] = [course for course in student.courses.all() if course.academic_year == context['current_year'].year - 1]
-            student_results_map_lvl3[student] = [result for result in student.results.all() if result.course.academic_year == context['current_year'].year - 1]
+            if masters:
+                lvl5_courses = [course for course in student.courses.all() if course.academic_year == base_year + 2]
+                if not lvl5_courses:
+                    no_course_students.add(student)
+                    continue
 
+            lvl4_courses = [course for course in student.courses.all() if course.academic_year == base_year + 1]
+            if not lvl4_courses:
+                no_course_students.add(student)
+                continue
+    
+            lvl3_courses = [course for course in student.courses.all() if course.academic_year == base_year]
+            if not lvl3_courses:
+                no_course_students.add(student)
+                continue
+
+            if masters:
+                student_course_map_lvl5[student] = lvl5_courses
+                student_results_map_lvl5[student] = [result for result in student.results.all() if result.course.academic_year == base_year + 2]
+
+            student_course_map_lvl4[student] = lvl4_courses
+            student_results_map_lvl4[student] = [result for result in student.results.all() if result.course.academic_year == base_year + 1]
+
+            student_course_map_lvl3[student] = lvl3_courses
+            student_results_map_lvl3[student] = [result for result in student.results.all() if result.course.academic_year == base_year]
+            
         all_students_json = [
             student.get_data_for_table(
                 {
                     "method": "get_extra_data_degree_classification",
-                    "args": [student_course_map_lvl4[student], student_results_map_lvl4[student], student_course_map_lvl3[student], student_results_map_lvl3[student]]
+                    "args": [masters, student_course_map_lvl3[student], student_results_map_lvl3[student], student_course_map_lvl4[student], student_results_map_lvl4[student], student_course_map_lvl5[student] if masters else {}, student_results_map_lvl5[student] if masters else {}]
                 }
-            ) for student in students
+            ) for student in students.difference(no_course_students)
         ]
-        get_query_count("after fetching degree classification")
 
-        return JsonResponse(all_students_json, safe=False)
+        get_query_count("after fetching degree classification")
+        response = JsonResponse(all_students_json, safe=False)
+
+        return response
 
     return render(request, "general/degree_classification.html", context)
 
@@ -338,7 +387,7 @@ def api_view(request):
         action = request.POST.get("action", None)
         if action:
             data = json.loads(request.POST.get("data", "{}"))
-            
+
             #GRADING RULES
             if action == "save_grading_rules":
                 year_id = request.POST.get("year_id", None)

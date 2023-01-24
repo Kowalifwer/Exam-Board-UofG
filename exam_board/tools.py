@@ -95,3 +95,15 @@ band_integer_to_band_letter_map = {
         21: "A2",
         22: "A1",
     }
+
+def band_integer_to_class_caluclator(integer):
+    if integer >= 18:
+        return "1st"
+    elif integer >= 15:
+        return "2:1"
+    elif integer >= 12:
+        return "2:2"
+    elif integer >= 9:
+        return "3rd"
+    else:
+        return "Fail"

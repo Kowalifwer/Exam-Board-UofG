@@ -5,7 +5,7 @@ from django.shortcuts import reverse
 from exam_board.tools import default_degree_classification_settings_dict
 import json
 from math import ceil as math_ceil
-from exam_board.tools import band_integer_to_band_letter_map
+from exam_board.tools import band_integer_to_band_letter_map, band_integer_to_class_caluclator
 
 
 # Create your models here.
@@ -23,11 +23,7 @@ class AcademicYear(models.Model):
     #create a getter for degree_classification_settings that returns the default settings in JSON
     @property
     def degree_classification_settings_for_table(self):
-        try:
-            return json.dumps(list(self.degree_classification_settings.values()))
-        except:
-            print("Error in degree_classification_settings_for_table")
-            return json.dumps([])
+        return json.dumps(list(self.degree_classification_settings.values()))
 
     def __str__(self):
         return f"{self.year} - {'Currently active' if self.is_current else 'Not current year'}"
@@ -95,7 +91,7 @@ class Student(UUIDModel):
 
     @property
     def current_level(self):
-        return self.current_academic_year - self.start_academic_year + 1
+        return self.current_academic_year - self.start_academic_year + (1 if not self.is_faster_route else 2)
 
     @property
     def current_level_verbose(self):  # TODO Fix this, by taking current month into consideration (2022-2023 might still be first_year but calculation will return second_year). Also consider is_faster year.
@@ -130,6 +126,7 @@ class Student(UUIDModel):
             "degree_name": self.degree_name,
             "degree_title": self.degree_title,
             "is_masters": self.is_masters,
+            "is_faster_route": self.is_faster_route,
             "current_year": self.current_level_verbose,
             "start_year": self.start_academic_year,
             "end_year": self.end_academic_year,
@@ -141,8 +138,9 @@ class Student(UUIDModel):
         
         return table_data
     
-    def get_extra_data_degree_classification(self, lvl4_courses, lvl4_results, lvl3_courses, lvl3_results):
+    def get_extra_data_degree_classification(self, masters, lvl3_courses, lvl3_results, lvl4_courses, lvl4_results, lvl5_courses={}, lvl5_results={}):
         extra_data = {
+            "class": "N/A",
             "final_band": 0,
             "final_gpa": 0,
             "l4_band": 0,
@@ -160,18 +158,23 @@ class Student(UUIDModel):
             "project": 0,
             "team": 0,
         }
+
+        if masters:
+            extra_data.update({
+                "l5_band": 0,
+                "l5_gpa": 0,
+                "project_masters": 0,
+            })
         
         #student -> courses -> expected_assessments -> assessment_result
         # for course in courses:
         #     expected_assessments = course...
         #     for assessment in expected_assessments:
-
-        #if its a project, we need to sum the grades
-
+        final_l5_grade_adder_tuples = [0,0]
         final_l4_grade_adder_tuples = [0,0]
         final_l3_grade_adder_tuples = [0,0]
         
-        def calculate_level_data(courses, results, grade_adder_tuples, update_greater_than=False):
+        def calculate_level_data(courses, results, grade_adder_tuples, update_greater_than=False, upgrade_to_masters=False):
             for course in courses:
                 credits = course.credits
                 expected_assessments = course.assessments.all()
@@ -182,11 +185,19 @@ class Student(UUIDModel):
                     if result:
                         grade = result[0].grade
                     course_grade += grade * assessment.weighting / 100
+                
+                if course.credits == 60:
+                    extra_data["project_masters"] = course_grade
+                elif course.credits == 40:
+                    if update_greater_than: #if is lvl 4 - means we have a solo project
+                        extra_data["project"] = course_grade
+                    else:
+                        extra_data["team"] = course_grade
 
                 grade_adder_tuples[0] += course_grade * credits
                 grade_adder_tuples[1] += credits
                 
-                if update_greater_than:
+                if update_greater_than and not masters or upgrade_to_masters:
                     if course_grade >= 70:
                         extra_data["greater_than_a"] += credits
                         extra_data["greater_than_b"] += credits
@@ -241,9 +252,20 @@ class Student(UUIDModel):
                 
             return grade_adder_tuples
         
+        final_l5_grade_adder_tuples = calculate_level_data(lvl5_courses, lvl5_results, final_l5_grade_adder_tuples, upgrade_to_masters=True)
         final_l4_grade_adder_tuples = calculate_level_data(lvl4_courses, lvl4_results, final_l4_grade_adder_tuples, update_greater_than=True)
         final_l3_grade_adder_tuples = calculate_level_data(lvl3_courses, lvl3_results, final_l3_grade_adder_tuples)
         final_gpa = 0
+
+        if masters:
+            if final_l5_grade_adder_tuples[1] == 0: ##no courses taken at level 4
+                extra_data["l5_gpa"] = "N/A"
+                extra_data["l5_band"] = "N/A"
+            else:
+                final_l5_grade = final_l5_grade_adder_tuples[0] / final_l5_grade_adder_tuples[1]
+                extra_data["l5_gpa"] = math_ceil(final_l5_grade / (100/22))
+                extra_data["l5_band"] = band_integer_to_band_letter_map[extra_data["l5_gpa"]]
+                final_gpa += final_l5_grade * 0.6
 
         if final_l4_grade_adder_tuples[1] == 0: ##no courses taken at level 4
             extra_data["l4_gpa"] = "N/A"
@@ -252,7 +274,7 @@ class Student(UUIDModel):
             final_l4_grade = final_l4_grade_adder_tuples[0] / final_l4_grade_adder_tuples[1]
             extra_data["l4_gpa"] = math_ceil(final_l4_grade / (100/22))
             extra_data["l4_band"] = band_integer_to_band_letter_map[extra_data["l4_gpa"]]
-            final_gpa += final_l4_grade * 0.6
+            final_gpa += final_l4_grade * (0.6 if not masters else 0.25)
         
         if final_l3_grade_adder_tuples[1] == 0: ##no courses taken at level 3
             extra_data["l3_gpa"] = "N/A"
@@ -261,11 +283,32 @@ class Student(UUIDModel):
             final_l3_grade = final_l3_grade_adder_tuples[0] / final_l3_grade_adder_tuples[1]
             extra_data["l3_gpa"] = math_ceil(final_l3_grade / (100/22))
             extra_data["l3_band"] = band_integer_to_band_letter_map[extra_data["l3_gpa"]]
-            final_gpa += final_l3_grade * 0.4
+            final_gpa += final_l3_grade * (0.4 if not masters else 0.15)
         
         ##calculate final band and final gpa: level3 is worth 40% and level 4 is worth 60%
-        extra_data["final_gpa"] = math_ceil(final_gpa / (100/22))
-        extra_data["final_band"] = band_integer_to_band_letter_map[extra_data["final_gpa"]]
+        if final_gpa == 0:
+            extra_data["final_gpa"] = "N/A"
+            extra_data["final_band"] = "N/A"
+        else:
+            extra_data["final_gpa"] = math_ceil(final_gpa / (100/22))
+            extra_data["final_band"] = band_integer_to_band_letter_map[extra_data["final_gpa"]]
+            extra_data["class"] = band_integer_to_class_caluclator(extra_data["final_gpa"])
+
+        if extra_data["project"] == 0:
+            extra_data["project"] = "N/A"
+        else:
+            extra_data["project"] = math_ceil(extra_data["project"] / (100/22))
+        
+        if extra_data["team"] == 0:
+            extra_data["team"] = "N/A"
+        else:
+            extra_data["team"] = math_ceil(extra_data["team"] / (100/22))
+        
+        if masters:
+            if extra_data["project_masters"] == 0:
+                extra_data["project_masters"] = "N/A"
+            else:
+                extra_data["project_masters"] = math_ceil(extra_data["project_masters"] / (100/22))
 
         return extra_data
 
@@ -352,6 +395,7 @@ class Course(UUIDModel):
             'lecturer_comment': self.lecturer_comment,
             'credits': self.credits,
             'is_taught_now': self.is_taught_now,
+            'course_id': self.id,
             
             #Extra properties
             # 'average_coursework_data': self.average_coursework_data,

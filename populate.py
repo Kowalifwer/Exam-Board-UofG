@@ -150,8 +150,8 @@ class Populator:
             Assessment(name="Web application (backend)", type="G", weighting=30),
             Assessment(name="Presentation", type="G", weighting=5),
             Assessment(name="Question 1", type="E", weighting=10),
-            Assessment(name="Question 2", type="E", weighting=10),
-            Assessment(name="Question 3", type="E", weighting=10),
+            Assessment(name="Question 2", type="E", weighting=15),
+            Assessment(name="Question 3", type="E", weighting=15),
         ])
         self.assessment_groups.append([   
             Assessment(name="Quizzes", type="C", weighting=10),
@@ -227,6 +227,13 @@ class Populator:
         prev_course_code = courses[0].code
         assessment_list = get_assessment_list(courses[0])
 
+        grade_range = [i for i in range(101)]
+        good_grade_dist = [i**2.3 for i in range(101)]
+        avg_grade_dist = [1 for _ in range (15)] + [2 for _ in range (35)] + [10 for _ in range (29)] + [2 for _ in range (11)] + [1 for _ in range (11)]
+        bad_grade_dist = [i for i in range(15)] + [i for i in range(85, -1, -1)]
+        peformance_choices = [bad_grade_dist, avg_grade_dist, good_grade_dist]
+
+        student_performance_map = {student.id: random.choices(peformance_choices, weights=[0.20, 0.525, 0.275], k=1)[0] for student in self.students}
         for course in courses:
             if course.code != prev_course_code: #new course found!
                 prev_course_code = course.code
@@ -241,9 +248,10 @@ class Populator:
                         student=student,
                         course=course,
                         assessment=assessment,
-                        grade=random.randint(0, 100),
+                        grade=random.choices(grade_range, weights=student_performance_map.get(student.id, avg_grade_dist), k=1)[0], #grade is weighted towards higher grades
                         preponderance=random.choices(['NA', 'MV', 'CW', 'CR'], weights=[0.85, 0.1, 0.025, 0.025])[0],
-                    ))
+                    )
+                )
         
         print(f"Generated {len(self.assessment_results)} assessment results in {time.process_time() - start} seconds and {len(connection.queries)} queries")
 
@@ -264,8 +272,8 @@ class Populator:
             else:
                 attempts += 1
 
-            if (credits_total >= (3*total_credits/4) and decision(0.05)): # 5% chance of getting between 90-120 credits (incomplete course selection)
-                return course_set
+            # if (credits_total >= (3*total_credits/4) and decision(0.05)): # 5% chance of getting between 90-120 credits (incomplete course selection)
+            #     return course_set
 
             if credits_total == total_credits or len(candidate_courses) == 0:
                 return course_set
@@ -295,14 +303,15 @@ class Populator:
             for student in students:
                 if decision(0.01):  # 99% of students will be enrolled into courses.
                     continue
-                level = 0
+                level = 0 if not student.is_faster_route else 1
                 final_courses_for_all_years = []
                 for i in range(student.start_academic_year, student.current_academic_year + 1): ##add 120 credits worth of courses, or less, for each year of study.
-                    level += 1  
-                    must_have_course = None 
-
-                    if level in [1,2]:
-                        allowed_levels = [1,2]
+                    level += 1
+                    must_have_course = None
+                    if level == 1:
+                        allowed_levels = [1]
+                    elif level == 2:
+                        allowed_levels = [2] if not student.is_faster_route else [1,2]
                     elif level == 3:
                         must_have_course = Course.objects.filter(academic_year=i, name__contains="Group", credits=40).first()
                         allowed_levels = [3, 4]
@@ -316,6 +325,8 @@ class Populator:
                         allowed_levels = [5]
 
                     required_credits = REQUIRED_CREDITS_PER_COURSE - must_have_course.credits if must_have_course else REQUIRED_CREDITS_PER_COURSE
+                    if decision(0.08): ##small chance to enroll 10 or 20 extra credits worth of courses!
+                        required_credits += random.choices([10,20], weights=[0.9,0.1], k=1)[0]
                     course_setup = [must_have_course] if must_have_course else []
                     candidate_courses_for_year = [course for course in candidate_courses if course.academic_year == i and course.level_integer in allowed_levels]
                     course_setup.extend(self.fetch_courses_total_credits(candidate_courses_for_year, required_credits))

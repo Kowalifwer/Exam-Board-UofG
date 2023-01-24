@@ -140,7 +140,7 @@ formatter_to_percentage = function(cell, formatterParams, onRendered){
 
 const default_formatter = formatter_to_band_letter
 
-function init_table(table_id, columns, prefil_data = null, extra_constructor_params = {}) {
+function init_table(table_id, columns, prefil_data = null, extra_constructor_params = {}, table_settings={}) {
     let table_constructor = {
         // layout:"fitColumns",
         // responsiveLayout:"hide",
@@ -302,14 +302,50 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     return table
 }
 
-let headerMenu = [
-    {
-        label:"Hide Column",
-        action:function(e, column){
-            column.toggle();
-        }
-    },
-]
+var headerMenu = function(){
+    var menu = [];
+    var columns = this.getColumns();
+
+    for(let column of columns){
+
+        //create checkbox element using font awesome icons
+        let icon = document.createElement("i");
+        icon.classList.add("fas");
+        icon.classList.add(column.isVisible() ? "fa-check-square" : "fa-square");
+
+        //build label
+        let label = document.createElement("span");
+        let title = document.createElement("span");
+
+        title.textContent = " " + column.getDefinition().title;
+
+        label.appendChild(icon);
+        label.appendChild(title);
+
+        //create menu item
+        menu.push({
+            label:label,
+            action:function(e){
+                //prevent menu closing
+                e.stopPropagation();
+
+                //toggle current column visibility
+                column.toggle();
+
+                //change menu item icon
+                if(column.isVisible()){
+                    icon.classList.remove("fa-square");
+                    icon.classList.add("fa-check-square");
+                }else{
+                    icon.classList.remove("fa-check-square");
+                    icon.classList.add("fa-square");
+                }
+            }
+        });
+    }
+
+   return menu;
+};
 
 //define various table setups below
 function load_students_table(extra_constructor_params = {}, extra_cols=true){
@@ -324,6 +360,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
                 {title: "Title", field: "degree_title"},
                 {title: "Name", field: "degree_name"},
                 {title: "Masters?", field: "is_masters", formatter: "tickCross"},
+                {title: "Faster route?", field: "is_faster_route", formatter: "tickCross"},
             ],
             "headerHozAlign": "center",
         },
@@ -347,34 +384,39 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
         ajaxParams.search_term = search_term
     }
 
+    let rowContextMenu = [
+        {
+            label:"Hide Student",
+            action:function(e, row){
+                row.delete();
+            }
+        },
+        {
+            label:"View Student breakdown page",
+                action:function(e, row){
+                    if (typeof row.getData().page_url !== 'undefined') {
+                        window.location.href = row.getData().page_url
+                    }
+                }
+        },
+    ]
+    if (typeof backend_course_id !== "undefined") {
+        rowContextMenu.push({
+            label: "Detailed Student assessment breakdown popup",
+            action: function(e, row){
+                create_student_course_detailed_table_popup(row.getData().GUID, backend_course_id, row.getTable(), load_students_table, [extra_constructor_params, extra_cols])
+            }   
+        }) 
+    }
+
+
     let final_extra_constructor_params = { ...extra_constructor_params,
         // groupBy: function(data){
         //     return data.start_year + " - " + data.end_year; //groups by data and age
         // },
         //context menus
-        "ajaxParams": ajaxParams,
-        rowContextMenu:[
-            {
-                label:"Hide Student",
-                action:function(e, row){
-                    row.delete();
-                }
-            },
-            {
-                label:"View Student breakdown page",
-                    action:function(e, row){
-                        if (typeof row.getData().page_url !== 'undefined') {
-                            window.location.href = row.getData().page_url
-                        }
-                    }
-            },
-            {
-                label: "Detailed assessment breakdown popup",
-                action: function(e, row){
-                    create_student_course_detailed_table_popup(row.getData().GUID, backend_course_id, row.getTable(), load_students_table, [extra_constructor_params, extra_cols])
-                }
-            }
-        ],
+        ajaxParams: ajaxParams,
+        rowContextMenu:rowContextMenu,
         groupBy: 'current_year',
         initialSort: [{column: 'current_year', dir: 'dsc'}],
         placeholder: "Student data loading...",
@@ -403,7 +445,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true){
     })
 }
 
-function load_degree_classification_table() {
+function load_degree_classification_table(level=4) {
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
         {title: "GUID", field: "GUID", topCalc: "count", headerFilter: "input", "frozen": true, headerContextMenu:headerMenu},
@@ -415,6 +457,7 @@ function load_degree_classification_table() {
                 {title: "Title", field: "degree_title"},
                 {title: "Name", field: "degree_name"},
                 {title: "Masters?", field: "is_masters", formatter: "tickCross"},
+                {title: "Faster route?", field: "is_faster_route", formatter: "tickCross"},
             ],
             "headerHozAlign": "center",
         },
@@ -429,8 +472,11 @@ function load_degree_classification_table() {
             "headerHozAlign": "center",
         },
         // Final band, Final GPA, L4 BAND, L4 GPA, L3 band, L3 gpa, >A, >b... Project, Team
+        {title: "Degree classification", field: "class"},
         {title: "Final band", field: "final_band"},
         {title: "Final GPA", field: "final_gpa"},
+        {"title": "L5 band", "field": "l5_band", "visible": (level==5) ? true:false},,
+        {"title": "L5 GPA", "field": "l5_gpa", "visible": (level==5) ? true:false},
         {title: "L4 band", field: "l4_band"},
         {title: "L4 GPA", field: "l4_gpa"},
         {title: "L3 band", field: "l3_band"},
@@ -443,11 +489,25 @@ function load_degree_classification_table() {
         {title: "> F", field: "greater_than_f"},
         {title: "> G", field: "greater_than_g"},
         {title: "> H", field: "greater_than_h"},
-        {title: "Project", field: "project"},
-        {title: "Team", field: "team"},
+        {title: "Team (lvl 3 Hons)", field: "team"},
+        {title: "Individual (lvl 4 Hons)", field: "project"},
+        {"title": "Individual (lvl 5 M)", "field": "project_masters", "visible": (level==5) ? true:false},
     ]
 
-    let table = init_table("degree_classification_table", columns, null, {})
+    let table = init_table("degree_classification_table_"+level, columns, null, {
+        rowContextMenu: [{
+            label:"View Student breakdown page",
+                action:function(e, row){
+                    if (typeof row.getData().page_url !== 'undefined') {
+                        window.location.href = row.getData().page_url
+                    }
+                } 
+        }],
+        "ajaxParams": {
+            "fetch_table_data": true,
+            "level": level,
+        }
+    })
 
 }
 
@@ -611,24 +671,35 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
         ajaxParams.search_term = search_term
     }
 
-    let final_extra_constructor_params = { ...extra_constructor_params,
-        "ajaxParams": ajaxParams,
-        rowContextMenu:[
-            {
-                label:"Hide Course",
+    let rowContextMenu = [
+        {
+            label:"Hide Course",
+            action:function(e, row){
+                row.delete();
+            }
+        },
+        {
+            label:"View Course Page",
                 action:function(e, row){
-                    row.delete();
-                }
-            },
-            {
-                label:"View Course Page",
-                    action:function(e, row){
-                        if (typeof row.getData().page_url !== 'undefined') {
-                            window.location.href = row.getData().page_url
-                        }
+                    if (typeof row.getData().page_url !== 'undefined') {
+                        window.location.href = row.getData().page_url
                     }
-            },
-        ],
+                }
+        },
+        
+    ]
+    if (typeof backend_student_GUID !== "undefined") {
+        rowContextMenu.push({
+            label: "Detailed Student assessment breakdown popup",
+            action: function(e, row){
+                create_student_course_detailed_table_popup(backend_student_GUID, row.getData().course_id, row.getTable(), load_courses_table, [extra_constructor_params, extra_cols])
+            }
+        })
+    }
+
+    let final_extra_constructor_params = { ...extra_constructor_params,
+        ajaxParams: ajaxParams,
+        rowContextMenu:rowContextMenu,
         groupBy: ['academic_year'],
         initialSort: [{column: 'academic_year', dir: 'dsc'}],
         placeholder: "Course data loading...",
