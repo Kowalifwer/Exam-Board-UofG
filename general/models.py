@@ -459,7 +459,6 @@ class Course(UUIDModel):
     
 class Assessment(UUIDModel):
     name = models.CharField(max_length=255, null=True, blank=True)
-    moderation = models.DecimalField(default=1.0, decimal_places=2, max_digits=5)
     weighting = models.IntegerField()
 
     type_choices = [
@@ -469,6 +468,10 @@ class Assessment(UUIDModel):
         ('E', 'Exam'),
     ]
     type = models.CharField(choices=type_choices, max_length=1, default='C')
+
+    moderation = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
+    moderated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    moderation_datetime = models.DateTimeField(null=True, blank=True)
 
     @property
     def possible_choices(self):
