@@ -191,23 +191,26 @@ def student_view(request, GUID):
         student_table = fetch_student_course_table_data_if_relevant(request)
         if student_table:
             return student_table
-        else:
-            student = Student.objects.filter(GUID=GUID).prefetch_related("results__assessment", "results__course").first()
-            courses = student.courses.all()
-            results = student.results.all()
+        assessment_data = fetch_assessment_data_if_relevant(request)
+        if assessment_data:
+            return assessment_data
 
-            ##note that this is heavily optimized for less executed queries.
-            def filter_results(course):
-                return [result for result in results if result.course == course]
+        student = Student.objects.filter(GUID=GUID).prefetch_related("results__assessment", "results__course").first()
+        courses = student.courses.all()
+        results = student.results.all()
 
-            all_courses_json = [
-                course.get_data_for_table({
-                    "method": "get_extra_data_student",
-                    "args": [filter_results(course)]
-                }) for course in courses
-            ]
-            get_query_count("after student query")
-            return JsonResponse(all_courses_json, safe=False)
+        ##note that this is heavily optimized for less executed queries.
+        def filter_results(course):
+            return [result for result in results if result.course == course]
+
+        all_courses_json = [
+            course.get_data_for_table({
+                "method": "get_extra_data_student",
+                "args": [filter_results(course)]
+            }) for course in courses
+        ]
+        get_query_count("after student query")
+        return JsonResponse(all_courses_json, safe=False)
     else:
         print("NOT FETCHING TABLE DATA")
     context = {"student": Student.objects.filter(GUID=GUID).first()}

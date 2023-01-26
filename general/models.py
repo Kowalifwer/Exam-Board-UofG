@@ -61,7 +61,7 @@ class User(AbstractUser, UUIDModel):
         return full_name_string
 
     def __str__(self):
-        return f"{self.title + '.' if self.title else ''} {self.get_full_name()}"
+        return self.get_full_name()
 
 
 class Student(UUIDModel):
@@ -113,7 +113,7 @@ class Student(UUIDModel):
     @property
     def student_comments_for_table(self):
         return json.dumps([{
-            "comment": comment.comment,
+            "comment": comment.comment.replace("\n", ""),
             "added_by": comment.added_by.get_name_verbose,
             "timestamp": comment.timestamp.strftime("%d/%m/%Y %H:%M"),
             "id": str(comment.id),

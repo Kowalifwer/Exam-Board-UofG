@@ -12,17 +12,22 @@
         <a class="underline" href="{%url 'general:degree_classification_exact' year.year%}">{{year.year}}-{{year.year|add:1}}</a>
     {%endfor%}
 
+    <div style="display: flex; overflow: auto;">
+        <canvas id="degree_classification_chart_4">loading chart</canvas>
+    </div>
+
     <p>BSc/BEng (Level 4) Graduates</p>
     <div class="tabulator_table" id="degree_classification_table_4" style="max-width: 1200px;"></div>
-    <script>
-        load_degree_classification_table(level=4)
-    </script>
+
+    <div style="width: 80%">
+        <canvas id="degree_classification_chart_5">loading chart</canvas>
+        <canvas id="degree_classification_chart2_5">loading chart</canvas>
+    </div>
 
     <p>MSc/MEng (Level 5) Graduates</p>
     <div class="tabulator_table" id="degree_classification_table_5" style="max-width: 1200px;"></div>
+
     <script>
-        load_degree_classification_table(level=5)
+        load_degree_classification_table(level=4)
     </script>
-
-
 {%endblock%}

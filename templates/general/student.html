@@ -8,7 +8,6 @@
 {% block body %}
     <input type="hidden" name="student_id" value="{{student.id}}" class="api_prefill">
 
-
     <p>Student: {{student}}</p>
     {% with comments=student.student_comments_for_table|safe%}
         {%if comments%}

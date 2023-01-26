@@ -1,5 +1,37 @@
 //helper functions
 const preponderance_list = ["NA", "MV", "CW", "CR"]
+const boundary_map = {
+    0: "H",
+
+    1: "G2",
+    2: "G1",
+
+    3: "F3",
+    4: "F2",
+    5: "F1",
+
+    6: "E3",
+    7: "E2",
+    8: "E1",
+
+    9: "D3",
+    10: "D2",
+    11: "D1",
+
+    12: "C3",
+    13: "C2",
+    14: "C1",
+    
+    15: "B3",
+    16: "B2",
+    17: "B1",
+
+    18: "A5",
+    19: "A4",
+    20: "A3",
+    21: "A2",
+    22: "A1",
+}
 
 const preponderance_formatter = function (cell) {
     let value = cell.getValue()
@@ -89,38 +121,6 @@ formatter_to_band_letter = function(cell, formatterParams, onRendered){
     }
 
     let integer_band = percent_to_integer_band(cell.getValue())
-    let boundary_map = {
-        0: "H",
-
-        1: "G2",
-        2: "G1",
-
-        3: "F3",
-        4: "F2",
-        5: "F1",
-
-        6: "E3",
-        7: "E2",
-        8: "E1",
-
-        9: "D3",
-        10: "D2",
-        11: "D1",
-
-        12: "C3",
-        13: "C2",
-        14: "C1",
-        
-        15: "B3",
-        16: "B2",
-        17: "B1",
- 
-        18: "A5",
-        19: "A4",
-        20: "A3",
-        21: "A2",
-        22: "A1",
-    }
     return boundary_map[integer_band] 
 }
 
@@ -314,8 +314,8 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     //     }
     // });
     table.destroyCharts = function(){
-        for (var chart of table.chart_links) {
-            chart[0].destroy()
+        for (var chart of table.charts) {
+            chart.destroy()
         }
     }
 
@@ -338,18 +338,30 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     table.chart_links = []
 
     table.addChartLink = function(chart_link){
-        console.log("Setting chart links")
-        console.log(chart_link)
         table.chart_links.push(chart_link)
-        console.log(table.chart_links)
     }
+
+    table.charts = []
 
     table.reloadCharts = function(){
         console.log("Reloading charts")
-        for (var chart of table.chart_links) {
-            chart[0].load_with_table_data(table, chart[1])
+        for (var link_data of table.chart_links) {
+            let data = link_data[1](table.getData())
+
+            let chart = new Chart(link_data[0], {
+                type: 'bar',
+                data: data,
+                options: {
+                  scales: {
+                    y: {
+                      beginAtZero: true
+                    }
+                  }
+                }
+              });
+            
+            table.charts.push(chart)
         }
-        console.log("Done reloading charts")
     }
 
     return table
@@ -478,20 +490,21 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
 
     table.setReloadFunction(load_students_table, [extra_constructor_params, extra_cols, settings])
 
-    console.log("BEFORE INIT CHART")
-    let chart = Charts.init(document.getElementById("students_final_grade"), "bar", {}, {})
-    console.log("AFTER INIT CHART")
     table.addChartLink([
-        chart, function(table) {
+        document.getElementById("students_final_grade"), function(table_data) {
             let chart_data = {};
-            table.getData().forEach(function(row){
-                chart_data[row.final_grade] = (chart_data[row.final_grade] || 0) + 1;
+            for (let x in boundary_map) {
+                chart_data[x[1]] = 0
+            }
+            table_data.forEach(function(row){
+                let band_grade = boundary_map[percent_to_integer_band(row.final_grade)]
+                chart_data[band_grade] = (chart_data[band_grade] || 0) + 1;
             })
             return {
-                labels: Object.keys(chart_data),
+                labels: Object.values(boundary_map),
                 datasets: [
                     {
-                        label: "Final grade",
+                        label: "Number of students",
                         data: Object.values(chart_data),
                     }
                 ]
@@ -584,6 +597,46 @@ function load_degree_classification_table(level=4) {
             "level": level,
         }
     })
+
+    table.addChartLink([document.getElementById("degree_classification_chart_"+level), function(table_data) {
+        let classes = ["Fail", "3rd", "2:2", "2:1", "1st"]
+        let chart_data = []
+        for (let x in classes) {
+            chart_data[x[1]] = 0
+        }
+        table_data.forEach(function(row){
+            chart_data[row.class] = (chart_data[row.class] || 0) + 1;
+        })
+        return {
+            labels: classes,
+            datasets: [
+                {
+                    label: "Number of students",
+                    data: Object.values(chart_data),
+                }
+            ]
+        }
+    }])
+
+    // table.addChartLink([document.getElementById("degree_classification_chart2_"+level), function(table_data) {
+    //     let classes = ["Fail", "3rd", "2:2", "2:1", "1st"]
+    //     let chart_data = []
+    //     for (let x in classes) {
+    //         chart_data[x[1]] = 0
+    //     }
+    //     table_data.forEach(function(row){
+    //         chart_data[row.class] = (chart_data[row.class] || 0) + 1;
+    //     })
+    //     return {
+    //         labels: classes,
+    //         datasets: [
+    //             {
+    //                 label: "Number of students",
+    //                 data: Object.values(chart_data),
+    //             }
+    //         ]
+    //     }
+    // }])
 
 }
 
@@ -801,7 +854,7 @@ function render_course_moderation_section(course_id, parent_table=null) {
     document.body.appendChild(wrapper)
     
     let columns = [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", align:"center", headerSort:false},
+        {formatter:"rowSelection", titleFormatter:"rowSelection", headerSort:false},
         {title: "Assessment type", field: "type"},
         {title: "Assessment name", field: "name"},
         {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},
@@ -926,6 +979,9 @@ function load_grading_rules_table(data_json){
 }
 
 function load_student_comments_table(data_json){
+    console.log(data_json)
+    console.log(data_json[158])
+
     let columns = [
         {title: "Comment", field: "comment", tooltip:true},
         {title: "Lecturer", field: "added_by", vertAlign:"middle"},
