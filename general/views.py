@@ -140,6 +140,10 @@ def all_students_view(request):
 def all_courses_view(request):
     all_courses = Course.objects.all()
     if is_fetching_table_data(request):
+        assessment_data = fetch_assessment_data_if_relevant(request)
+        if assessment_data:
+            return assessment_data
+
         all_courses_json = [course.get_data_for_table() for course in all_courses]
         # return JsonResponse({'data': all_students_json, 'last_page': paginator.num_pages})
         return JsonResponse(all_courses_json, safe=False)
@@ -236,11 +240,18 @@ def fetch_student_course_table_data_if_relevant(request):
 def fetch_assessment_data_if_relevant(request):
     is_assessments = request.GET.get("assessments", None)
     course_id = request.GET.get("course_id", None)
-    print(is_assessments, course_id)
     if course_id and is_assessments:
         course = Course.objects.filter(id=course_id).first()
         if course:
-            data = [{"type": assessment.get_type_display(), "name": assessment.name, "weighting": assessment.weighting, "moderation": f"{'' if assessment.moderation <= 0 else '+'}{assessment.moderation} bands.", "id": str(assessment.id)} for assessment in course.assessments.all()]
+            data = [
+                {"type": assessment.get_type_display(),
+                "name": assessment.name,
+                "weighting": assessment.weighting,
+                "moderation": f"{'' if assessment.moderation <= 0 else '+'}{assessment.moderation} bands.",
+                "moderation_user": assessment.moderated_by.get_name_verbose if assessment.moderated_by else "Not moderated",
+                "moderation_date": assessment.moderation_datetime.strftime("%d/%m/%Y %H:%M") if assessment.moderation_datetime else "Not moderated",
+                "id": str(assessment.id)}
+            for assessment in course.assessments.all().order_by("weighting").select_related("moderated_by")]
             return JsonResponse(data, safe=False)
     return None
 
@@ -411,57 +422,59 @@ def api_view(request):
                 mode = data.get("mode", None)
                 value = data.get("value", 0)
                 assessment_ids = data.get("assessment_ids", None)
+                course_id = data.get("course_id", None)
                 ##need to create new assessments, and update course_assessment_map, and all the grade results
                 assessments_db = Assessment.objects.filter(id__in=assessment_ids)
                 new_assessment_refs = []
                 new_to_create = []
-                assessments_to_delete = []
 
-                if not value or not mode or not assessment_ids or not assessments_db:
-                    return JsonResponse({"status": "Server error. Invalid data.", "data": None}, safe=False)
+                if not value or not mode or not assessment_ids or not assessments_db or not course_id:
+                    return JsonResponse({"status": "Server error. Invalid data recieved.", "data": None}, safe=False)
                 
                 value = int(value)
                 print("value", value)
                 ass_result_to_update_map = {}
                 course = Course.objects.filter(id=course_id).first()
+                print("course", course, course_id)
+
+                def value_converseion_based_on_mode(value, existing_value=0):
+                    if mode == "increase":
+                        return value + existing_value
+                    elif mode == "decrease":
+                        return value*-1 + existing_value
+                    elif mode == "remove":
+                        return 0
+
+                    assert True == False, "Invalid mode. Should be increase, decrease or remove."
     
                 ##think about REPLACEMENT edge case. we can only delete if assessment is not used in any other course.
                 for assessment_db in assessments_db:
-                    instance = Assessment.objects.filter(name=assessment_db.name, weighting=assessment_db.weighting, type=assessment_db.type, moderation=assessment_db.moderation + (value if mode == "increase" else value*-1)).first()
+                    instance = Assessment.objects.filter(name=assessment_db.name, weighting=assessment_db.weighting, type=assessment_db.type, moderation=value_converseion_based_on_mode(value, assessment_db.moderation)).first()
                     if not instance:
-                        instance = Assessment(name=assessment_db.name, weighting=assessment_db.weighting, type=assessment_db.type, moderation=(value if mode == "increase" else value*-1))
+                        instance = Assessment(name=assessment_db.name, weighting=assessment_db.weighting, type=assessment_db.type, moderation=value_converseion_based_on_mode(value))
                         new_to_create.append(instance)
 
-                    instance.moderated_by = request.user
-                    instance.moderation_datetime = timezone.now()
+                    if instance.moderation != 0:
+                        instance.moderated_by = request.user
+                        instance.moderation_datetime = timezone.now()
+                    else:
+                        instance.moderated_by = None
+                        instance.moderation_datetime = None
                     new_assessment_refs.append(instance)
 
                     ass_results = AssessmentResult.objects.filter(assessment=assessment_db, course=course)
                     ass_result_to_update_map[instance] = ass_results
                 
-                print(course)
-                print("NEW", new_assessment_refs)
-                print("OLD DB", assessments_db)
-
-                # print(course.assessments.all())
 
                 course.assessments.remove(*assessments_db)
-                print("REMOVED")
                 Assessment.objects.bulk_create(new_to_create)
-                print("CREATED")
                 course.assessments.add(*new_assessment_refs)
-                print("ADDED")
-                # print(ass_result_to_update_map)
                 for key, value in ass_result_to_update_map.items():
                     print(key, value)
                     value.update(assessment=key)
-                print("UPDATED")
                 Assessment.objects.filter(courses=None).exclude(moderation=0).delete()
-                print("DELETED")
                 
-                return JsonResponse({"status": "Moderation successful.", "data": None}, safe=False)
-
-                # return JsonResponse({"status": "Moderation not implemented yet.", "data": None}, safe=False)
+                return JsonResponse({"status": "Moderation successful.", "data": True}, safe=False)
 
             #GRADING RULES
             if action == "save_grading_rules":

@@ -214,3 +214,85 @@ const Popup = {
         document.querySelector(".body-inner").classList.remove("disabled")
     },
 }
+
+//chart to chart handler map. say table is reloaded - chart needs to be reloaded.
+//as soon as table has data - chart needs to be initialized.
+
+//a function that takes a tables data, and returns chart data object.
+
+const Charts = {
+    init: function(chart_or_chart_id=null, type=null, data={}, options={}) {
+        let chart = chart_or_chart_id
+        if (chart == null) {
+            chart = document.createElement("canvas")
+        } else {
+            chart = (isElement(chart)) ? chart : document.getElementById(chart)
+        }
+        
+        console.log("initializing chart")
+        this.chart = new Chart(chart, {
+            type: (type) ? type : 'bar',
+            data: (data) ? data : {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Number of courses offered in a given year',
+                        data: [],
+                    }
+                ]
+            },
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
+              }
+            }
+          });
+        
+        console.log("chart initialized")
+        return this
+    },
+    chart: null,
+    load_with_table_data: function(table, population_function) {
+        console.log("loading chart with table data")
+        console.log(table)
+        let data = population_function(table)
+        console.log(data)
+        console.log(this.chart)
+        //population_function is a function that takes a table data object, and returns chart data object.
+        this.chart.data = population_function(table)
+        this.chart.update('active')
+        console.log("done!")
+    },
+    destroy: function() {
+        this.chart.destroy()
+    }
+}
+
+
+//MOSCOW CHARTS PLAN.
+
+//today: Create chart system. Add simple charts to every page.
+//my own
+//degree classification: 
+// degree qualification distribution
+
+// course page:
+// final grade distribution
+// average grade per assignment distribution
+
+// student page:
+// 
+
+// dashboard (given year):
+// all courses offered in that year
+// all students in that year
+// 
+
+//moscow
+//1. grades below band d3 -> in course page, we have final grade. we can use that to show the grade distribution.
+
+
+//note that dashboard should be year by year. for sure.
+// percentage of students in a grade band, in a particular YEAR.

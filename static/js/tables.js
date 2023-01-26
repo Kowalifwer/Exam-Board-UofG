@@ -293,22 +293,63 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         let moderate_course_button = string_to_html_element(`<button class="tabulator-moderate">Moderate course</button>`)
         if (settings.backend_course_id) {
             moderate_course_button.addEventListener("click", function(e){
-                render_course_moderation_section(settings.backend_course_id)
+                render_course_moderation_section(settings.backend_course_id, table)
             })
             table_wrapper.querySelector(".tabulator-components").appendChild(moderate_course_button)
-        }       
+        }
     })
+
+    table.on("dataProcessed", function(){
+        table.reloadCharts()
+    })
+
+    table.setReloadFunction = (reload_function, reload_function_parameter_list) => {
+        table.reload_function = reload_function
+        table.reload_function_parameter_list = reload_function_parameter_list
+    }
 
     // table.on("rowClick", function(e, row){
     //     if (typeof row.getData().page_url !== 'undefined') {
     //         window.location.href = row.getData().page_url
     //     }
     // });
-    table.reloadTable = (reload_function, reload_function_parameter_list) => {
+    table.destroyCharts = function(){
+        for (var chart of table.chart_links) {
+            chart[0].destroy()
+        }
+    }
+
+    table.reloadTable = (message=null) => {
+        table.destroyCharts()
+        
+        if (! table.reload_function || ! table.reload_function_parameter_list) {
+            console.warn("No reload function set for table")
+            return
+        }
         let table_wrapper = table.getWrapper()
         //delete all children in wrapper, except for the tabulator element
         table_wrapper.querySelectorAll(":scope *:not(.tabulator)").forEach(child => child.remove())
-        reload_function(...reload_function_parameter_list)
+        table.reload_function(...table.reload_function_parameter_list)
+        if (message) {
+            table_wrapper.prepend(string_to_html_element(`<p>${message}</p>`))
+        }
+    }
+
+    table.chart_links = []
+
+    table.addChartLink = function(chart_link){
+        console.log("Setting chart links")
+        console.log(chart_link)
+        table.chart_links.push(chart_link)
+        console.log(table.chart_links)
+    }
+
+    table.reloadCharts = function(){
+        console.log("Reloading charts")
+        for (var chart of table.chart_links) {
+            chart[0].load_with_table_data(table, chart[1])
+        }
+        console.log("Done reloading charts")
     }
 
     return table
@@ -416,7 +457,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
         rowContextMenu.push({
             label: "Detailed Student assessment breakdown popup",
             action: function(e, row){
-                create_student_course_detailed_table_popup(row.getData().GUID, backend_course_id, row.getTable(), load_students_table, [extra_constructor_params, extra_cols, settings])
+                create_student_course_detailed_table_popup(row.getData().GUID, backend_course_id, row.getTable())
             }   
         }) 
     }
@@ -434,6 +475,29 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
         placeholder: "Student data loading...",
     }
     let table = init_table("students_table", columns, null, final_extra_constructor_params, settings)
+
+    table.setReloadFunction(load_students_table, [extra_constructor_params, extra_cols, settings])
+
+    console.log("BEFORE INIT CHART")
+    let chart = Charts.init(document.getElementById("students_final_grade"), "bar", {}, {})
+    console.log("AFTER INIT CHART")
+    table.addChartLink([
+        chart, function(table) {
+            let chart_data = {};
+            table.getData().forEach(function(row){
+                chart_data[row.final_grade] = (chart_data[row.final_grade] || 0) + 1;
+            })
+            return {
+                labels: Object.keys(chart_data),
+                datasets: [
+                    {
+                        label: "Final grade",
+                        data: Object.values(chart_data),
+                    }
+                ]
+            }
+        }
+    ])
     
     table.on("dataLoaded", function(data){
         // page_count += 1
@@ -445,15 +509,15 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
         //         table.dispatchEvent("dataLoadedAll")
         //     }
         // })
-        if (typeof chart !== 'undefined') {
-            var chart_data = {};
-            for (var i = 0; i < data.length; i++) {
-                chart_data[data[i].start_year] = (chart_data[data[i].start_year] || 0) + 1;
-            }
-            chart.data.labels = Object.keys(chart_data);
-            chart.data.datasets[0].data = Object.values(chart_data);
-            chart.update('active');
-        }
+        // if (typeof chart !== 'undefined') {
+        //     var chart_data = {};
+        //     for (var i = 0; i < data.length; i++) {
+        //         chart_data[data[i].start_year] = (chart_data[data[i].start_year] || 0) + 1;
+        //     }
+        //     chart.data.labels = Object.keys(chart_data);
+        //     chart.data.datasets[0].data = Object.values(chart_data);
+        //     chart.update('active');
+        // }
     })
 }
 
@@ -523,7 +587,7 @@ function load_degree_classification_table(level=4) {
 
 }
 
-function create_student_course_detailed_table_popup(student_GUID=null, course_id=null, parent_table_to_reload=null, reload_function=null, reload_function_parameter_list=null){
+function create_student_course_detailed_table_popup(student_GUID=null, course_id=null, parent_table_to_reload=null){
     if (student_GUID && course_id) {
         let columns = [
             // {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
@@ -582,13 +646,10 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
                     //api call here to save the data.
                     api_post("update_preponderance", table_data).then(response => {
                         if (response.data) {
-                            if (reload_function && reload_function_parameter_list) {
-                                parent_table_to_reload.reloadTable(reload_function, reload_function_parameter_list)
-                                popup.close()
-                                console.log(response.status)
+                            parent_table_to_reload.reloadTable()
+                            popup.close()
+                            console.log(response.status)
                                 //TODO: add a success message here
-                                //TODO: fix popup wrapper close.
-                            }
                         } else {
                             alert(response.status)
                         }
@@ -652,13 +713,19 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
                     }
                 }
         },
+        {
+            label:"Moderate course grades",
+            action:function(e, row){
+                render_course_moderation_section(row.getData().course_id)
+            }
+        }
     ]
 
     if (typeof backend_student_GUID !== "undefined") {
         rowContextMenu.push({
             label: "Detailed Student assessment breakdown popup",
             action: function(e, row){
-                create_student_course_detailed_table_popup(backend_student_GUID, row.getData().course_id, row.getTable(), load_courses_table, [extra_constructor_params, extra_cols])
+                create_student_course_detailed_table_popup(backend_student_GUID, row.getData().course_id, row.getTable())
             }
         })
     }
@@ -671,6 +738,8 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
         placeholder: "Course data loading...",
     }
     let table = init_table("courses_table", columns, null, final_extra_constructor_params)
+
+    table.setReloadFunction(load_courses_table, [extra_constructor_params, extra_cols])
 
     table.on("dataLoaded", function(data){
         // page_count += 1
@@ -694,7 +763,7 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
     })
 }
 
-function render_course_moderation_section(course_id) {
+function render_course_moderation_section(course_id, parent_table=null) {
     //course_data.assessments
     let final_extra_constructor_params = {
         ajaxParams: {
@@ -713,6 +782,9 @@ function render_course_moderation_section(course_id) {
             <div id="moderation-input-area" class="disabled moderation-input-area">
                 <button id="moderation-increase">Increase bands</button>
                 <button id="moderation-decrease">Decrease bands</button>
+                <button id="moderation-remove">Remove moderation</button>
+
+                <p>by</p>
                 <select id="moderation-value">
                     <option value="0" default>--Select number of bands--</option>
                     <option value="1">1</option>
@@ -732,29 +804,36 @@ function render_course_moderation_section(course_id) {
         {formatter:"rowSelection", titleFormatter:"rowSelection", align:"center", headerSort:false},
         {title: "Assessment type", field: "type"},
         {title: "Assessment name", field: "name"},
-        {title: "Current moderation", field: "moderation", headerHozAlign: "center"},
         {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},
+        {title: "Current moderation", field: "moderation", headerHozAlign: "center"},
+        {title: "Moderation User", field: "moderation_user", headerHozAlign: "center"},
+        {title: "Moderation Date", field: "moderation_date", headerHozAlign: "center"},
     ]
     let table = init_table(document.getElementById("assessments_table"), columns, null, final_extra_constructor_params)
     let popup = Popup.init(wrapper)
 
-    
-
-    document.getElementById("moderation-increase").addEventListener("click", function(){
+    const handle_moderation = (mode) => {
         let moderation_value_elt = document.getElementById("moderation-value")
         let moderation_value = moderation_value_elt.options[moderation_value_elt.selectedIndex].value
-        api_post("moderation", {"mode": "increase", "value": moderation_value, "assessment_ids": table.getSelectedData().map(x => x.id)}).then(data => {
-            console.log(data)
+        if (moderation_value == 0) {
+            alert("Please select a number of bands to moderate by")
+            return
+        }
+        api_post("moderation", {"mode": mode, "value": moderation_value, "assessment_ids": table.getSelectedData().map(x => x.id), "course_id": course_id}).then(data => {
+            if (data.data) {
+                popup.close()
+                if (parent_table)
+                    parent_table.reloadTable()
+            }
+             else {
+                alert("Error: " + data.status)
+            }
         })
-    })
+    }
 
-    document.getElementById("moderation-decrease").addEventListener("click", function(){
-        let moderation_value_elt = document.getElementById("moderation-value")
-        let moderation_value = moderation_value_elt.options[moderation_value_elt.selectedIndex].value
-        api_post("moderation", {"mode": "decrease", "value": moderation_value, "assessment_ids": table.getSelectedData().map(x => x.id)}).then(data => {
-            console.log(data)
-        })
-    })
+    document.getElementById("moderation-increase").addEventListener("click", function() {handle_moderation("increase")})
+    document.getElementById("moderation-decrease").addEventListener("click", function() {handle_moderation("decrease")})
+    document.getElementById("moderation-remove").addEventListener("click", function() {handle_moderation("remove")})
 
     table.on("rowSelectionChanged", function(data, rows){
         let input_area = document.getElementById("moderation-input-area")
@@ -770,9 +849,6 @@ function render_course_moderation_section(course_id) {
     //Step 1: select the assessments from the table that you would like to moderate. click next.
     //Step 2: select the moderation rules you would like to apply. click next.
     //Step 3: review page: shows the moderated grades. Are you sure you want to apply these grades? click next.
-    string_to_html_element(`
-
-    `)
 }
 
 
