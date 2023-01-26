@@ -19,7 +19,7 @@ CURRENT_YEAR = 2022
 COMPUTER_SCIENCE_COURSE_CODE_PREFIX = 'COMPSCI'
 REQUIRED_CREDITS_PER_COURSE = 120
 TOTAL_NUMBER_OF_COURSES = 7*12
-TOTAL_NUMBER_OF_STUDENTS = 500
+TOTAL_NUMBER_OF_STUDENTS = 600
 
 def decision(probability):
     return random.random() < probability
@@ -182,9 +182,9 @@ class Populator:
         lecturers = random.choices(self.users, k=3)
         random_numbers = random.sample(range(100, 999), 3)
         for j in range(FIRST_YEAR_OF_COURSES, LAST_YEAR_OF_COURSES+1):
-            courses.append(Course(academic_year=j, code=f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}3{random_numbers[0]} - Group project", name="Level 3 Group project", credits=40, lecturer_comment="Welcome to the level 3 group project!", is_taught_now=(j == self.current_academic_year), lecturer=lecturers[0]))
-            courses.append(Course(academic_year=j, code=f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}4{random_numbers[1]} - Individual project", name="Level 4 Individual project", credits=40, lecturer_comment="Welcome to the level 4 individual project!", is_taught_now=(j == self.current_academic_year), lecturer=lecturers[1]))
-            courses.append(Course(academic_year=j, code=f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}5{random_numbers[2]} - Individual project", name="Level 5 (M) Individual project", credits=60, lecturer_comment="Welcome to the level 5 (M) individual project!", is_taught_now=(j == self.current_academic_year), lecturer=lecturers[2]))
+            courses.append(Course(academic_year=j, code=f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}3{random_numbers[0]}", name="Level 3 Group project", credits=40, lecturer_comment="Welcome to the level 3 group project!", is_taught_now=(j == self.current_academic_year), lecturer=lecturers[0]))
+            courses.append(Course(academic_year=j, code=f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}4{random_numbers[1]}", name="Level 4 Individual project", credits=40, lecturer_comment="Welcome to the level 4 individual project!", is_taught_now=(j == self.current_academic_year), lecturer=lecturers[1]))
+            courses.append(Course(academic_year=j, code=f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}5{random_numbers[2]}", name="Level 5 (M) Individual project", credits=60, lecturer_comment="Welcome to the level 5 (M) individual project!", is_taught_now=(j == self.current_academic_year), lecturer=lecturers[2]))
 
         level_pattern = [1,2,3,3,4,4,5] ##this pattern will determine the level of the course generated. this is to balance and make the courses more realistic.
         while i < n:

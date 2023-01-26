@@ -163,6 +163,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             rowGroups:false, //do not include row groups in downloaded table
             columnCalcs:false, //do not include column calcs in downloaded table
         },
+        rowContextMenu: []
         //downloadRowRange:"selected", //download selected rows
     }
 
@@ -192,12 +193,33 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table_constructor[key] = extra_constructor_params[key]
     }
 
+    table_constructor.rowContextMenu.push({
+        label:"Multi-row actions",
+        menu:[
+            {
+                label:"<i class='fas fa-trash'></i> Hide row(s)",
+                action:function(e, row){
+                    let selected_rows = table.getSelectedRows()
+                    selected_rows.forEach(function(inner_row){
+                        table.deleted_rows.push(inner_row.getData())
+                        inner_row.delete()
+                    })
+                    if (table.deleted_rows) {
+                        document.getElementById('unhide-rows').classList.remove('hidden')
+                    }
+                }
+            },
+        ]
+    })
+
     let table_element = (isElement(table_id)) ? table_id : document.getElementById(table_id)
     table_element.dataset.edit_mode = 0
     let table = new Tabulator(table_element, table_constructor)
     table.extra_cols = []
     table.settings = settings
     // table.get_cols = columns
+
+    table.deleted_rows = []
 
     table.getElement = () => table_element
     table.reformatTable = function(formatter=null, cssClass=null) {
@@ -273,6 +295,16 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
         let download_excel = string_to_html_element(`<button class="tabulator-download">Download excel</button>`)
         let download_pdf = string_to_html_element(`<button class="tabulator-download">Download pdf</button>`)
+        let unhide_rows = string_to_html_element(`<button id="unhide-rows" class="hidden">Unhide rows</button>`)
+
+        unhide_rows.addEventListener("click", function(e){
+            let deleted_rows = table.deleted_rows
+            deleted_rows.forEach(function(row){
+                table.addRow(row)
+            })
+            table.deleted_rows = []
+            unhide_rows.classList.add("hidden")
+        })
 
         download_excel.addEventListener("click", function(e){
             table.download("xlsx", "data.xlsx", {});
@@ -289,7 +321,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table_wrapper.querySelector(".tabulator-components").appendChild(download_excel)
         table_wrapper.querySelector(".tabulator-components").appendChild(download_pdf)
 
-        console.log(settings)
         let moderate_course_button = string_to_html_element(`<button class="tabulator-moderate">Moderate course</button>`)
         if (settings.backend_course_id) {
             moderate_course_button.addEventListener("click", function(e){
@@ -297,6 +328,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             })
             table_wrapper.querySelector(".tabulator-components").appendChild(moderate_course_button)
         }
+        table_wrapper.querySelector(".tabulator-components").appendChild(unhide_rows)
     })
 
     table.on("dataProcessed", function(){
@@ -344,7 +376,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     table.charts = []
 
     table.reloadCharts = function(){
-        console.log("Reloading charts")
         for (var link_data of table.chart_links) {
             let data = link_data[1](table.getData())
 
@@ -451,12 +482,6 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
 
     let rowContextMenu = [
         {
-            label:"Hide Student",
-            action:function(e, row){
-                row.delete();
-            }
-        },
-        {
             label:"View Student breakdown page",
                 action:function(e, row){
                     if (typeof row.getData().page_url !== 'undefined') {
@@ -494,7 +519,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
         document.getElementById("students_final_grade"), function(table_data) {
             let chart_data = {};
             for (let x in boundary_map) {
-                chart_data[x[1]] = 0
+                chart_data[boundary_map[x]] = 0
             }
             table_data.forEach(function(row){
                 let band_grade = boundary_map[percent_to_integer_band(row.final_grade)]
@@ -602,7 +627,7 @@ function load_degree_classification_table(level=4) {
         let classes = ["Fail", "3rd", "2:2", "2:1", "1st"]
         let chart_data = []
         for (let x in classes) {
-            chart_data[x[1]] = 0
+            chart_data[classes[x]] = 0
         }
         table_data.forEach(function(row){
             chart_data[row.class] = (chart_data[row.class] || 0) + 1;
@@ -752,12 +777,6 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
     }
 
     let rowContextMenu = [
-        {
-            label:"Hide Course",
-            action:function(e, row){
-                row.delete();
-            }
-        },
         {
             label:"View Course Page",
                 action:function(e, row){
@@ -979,8 +998,6 @@ function load_grading_rules_table(data_json){
 }
 
 function load_student_comments_table(data_json){
-    console.log(data_json)
-    console.log(data_json[158])
 
     let columns = [
         {title: "Comment", field: "comment", tooltip:true},
@@ -1006,12 +1023,6 @@ function load_student_comments_table(data_json){
         "rowHeight": 30,
         "index": "id",
         rowContextMenu:[
-            {
-                label:"Hide Comment",
-                action:function(e, row){
-                    row.delete();
-                }
-            },
             {
                 label:"Delete comment",
                     action:function(e, row){
