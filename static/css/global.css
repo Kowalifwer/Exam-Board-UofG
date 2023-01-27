@@ -272,6 +272,15 @@ body {
     margin: 20px 0;
 }
 
-.hidden {
+.hidden, .hidden-row {
     display: none;
+}
+
+.tabulator-columns-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin: 5px 0;
+    padding: 20px 0;
 }

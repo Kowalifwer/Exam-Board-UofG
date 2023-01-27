@@ -154,7 +154,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
         paginationSize: 100,
         paginationSizeSelector:[25, 50, 100, 1000],
-        layout:"fitDataTable", //fitDataStretch
+        layout:"fitDataStretch", //fitDataStretch
         movableColumns: true,
         // layoutColumnsOnNewData:true
         downloadConfig:{
@@ -202,7 +202,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                     let selected_rows = table.getSelectedRows()
                     selected_rows.forEach(function(inner_row){
                         table.deleted_rows.push(inner_row.getData())
-                        inner_row.delete()
+                        inner_row.getElement().classList.add('hidden-row')
                     })
                     if (table.deleted_rows) {
                         document.getElementById('unhide-rows').classList.remove('hidden')
@@ -296,11 +296,47 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         let download_excel = string_to_html_element(`<button class="tabulator-download">Download excel</button>`)
         let download_pdf = string_to_html_element(`<button class="tabulator-download">Download pdf</button>`)
         let unhide_rows = string_to_html_element(`<button id="unhide-rows" class="hidden">Unhide rows</button>`)
+        let column_manager = string_to_html_element(`<button class="column-manager">Column manager</button>`)
+
+        column_manager.addEventListener("click", function(){
+            var columns = table.getColumns();
+            var menu_container = document.createElement("div");
+            menu_container.classList = "tabulator-columns-menu";
+            menu_container.width = "200px";
+            menu_container.height = "500px";
+
+            for(let column of columns){
+                if (!column.getDefinition().title)
+                    continue
+                //create checkbox element using font awesome icons
+                let checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.checked = column.isVisible();
+
+                //build label
+                let label = document.createElement("label");
+                let title = document.createElement("span");
+
+                title.textContent = " " + column.getDefinition().title;
+
+                label.appendChild(title);
+                label.appendChild(checkbox);
+
+                //create menu item
+                menu_container.appendChild(label);
+
+                checkbox.addEventListener("change", function() {
+                    //toggle current column visibility
+                    column.toggle();
+                })
+            }
+            Popup.init(menu_container)
+        })
+            
 
         unhide_rows.addEventListener("click", function(e){
-            let deleted_rows = table.deleted_rows
-            deleted_rows.forEach(function(row){
-                table.addRow(row)
+            table.getElement().querySelectorAll(".hidden-row").forEach(function(row){
+                row.classList.remove("hidden-row")
             })
             table.deleted_rows = []
             unhide_rows.classList.add("hidden")
@@ -320,6 +356,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table_wrapper.querySelector(".tabulator-components").prepend(select_element)
         table_wrapper.querySelector(".tabulator-components").appendChild(download_excel)
         table_wrapper.querySelector(".tabulator-components").appendChild(download_pdf)
+        table_wrapper.querySelector(".tabulator-components").appendChild(column_manager)
 
         let moderate_course_button = string_to_html_element(`<button class="tabulator-moderate">Moderate course</button>`)
         if (settings.backend_course_id) {
@@ -607,6 +644,14 @@ function load_degree_classification_table(level=4) {
         {title: "Individual (lvl 4 Hons)", field: "project"},
         {"title": "Individual (lvl 5 M)", "field": "project_masters", "visible": (level==5) ? true:false},
     ]
+
+    if (level != 5) {
+        for (let i = 0; i < columns.length; i++) {
+            if (["l5_band", "l5_gpa", "project_masters"].includes(columns[i].field)) {
+                columns.splice(i, 1);
+            }
+        }
+    }
 
     let table = init_table("degree_classification_table_"+level, columns, null, {
         rowContextMenu: [{
