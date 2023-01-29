@@ -59,7 +59,12 @@ const is_preponderance = function (cell) {
     return false
 }
 
-function percent_to_integer_band(percent) {
+function percent_to_integer_band(percent, round_up=true) {
+    // if (round_up)
+    //     return Math.ceil(percent/(100/22))
+    // else
+    //     return (percent/(100/22)).toFixed(1)
+
     const bound_check = (lower_bound, upper_bound) => {
         if (percent >= lower_bound && percent < upper_bound)
             return true
@@ -115,7 +120,7 @@ function percent_to_integer_band(percent) {
 }
 
 //FORMATTERS
-formatter_to_band_letter = function(cell, formatterParams, onRendered){
+const formatter_to_band_letter = function(cell, formatterParams, onRendered){
     if (is_preponderance(cell)) {
         return preponderance_formatter(cell)
     }
@@ -124,18 +129,38 @@ formatter_to_band_letter = function(cell, formatterParams, onRendered){
     return boundary_map[integer_band] 
 }
 
-formatter_to_band_integer = function(cell, formatterParams, onRendered){
+const formatter_to_band_integer = function(cell, formatterParams, onRendered){
     if (is_preponderance(cell)) {
         return preponderance_formatter(cell)
     }
     return percent_to_integer_band(cell.getValue())
 }
 
-formatter_to_percentage = function(cell, formatterParams, onRendered){
+const formatter_to_percentage = function(cell, formatterParams, onRendered){
     if (is_preponderance(cell)) {
         return preponderance_formatter(cell)
     }
     return cell.getValue() + "%"
+}
+
+const custom_average_calculator = function(values, data, calcParams){
+    let total = 0;
+    let count = 0;
+
+    let check_list = [...preponderance_list, "N/A", ""]
+
+    values.forEach(function(value){
+        if (!check_list.includes(value)) {
+            total += parseInt(value);
+            count++;
+        }
+    });
+
+    if (count) {
+        return total / count;
+    } else {
+        return "N/A";
+    }
 }
 
 const default_formatter = formatter_to_band_letter
@@ -151,6 +176,9 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         columnHeaderVertAlign:"middle",
 
         selectable:true,
+        rowHeight: 30,
+        groupToggleElement: "header",
+
 
         paginationSize: 100,
         paginationSizeSelector:[25, 50, 100, 1000],
@@ -192,20 +220,35 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     for (let key in extra_constructor_params){
         table_constructor[key] = extra_constructor_params[key]
     }
-
     table_constructor.rowContextMenu.push({
-        label:"Multi-row actions",
+        separator: true
+    })
+    table_constructor.rowContextMenu.push({
+        label:"<div class='inline-icon' title='The following actions will affect all the selected rows. Note that all the actions in this category are reversible - so do not worry if you accidentally click something.'><img src='/static/icons/info.svg'></i><span>Multi-row actions</span></div>",
         menu:[
             {
-                label:"<i class='fas fa-trash'></i> Hide row(s)",
+                label:"<div class='inline-icon' title='Note that this is simply hiding the rows, meaning no table data gets manipulated.'><img src='/static/icons/info.svg'></i><span>Hide row(s)</span></div>",
+                action:function(e, row){
+                    let selected_rows = table.getSelectedRows()
+                    selected_rows.forEach(function(inner_row){
+                        table.hidden_rows.push(inner_row.getData())
+                        inner_row.getElement().classList.add('hidden-row')
+                    })
+                    if (table.hidden_rows) {
+                        document.getElementById('unhide-rows').classList.remove('hidden')
+                    }
+                }
+            },
+            {
+                label:"<div class='inline-icon' title='Note that this action properly removes data from the table (locally, and not from the database), - this can be useful for preparing the table for data extraction, such as generating an excel file, for example.'><img src='/static/icons/info.svg'></i><span>Delete row(s)</span></div>",
                 action:function(e, row){
                     let selected_rows = table.getSelectedRows()
                     selected_rows.forEach(function(inner_row){
                         table.deleted_rows.push(inner_row.getData())
-                        inner_row.getElement().classList.add('hidden-row')
+                        inner_row.delete()
                     })
                     if (table.deleted_rows) {
-                        document.getElementById('unhide-rows').classList.remove('hidden')
+                        document.getElementById('undelete-rows').classList.remove('hidden')
                     }
                 }
             },
@@ -219,6 +262,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     table.settings = settings
     // table.get_cols = columns
 
+    table.hidden_rows = []
     table.deleted_rows = []
 
     table.addNotification = function(message="Table in edit mode! Click on any of the <span class='tabulator-notification-hint'>outlined cells</span>, to edit the data inside.") {
@@ -236,7 +280,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     }
 
     table.getElement = () => table_element
-    table.reformatTable = function(formatter=null, cssClass=null) {
+    table.reformatTable = function(formatter=null, cssClass=null, new_bottom_calc_function=null) {
         let existing_cols = {}
         table.getColumns().forEach(function(col){
             var parent_col = col.getParentColumn()
@@ -253,16 +297,26 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             if (col.columns) {
                 col.columns.forEach(function(col_inner) {
                     if (col_inner.cssClass && col_inner.cssClass.includes(cssClass)) {
-                        if (formatter)
+                        if (formatter) {
                             col_inner.formatter = formatter
+                            if (new_bottom_calc_function) {
+                                col_inner.bottomCalc = new_bottom_calc_function
+                                col_inner.bottomCalcFormatter = formatter
+                            }
+                        }
                         else
                             delete col_inner.formatter
                     }
                 })
             } else {
                 if (col.cssClass && col.cssClass.includes(cssClass)) {
-                    if (formatter)
+                    if (formatter) {
                         col.formatter = formatter
+                        if (new_bottom_calc_function) {
+                            col.bottomCalc = new_bottom_calc_function
+                            col.bottomCalcFormatter = formatter
+                        }
+                    }
                     else
                         delete col.formatter
                 }
@@ -283,7 +337,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             table.addColumn(table.extra_cols[i])
         }
         
-        table.reformatTable(default_formatter, "format_grade")
+        table.reformatTable(default_formatter, "format_grade", custom_average_calculator)
         //handle formatting stuff
         var select_element = string_to_html_element(
             `
@@ -297,17 +351,18 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
         select_element.addEventListener("change", function(e){
             if (this.value == "P") {
-                table.reformatTable(formatter_to_percentage, "format_grade")
+                table.reformatTable(formatter_to_percentage, "format_grade", custom_average_calculator)
             } else if (this.value == "B") {
-                table.reformatTable(formatter_to_band_letter, "format_grade")
+                table.reformatTable(formatter_to_band_letter, "format_grade", custom_average_calculator)
             } else if (this.value == "I") {
-                table.reformatTable(formatter_to_band_integer, "format_grade")
+                table.reformatTable(formatter_to_band_integer, "format_grade", custom_average_calculator)
             }
         })
 
         let download_excel = string_to_html_element(`<button class="tabulator-download">Download excel</button>`)
         let download_pdf = string_to_html_element(`<button class="tabulator-download">Download pdf</button>`)
         let unhide_rows = string_to_html_element(`<button id="unhide-rows" class="hidden">Unhide rows</button>`)
+        let undelete_rows = string_to_html_element(`<button id="undelete-rows" class="hidden">Add back deleted rows</button>`)
         let column_manager = string_to_html_element(`<button class="column-manager">Column manager</button>`)
 
         column_manager.addEventListener("click", function(){
@@ -350,8 +405,14 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             table.getElement().querySelectorAll(".hidden-row").forEach(function(row){
                 row.classList.remove("hidden-row")
             })
-            table.deleted_rows = []
+            table.hidden_rows = []
             unhide_rows.classList.add("hidden")
+        })
+
+        undelete_rows.addEventListener("click", function(e){
+            table.addData(table.deleted_rows)
+            table.deleted_rows = []
+            undelete_rows.classList.add("hidden")
         })
 
         download_excel.addEventListener("click", function(e){
@@ -378,6 +439,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             table_wrapper.querySelector(".tabulator-components").appendChild(moderate_course_button)
         }
         table_wrapper.querySelector(".tabulator-components").appendChild(unhide_rows)
+        table_wrapper.querySelector(".tabulator-components").appendChild(undelete_rows)
     })
 
     table.on("dataProcessed", function(){
@@ -389,11 +451,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table.reload_function_parameter_list = reload_function_parameter_list
     }
 
-    // table.on("rowClick", function(e, row){
-    //     if (typeof row.getData().page_url !== 'undefined') {
-    //         window.location.href = row.getData().page_url
-    //     }
-    // });
+
     table.destroyCharts = function(){
         for (var chart of table.charts) {
             chart.destroy()
@@ -426,7 +484,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
     table.reloadCharts = function(){
         for (var link_data of table.chart_links) {
-            let chart_setup = link_data[1](table.getData())
+            let chart_setup = link_data[1](table)
 
             let default_setup = {
                 type: 'bar',
@@ -499,7 +557,7 @@ var headerMenu = function(){
 function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={}){
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
-        {title: "GUID", field: "GUID", topCalc: "count", headerFilter: "input", "frozen": true, headerContextMenu:headerMenu},
+        {title: "GUID", field: "GUID", headerFilter: "input", "frozen": true, headerContextMenu:headerMenu},
         {title: "Name", field: "name", headerFilter: "input"},
         {
             title: "Degree info",
@@ -567,8 +625,16 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
 
     table.setReloadFunction(load_students_table, [extra_constructor_params, extra_cols, settings])
 
+    table.on("tableBuilt", function() {
+        table.setGroupHeader(function(value, count, data, group){
+            return `Number of ${value} students: ${count}`; //return the header contents
+        });
+    })
+
+    if (document.getElementById("students_final_grade")) {
     table.addChartLink([
-        document.getElementById("students_final_grade"), function(table_data) {
+        document.getElementById("students_final_grade"), function(table_inner) {
+            let table_data = table_inner.getData()
             let chart_data = {};
             let boundaries = ["A","B","C","D","E","F","G","H"]
             for (let x in boundaries) {
@@ -629,6 +695,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
             
         }
     ])
+    }
     
     table.on("dataLoaded", function(data){
         // page_count += 1
@@ -724,7 +791,8 @@ function load_degree_classification_table(level=4) {
         }
     })
 
-    table.addChartLink([document.getElementById("degree_classification_chart_"+level), function(table_data) {
+    table.addChartLink([document.getElementById("degree_classification_chart_"+level), function(table_inner) {
+        let table_data = table_inner.getData()
         let classes = ["Fail", "3rd", "2:2", "2:1", "1st"]
         let chart_data = []
         for (let x in classes) {
@@ -853,10 +921,11 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
     
 }
 
-function load_courses_table(extra_constructor_params = {}, extra_cols=true){
+function load_courses_table(extra_constructor_params = {}, extra_cols=true, settings={}){
+    console.log(settings)
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
-        {title: "Name", field: "name", topCalc: "count", headerFilter: "input"},
+        {title: "Name", field: "name", headerFilter: "input"},
         {title: "Code", field: "code", headerFilter: "input"},
         {title: "Academic year", field: "academic_year"},
         {title: "Credits", field: "credits", bottomCalc: "sum"},
@@ -872,7 +941,18 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
                 {title: "Final weighted grade", field: "final_grade", cssClass: "format_grade"},
             ]
         })
+    } else {
+        columns.push({
+            title: "Cohort average performance",
+            headerHozAlign: "center",
+            columns: [
+                {title: "Coursework grade", field: "coursework_avg", cssClass: "format_grade"},
+                {title: "Exam grade", field: "exam_avg", cssClass: "format_grade"},
+                {title: "Final weighted grade", field: "final_grade", cssClass: "format_grade"},
+            ]
+        })
     }
+
     let ajaxParams = {
         "fetch_table_data": true,
         "courses": true,
@@ -898,11 +978,11 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
         }
     ]
 
-    if (typeof backend_student_GUID !== "undefined") {
+    if (settings.student) {
         rowContextMenu.push({
             label: "Detailed Student assessment breakdown popup",
             action: function(e, row){
-                create_student_course_detailed_table_popup(backend_student_GUID, row.getData().course_id, row.getTable())
+                create_student_course_detailed_table_popup(settings.student.GUID, row.getData().course_id, row.getTable())
             }
         })
     }
@@ -914,11 +994,88 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
         initialSort: [{column: 'academic_year', dir: 'dsc'}],
         placeholder: "Course data loading...",
     }
-    let table = init_table("courses_table", columns, null, final_extra_constructor_params)
+    let table = init_table("courses_table", columns, null, final_extra_constructor_params, settings)
 
-    table.addChartLink()
+    table.on("tableBuilt", function() {
+        table.setGroupHeader(function(value, count, data, group){
+            if (settings.student) {
+                //reduce the "credits" in each row of data
+                console.log(data)
+                let course_credits = data.reduce(function(a, b) {
+                    return a + b["credits"]
+                }, 0)
+                return `${count} courses in ${value}, for a total of <span class='${(course_credits < 120) ? "error-color":"success-color"}'>${course_credits} credits<span>`; //return the header contents
+            } else {
+                return `${count} courses offered in ${value}`; //return the header contents
+            }
+        });
+    })
+    
+    
 
-    table.setReloadFunction(load_courses_table, [extra_constructor_params, extra_cols])
+    if (settings.student) {
+        table.addChartLink([document.getElementById("student_level_chart"), function(table_inner) {
+        let student_data = settings.student
+        let table_data = table_inner.getData()
+        let chart_data = {};
+        let year_datas = []
+
+        for (let x = student_data.start_year; x < student_data.end_year; x++) {
+            year_datas.push({
+                'year': x + 1,
+                'level': (student_data.is_faster_router) ? x+1-student_data.start_year : x+1-student_data.start_year + 1,
+            })
+            // `${student_data.start_year} - level {(student_data.is_faster_router) ? x : x + 1}`
+        }
+
+        let grouped_data = table_inner.getCalcResults()
+        for (let year in grouped_data) {
+            let year_data = grouped_data[year]
+            percent_to_integer_band
+            chart_data[year] = percent_to_integer_band(year_data.bottom.final_grade, false)
+        }
+
+        //make abc grades pleasant green color, d grade yellow, and e f g h red
+        return {
+            data: {
+                labels: Object.keys(chart_data),
+                datasets: [
+                    {
+                        label: "GPA",
+                        data: Object.values(chart_data),
+                        barPercentage: 0.90,
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: "Academic year",
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: "Final GPA",
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: "Final GPA across all Academic years",
+                    }
+                }
+            }
+        }
+    }])
+    }
+    
+
+    table.setReloadFunction(load_courses_table, [extra_constructor_params, extra_cols, settings])
 
     table.on("dataLoaded", function(data){
         // page_count += 1

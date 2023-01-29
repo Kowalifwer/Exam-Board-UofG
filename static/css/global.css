@@ -16,9 +16,10 @@
     --second-color: rgba(235,176,223,1);
     --third-color: rgb(215, 217, 232);
 
-    --success-green: #7DDE92,
-    --average-yellow: #FF9B71,
-    --bad-red: #F15156,
+
+    --success-green: #7DDE92;
+    --average-yellow: #FF9B71;
+    --bad-red: #F15156;
 }
 
 * {
@@ -83,6 +84,16 @@ a {
     text-decoration: none;
 }
 
+.error-color {
+    color: var(--bad-red) !important;
+    margin-left: 0 !important;
+}
+
+.success-color {
+    color: var(--success-color) !important;
+    margin-left: 0 !important;
+}
+
 .grow:hover {
     transform: scale(1.2);
 }
@@ -117,50 +128,7 @@ input, textarea {
 /* GENERAL */
 
 /* CSS */
-.button-30 {
-  align-items: center;
-  appearance: none;
-  background-color: #FCFCFD;
-  border-radius: 7.5px;
-  border-width: 0;
-  box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,rgba(45, 35, 66, 0.3) 0 7px 13px -3px,#D6D6E7 0 -3px 0 inset;
-  box-sizing: border-box;
-  color: #36395A;
-  cursor: pointer;
-  display: inline-flex;
-  font-family: "JetBrains Mono",monospace;
-  height: 40px;
-  justify-content: center;
-  line-height: 1;
-  list-style: none;
-  overflow: hidden;
-  padding-left: 16px;
-  padding-right: 16px;
-  position: relative;
-  text-align: left;
-  text-decoration: none;
-  transition: box-shadow .15s,transform .15s;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-  white-space: nowrap;
-  will-change: box-shadow,transform;
-  font-size: 15px;
-}
 
-.button-30:focus {
-  box-shadow: #D6D6E7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
-}
-
-.button-30:hover {
-  box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
-  transform: translateY(-2px);
-}
-
-.button-30:active {
-  box-shadow: #D6D6E7 0 3px 7px inset;
-  transform: translateY(2px);
-}
 
 body {
     margin: 0;
@@ -233,7 +201,6 @@ body {
 .tabulator {
     max-height: 600px !important;
     max-width: 100% !important;
-    border-radius: 5px;
     box-shadow: 0 0 10px 0 rgba(0,0,0,0.5);
 }
 
@@ -340,3 +307,24 @@ body {
 .tabulator-notification-hint {
     color: blue;
 }
+
+.inline-icon {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+/* .tabulator-row-even {
+    background-color: white !important;
+}
+
+.tabulator-frozen {
+    border-right: 1px solid grey !important;
+}
+
+.tabulator-calcs-top .tabulator-frozen {
+    border-right: none !important;
+}
+
+.tabulator-calcs-bottom .tabulator-frozen {
+    border-right: none !important;
+} */
