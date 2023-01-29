@@ -6,25 +6,14 @@
 {% endblock %}
 
 {% block body %}
-    <h2>All courses</h2>
-    <div style="width: 800px;"><canvas id="courses"></canvas></div>
+    
+    <h2>All courses offered for the Academic year {{current_year.year}}-{{current_year.year|add:1}}</h2>
+    <p>view other years</p>
+    {%for year in other_years%}
+        <a class="underline" href="{%url 'general:all_courses_exact' year.year%}">{{year.year}}-{{year.year|add:1}}</a>
+    {%endfor%}
     <div id="courses_table" class="tabulator_table" style="max-width: 1200px;"></div>
     <script>
-        chart = new Chart(
-            document.getElementById('courses'),
-            {
-                type: 'bar',
-                data: {
-                    labels: [],
-                    datasets: [
-                        {
-                            label: 'Number of courses offered in a given year',
-                            data: [],
-                        }
-                    ]
-                }
-            }
-        );
-        load_courses_table({}, false)
+        load_courses_table({}, false, {})
     </script>
 {%endblock%}

@@ -131,12 +131,16 @@ class Student(UUIDModel):
             "start_year": self.start_academic_year,
             "end_year": self.end_academic_year,
             "page_url": self.page_url,
+            "level": self.current_level,
         }
         if extra_data:
             extra_data = getattr(self, extra_data["method"])(*extra_data["args"])
             table_data.update(extra_data)
         
         return table_data
+    
+    def get_data_for_table_json(self, extra_data=None):
+        return json.dumps(self.get_data_for_table(extra_data))
     
     def get_extra_data_degree_classification(self, masters, lvl3_courses, lvl3_results, lvl4_courses, lvl4_results, lvl5_courses={}, lvl5_results={}):
         extra_data = {
@@ -265,7 +269,7 @@ class Student(UUIDModel):
                 final_l5_grade = final_l5_grade_adder_tuples[0] / final_l5_grade_adder_tuples[1]
                 extra_data["l5_gpa"] = math_ceil(final_l5_grade / (100/22))
                 extra_data["l5_band"] = band_integer_to_band_letter_map[extra_data["l5_gpa"]]
-                final_gpa += final_l5_grade * 0.6
+                final_gpa += final_l5_grade * 0.4 ##level 5 is worth 40% of the final gpa for masters students
 
         if final_l4_grade_adder_tuples[1] == 0: ##no courses taken at level 4
             extra_data["l4_gpa"] = "N/A"
@@ -274,7 +278,7 @@ class Student(UUIDModel):
             final_l4_grade = final_l4_grade_adder_tuples[0] / final_l4_grade_adder_tuples[1]
             extra_data["l4_gpa"] = math_ceil(final_l4_grade / (100/22))
             extra_data["l4_band"] = band_integer_to_band_letter_map[extra_data["l4_gpa"]]
-            final_gpa += final_l4_grade * (0.6 if not masters else 0.25)
+            final_gpa += final_l4_grade * (0.6 if not masters else 0.36) #level 4 is worth 60% of the final gpa for undergraduates and 36% for masters students
         
         if final_l3_grade_adder_tuples[1] == 0: ##no courses taken at level 3
             extra_data["l3_gpa"] = "N/A"
@@ -283,7 +287,7 @@ class Student(UUIDModel):
             final_l3_grade = final_l3_grade_adder_tuples[0] / final_l3_grade_adder_tuples[1]
             extra_data["l3_gpa"] = math_ceil(final_l3_grade / (100/22))
             extra_data["l3_band"] = band_integer_to_band_letter_map[extra_data["l3_gpa"]]
-            final_gpa += final_l3_grade * (0.4 if not masters else 0.15)
+            final_gpa += final_l3_grade * (0.4 if not masters else 0.24) #level 3 is worth 40% of the final gpa for undergraduates and 24% for masters students
         
         ##calculate final band and final gpa: level3 is worth 40% and level 4 is worth 60%
         if final_gpa == 0:
@@ -438,23 +442,29 @@ class Course(UUIDModel):
         extra_data = {
             'coursework_avg': [0, 0],
             'exam_avg': [0, 0],
-            'final_grade': 0,
+            'final_grade': [0, 0],
         }
 
-        assessment_groups = {
-            'exam': [],
-            'coursework': [],
-        }
+        ##go over every assessment, group by cw and exam
 
-        assessments = self.assessments.all()
-        results = self.results.all()
-        for assessment in assessments:
-            pass
-        len(assessments)
-        len(results)
-
-        # for result in results:
-        #     pass
+        all_assessments = self.assessments.all()
+        all_results = self.results.all()
+        for assessment in all_assessments:
+            for result in all_results:
+                if result.assessment == assessment:
+                    if result.assessment.type == 'E':
+                        extra_data['exam_avg'][0] += result.grade * result.assessment.weighting
+                        extra_data['exam_avg'][1] += result.assessment.weighting
+                    else:
+                        extra_data['coursework_avg'][0] += result.grade * result.assessment.weighting
+                        extra_data['coursework_avg'][1] += result.assessment.weighting
+                    extra_data['final_grade'][0] += result.grade * result.assessment.weighting / 100
+                    extra_data['final_grade'][1] += result.assessment.weighting / 100
+        
+        ##get the averages, and round everything up.
+        extra_data['exam_avg'] = round(extra_data['exam_avg'][0] / extra_data['exam_avg'][1], 2) if extra_data["exam_avg"][1] > 0 else "N/A"
+        extra_data['coursework_avg'] = round(extra_data['coursework_avg'][0] / extra_data['coursework_avg'][1], 2) if extra_data["coursework_avg"][1] > 0 else "N/A"
+        extra_data['final_grade'] = round(extra_data['final_grade'][0] / extra_data['final_grade'][1], 2) if extra_data["final_grade"][1] > 0 else "N/A"
         return extra_data
     
 class Assessment(UUIDModel):

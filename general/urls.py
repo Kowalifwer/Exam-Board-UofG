@@ -18,6 +18,7 @@ urlpatterns = [
     path('students/<str:GUID>/', student_view, name='student'),
     
     path('courses/all/', all_courses_view, name='all_courses'),
+    path('courses/all/<int:year>/', all_courses_view, name='all_courses_exact'),
     path('courses/<str:code>/<int:year>/', course_view, name='course'),
 
     path('degree_classification/', degree_classification_view, name='degree_classification'),

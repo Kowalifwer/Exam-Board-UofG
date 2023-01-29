@@ -120,35 +120,40 @@ def all_students_view(request):
     print("time taken to render home page: ", time.process_time())
     all_students = Student.objects.all()
     # print(request.META['REMOTE_ADDR'])
-    if is_fetching_table_data(request):
-        # page = request.GET.get('page', 1)
-        # size = request.GET.get('size', 200)
-        # paginator = Paginator(all_students, size)
-        
-        # try:
-        #     students = paginator.page(page)
-        # except EmptyPage:
-        #     students = []
-        # except PageNotAnInteger:
-        #     students = paginator.page(1)     
+    if is_fetching_table_data(request):   
         all_students_json = [student.get_data_for_table() for student in all_students]
         # return JsonResponse({'data': all_students_json, 'last_page': paginator.num_pages})
         return JsonResponse(all_students_json, safe=False)
 
     return render(request, "general/all_students.html")
 
-def all_courses_view(request):
-    all_courses = Course.objects.all()
+def all_courses_view(request, year=None):
+    context = {'other_years': []}
+    all_years = AcademicYear.objects.all()
+    for academic_year in all_years:
+        if year and year == academic_year.year:
+            context['current_year'] = academic_year
+        elif academic_year.is_current and 'current_year' not in context:
+            context['current_year'] = academic_year
+        else:
+            context['other_years'].append(academic_year)
+
+    all_courses = Course.objects.filter(academic_year=context['current_year'].year)
     if is_fetching_table_data(request):
         assessment_data = fetch_assessment_data_if_relevant(request)
         if assessment_data:
             return assessment_data
 
-        all_courses_json = [course.get_data_for_table() for course in all_courses]
+        get_query_count("all_courses_view", True)
+        all_courses_json = [course.get_data_for_table({
+            "method": "get_extra_data_general",
+            "args": []
+        }) for course in all_courses.prefetch_related("assessments", "results", "results__assessment")]
+        get_query_count("Time to search finish")
         # return JsonResponse({'data': all_students_json, 'last_page': paginator.num_pages})
         return JsonResponse(all_courses_json, safe=False)
 
-    return render(request, "general/all_courses.html")
+    return render(request, "general/all_courses.html", context)
 
 def global_search_view(request):
     context = {}
@@ -216,9 +221,6 @@ def student_view(request, GUID):
     context = {"student": Student.objects.filter(GUID=GUID).first()}
     return render(request, "general/student.html", context)
 
-def course_student_view(request):
-    pass
-
 def fetch_student_course_table_data_if_relevant(request):
     student_GUID = request.GET.get("student_GUID", "")
     course_id = request.GET.get("course_id", "")
@@ -257,7 +259,6 @@ def fetch_assessment_data_if_relevant(request):
             for assessment in course.assessments.all().order_by("weighting").select_related("moderated_by")]
             return JsonResponse(data, safe=False)
     return None
-
 
 def course_view(request, code, year):
     get_query_count("before fetching course", False)
@@ -300,7 +301,7 @@ def course_view(request, code, year):
             if value["columns"]:
                 value["title"] += f"({value['weighting']}%)"
                 if len(value["columns"]) > 1:
-                    value["columns"].append({"title": "Total", "field": f"{key}_grade", "cssClass": "format_grade"})
+                    value["columns"].append({"title": "Overall", "field": f"{key}_grade", "cssClass": "format_grade"})
                 value.pop("weighting")
 
         extra_cols = list(extra_col_grps.values())
