@@ -221,6 +221,20 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
     table.deleted_rows = []
 
+    table.addNotification = function(message="Table in edit mode! Click on any of the <span class='tabulator-notification-hint'>outlined cells</span>, to edit the data inside.") {
+        let notification = document.createElement('div')
+        notification.classList.add('tabulator-notification')
+        notification.innerHTML = message
+        table.getWrapper().prepend(notification)
+    }
+
+    table.removeNotification = function() {
+        let notification = table.getWrapper().querySelector('.tabulator-notification')
+        if (notification) {
+            notification.remove()
+        }
+    }
+
     table.getElement = () => table_element
     table.reformatTable = function(formatter=null, cssClass=null) {
         let existing_cols = {}
@@ -258,8 +272,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     }
 
     let wrapper = wrap(table_element, document.createElement('div'))
-    wrapper.style.display = "flex"
-    wrapper.style.flexDirection = "column"
     wrapper.classList.add('tabulator-wrapper')
     table.getWrapper = () => wrapper
     let table_components = document.createElement('div')
@@ -414,19 +426,22 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
     table.reloadCharts = function(){
         for (var link_data of table.chart_links) {
-            let data = link_data[1](table.getData())
+            let chart_setup = link_data[1](table.getData())
 
-            let chart = new Chart(link_data[0], {
+            let default_setup = {
                 type: 'bar',
-                data: data,
+                data: {},
                 options: {
-                  scales: {
-                    y: {
-                      beginAtZero: true
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     }
-                  }
-                }
-              });
+                },
+                responsive : true,            }
+            let final_setup = {...default_setup, ...chart_setup}
+
+            let chart = new Chart(link_data[0], final_setup)
             
             table.charts.push(chart)
         }
@@ -555,22 +570,63 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
     table.addChartLink([
         document.getElementById("students_final_grade"), function(table_data) {
             let chart_data = {};
-            for (let x in boundary_map) {
-                chart_data[boundary_map[x]] = 0
+            let boundaries = ["A","B","C","D","E","F","G","H"]
+            for (let x in boundaries) {
+                chart_data[boundaries[x]] = 0
             }
             table_data.forEach(function(row){
-                let band_grade = boundary_map[percent_to_integer_band(row.final_grade)]
+                let band_grade = boundary_map[percent_to_integer_band(row.final_grade)][0]
                 chart_data[band_grade] = (chart_data[band_grade] || 0) + 1;
             })
+
+            //make abc grades pleasant green color, d grade yellow, and e f g h red
+            let colors = ["#7DDE92","#7DDE92","#7DDE92","#FF9B71","#F15156","#F15156","#F15156","#F15156"]
+
             return {
-                labels: Object.values(boundary_map),
-                datasets: [
-                    {
-                        label: "Number of students",
-                        data: Object.values(chart_data),
+                data: {
+                    labels: Object.values(boundaries),
+                    datasets: [
+                        {
+                            label: "Number of students",
+                            data: Object.values(chart_data),
+                            barPercentage: 0.90,
+                            backgroundColor: colors,
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: "Number of students",
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: "Final grade for course",
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                footer: function(tooltipItems) {
+                                    return "Percentage of students: " + (tooltipItems[0].parsed.y / table_data.length * 100).toFixed(2) + "%"
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: "Final grade distribution for course",
+                        }
+
                     }
-                ]
-            }
+                }
+            } 
+            
         }
     ])
     
@@ -622,12 +678,11 @@ function load_degree_classification_table(level=4) {
             ],
             "headerHozAlign": "center",
         },
-        // Final band, Final GPA, L4 BAND, L4 GPA, L3 band, L3 gpa, >A, >b... Project, Team
         {title: "Degree classification", field: "class"},
         {title: "Final band", field: "final_band"},
         {title: "Final GPA", field: "final_gpa"},
-        {"title": "L5 band", "field": "l5_band", "visible": (level==5) ? true:false},,
-        {"title": "L5 GPA", "field": "l5_gpa", "visible": (level==5) ? true:false},
+        {title: "L5 band", field: "l5_band"},
+        {title: "L5 GPA", field: "l5_gpa"},
         {title: "L4 band", field: "l4_band"},
         {title: "L4 GPA", field: "l4_gpa"},
         {title: "L3 band", field: "l3_band"},
@@ -642,13 +697,14 @@ function load_degree_classification_table(level=4) {
         {title: "> H", field: "greater_than_h"},
         {title: "Team (lvl 3 Hons)", field: "team"},
         {title: "Individual (lvl 4 Hons)", field: "project"},
-        {"title": "Individual (lvl 5 M)", "field": "project_masters", "visible": (level==5) ? true:false},
+        {title: "Individual (lvl 5 M)", field: "project_masters"},
     ]
 
     if (level != 5) {
         for (let i = 0; i < columns.length; i++) {
             if (["l5_band", "l5_gpa", "project_masters"].includes(columns[i].field)) {
                 columns.splice(i, 1);
+                i--;
             }
         }
     }
@@ -678,13 +734,15 @@ function load_degree_classification_table(level=4) {
             chart_data[row.class] = (chart_data[row.class] || 0) + 1;
         })
         return {
-            labels: classes,
-            datasets: [
-                {
-                    label: "Number of students",
-                    data: Object.values(chart_data),
-                }
-            ]
+            data: {
+                labels: classes,
+                datasets: [
+                    {
+                        label: "Number of students",
+                        data: Object.values(chart_data),
+                    }
+                ]
+            }
         }
     }])
 
@@ -714,11 +772,11 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
     if (student_GUID && course_id) {
         let columns = [
             // {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
-            {title: "Assessment type", field: "type", topCalc: "count"},
+            {title: "Assessment type", field: "type"},
             {title: "Assessment name", field: "name"},
             {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},
             {title: "Grade", field: "grade", cssClass: "format_grade"},
-            {title: "Preponderance", field: "preponderance", formatter: preponderance_formatter, editor: "list", editorParams: {
+            {title: "Preponderance", field: "preponderance", cssClass: "edit-mode", formatter: preponderance_formatter, editor: "list", editorParams: {
                 values: preponderance_list
             }},
             {title: "AssessmentResult ID", field: "result_id", visible: false},
@@ -741,7 +799,7 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
         let elt = document.createElement("div")
         document.body.appendChild(elt)
         let table = init_table(elt, columns.map((col) => {
-            return {...col, editor: false}
+            return {...col, editor: false, cssClass: ""}
         }), null, final_extra_constructor_params)
         table.getElement().style.marginTop = "10px"
         table.getElement().style.marginBottom = "10px"
@@ -756,9 +814,10 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
             if (table_element.dataset.edit_mode == 1) {
                 if (confirm("Are you sure you want to save the changes? - this will overwrite the current preponderance values for this student, and reload the tables on the page.")) {
                     this.innerHTML = "Edit preponderance"
+                    table.removeNotification()
                     table_element.dataset.edit_mode = 0
                     table.setColumns(columns.map(col => {
-                        return {...col, editor: false}
+                        return {...col, editor: false, cssClass: ""}
                     }))
                     let table_data = table.getData()
                     // if (JSON.stringify(table_data) === JSON.stringify(data_json)) {
@@ -779,6 +838,7 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
                     })
                 }
             } else {
+                table.addNotification()
                 this.innerHTML = "Save changes!"
                 table.setColumns(columns)
                 console.log(columns)
@@ -855,6 +915,8 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true){
         placeholder: "Course data loading...",
     }
     let table = init_table("courses_table", columns, null, final_extra_constructor_params)
+
+    table.addChartLink()
 
     table.setReloadFunction(load_courses_table, [extra_constructor_params, extra_cols])
 
@@ -970,17 +1032,23 @@ function render_course_moderation_section(course_id, parent_table=null) {
 
 
 function load_grading_rules_table(data_json){
+    // let tooltip_function = function(e, cell, onRendered){
+    //     var el = document.createElement("div");
+    //     el.innerText = "Left click cell to edit."; //return cells "field - value";
+    //     return el; 
+    // }
+
     let columns = [
         // {formatter:"rowSelection", titleFormatter:"rowSelection", align:"center", headerSort:false},
-        {title: "Name", field: "name", editor: false, clickPopup: "Hello",},
-        {title: "Standard lower GPA", field: "std_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1},},
-        {title: "Discretionary lower GPA", field: "disc_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1},},
-        {title: "Character Band", field: "char_band", visible: false, editor: "list",
+        {title: "Name", field: "name", editor: false, clickPopup: "Hello"},
+        {title: "Standard lower GPA", field: "std_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1}, cssClass: "edit-mode"},
+        {title: "Discretionary lower GPA", field: "disc_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1}, cssClass: "edit-mode"},
+        {title: "Character Band", field: "char_band", visible: false, editor: "list", cssClass: "edit-mode",
             editorParams: {
                 values: ["A", "B", "C", "D", "F"]
             }
         },
-        {title: "Percentage above", field: "percentage_above", formatter: "money", visible: false, editor:"number", formatterParams: {precision: 0, symbol: "%", symbolAfter: true},
+        {title: "Percentage above", field: "percentage_above", formatter: "money", visible: false, editor:"number", cssClass: "edit-mode", formatterParams: {precision: 0, symbol: "%", symbolAfter: true},
             editorParams: {
                 min: 0,
                 max: 100,
@@ -998,7 +1066,7 @@ function load_grading_rules_table(data_json){
     
     let table = init_table("grading_rules_table", columns.map(
         col => {
-            return {...col, editor: false}
+            return {...col, editor: false, cssClass: ""}
         }
     ), data_json, final_extra_constructor_params)
 
@@ -1008,13 +1076,14 @@ function load_grading_rules_table(data_json){
         let edit_button = document.createElement('button')
         let table_element = table.getElement()
         edit_button.innerHTML = "Edit Classification rules"
-        edit_button.style.maxWidth = "150px"
+        edit_button.style.maxWidth = "250px"
         edit_button.addEventListener('click', function(){
             if (table_element.dataset.edit_mode == 1) {
+                table.removeNotification()
                 this.innerHTML = "Edit Classification rules"
                 table_element.dataset.edit_mode = 0
                 table.setColumns(columns.map(col => {
-                    return {...col, editor: false}
+                    return {...col, editor: false, cssClass: ""}
                 }))
                 let table_data = table.getData()
                 if (JSON.stringify(table_data) === JSON.stringify(data_json)) {
@@ -1031,11 +1100,15 @@ function load_grading_rules_table(data_json){
                     alert(response.status)
                 })
             } else {
-                this.innerHTML = "Save"
+                table.addNotification()
+                this.innerHTML = "Save changes"
                 table_element.dataset.edit_mode = 1
                 table.setColumns(columns.map(col => {
                     return {...col, visible: true}
                 }))
+                table.getColumns().forEach(col => {
+                    console.log(col.getElement())
+                })
             }
         })
         footer.prepend(edit_button)

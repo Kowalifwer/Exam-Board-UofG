@@ -9,6 +9,10 @@
     <input type="hidden" name="student_id" value="{{student.id}}" class="api_prefill">
 
     <p>Student: {{student}}</p>
+    <p>Completed years: ... show all.</p>
+
+    <p>If graduated: Do something about it!!!</p>
+
     {% with comments=student.student_comments_for_table|safe%}
         <p>Lecturer Comments:</p>
         {%if comments == '[]'%} <p>There are no comments right now. Feel free to add the first comment!</p>{%endif%}

@@ -145,9 +145,9 @@ function api(page_count, pagination_size) {
 const Popup = {
     content: null,
     init: function(content) {
+        let z_index = 1000
         document.querySelectorAll(".popup-wrapper").forEach(element => {
-            alert("popup already exists. removing...")
-            element.remove()
+            z_index += 1
         })
 
         let popup_wrapper = document.createElement("div")
@@ -157,12 +157,13 @@ const Popup = {
         popup_wrapper.style.width = "100%"
         popup_wrapper.style.height = "100%"
         popup_wrapper.style.backgroundColor = "transparent"
-        popup_wrapper.style.zIndex = "1000"
+        popup_wrapper.style.zIndex = z_index
         popup_wrapper.style.display = "flex"
         popup_wrapper.style.justifyContent = "center"
         popup_wrapper.style.alignItems = "center"
         popup_wrapper.style.overflow = "auto"
         popup_wrapper.classList.add("popup-wrapper")
+        popup_wrapper.style.backdropFilter =  "blur(5px)"
 
         let popup_inner = document.createElement("div")
         popup_inner.style.backgroundColor = "white"
@@ -174,7 +175,7 @@ const Popup = {
         popup_inner.style.maxWidth = "80%"
         popup_inner.style.overflow = "auto"
         popup_inner.style.boxShadow = "0 0 10px 0 rgba(0,0,0,0.5)"
-        popup_inner.style.zIndex = "1001"
+        popup_inner.style.zIndex = z_index + 200
         popup_inner.style.display = "flex"
         popup_inner.style.justifyContent = "center"
         popup_inner.style.alignItems = "center"
@@ -184,34 +185,35 @@ const Popup = {
 
         //make everythihing except the popup wrapper be blurred
         let main_body = document.querySelector(".body-inner")
-        main_body.classList.add("disabled")
+        main_body.classList.add("disabled-body")
         
         let close_button = document.createElement("button")
         close_button.classList.add("popup-close-button")
         close_button.innerHTML = "Close"
-        close_button.onclick = function(){
-            popup_wrapper.remove()
-            main_body.classList.remove("disabled")
-        }
+        close_button.onclick = () => {this.close()} //use arrow function to bind this to the popup object
         popup_inner.appendChild(close_button)
         
-        window.onclick = function(event) {
-            //if event.target is not a child of the popup wrapper, remove the popup wrapper
-            if (event.target == popup_wrapper) {
-                popup_wrapper.remove()
-                main_body.classList.remove("disabled")
+        window.onclick = (e) => {
+            let found_wrapper = document.querySelector(".popup-wrapper")
+            if (!found_wrapper) return
+            if (e.target == found_wrapper || e.target == found_wrapper.querySelector(".popup-close-button")) {
+                this.close()
             }
         }
 
         popup_inner.appendChild(content)
         document.body.prepend(popup_wrapper)
-        
         this.content = content
         return this
     },
     close: function() {
-        document.querySelector(".popup-wrapper").remove()
-        document.querySelector(".body-inner").classList.remove("disabled")
+        let wrapper = document.querySelector(".popup-wrapper")
+        if (wrapper) wrapper.remove()
+        
+        if (!document.querySelector(".popup-wrapper"))
+            document.querySelector(".body-inner").classList.remove("disabled-body")
+        
+        delete this
     },
 }
 

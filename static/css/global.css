@@ -10,10 +10,15 @@
     --shadow: 0px 6px 5px -1px rgba(0,0,0,0.35);
     --body-padding: 50px;
     --primary-button-offset: 50px;
+    --edit-color: #6ee38f2f;
 
     --first-color: rgba(146,225,234,1);
     --second-color: rgba(235,176,223,1);
     --third-color: rgb(215, 217, 232);
+
+    --success-green: #7DDE92,
+    --average-yellow: #FF9B71,
+    --bad-red: #F15156,
 }
 
 * {
@@ -233,11 +238,17 @@ body {
 }
 
 .tabulator-wrapper {
-    
+    position: relative;
+    display: flex;
+    flex-direction: column;
 }
 
 .disabled {
     opacity: 0.5;
+    pointer-events: none;
+}
+
+.disabled-body {
     pointer-events: none;
 }
 
@@ -283,4 +294,49 @@ body {
     gap: 5px;
     margin: 5px 0;
     padding: 20px 0;
+}
+
+@keyframes tilt-shaking {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(1deg); }
+    50% { transform: rotate(0eg); }
+    75% { transform: rotate(-1deg); }
+    100% { transform: rotate(0deg); }
+}
+
+.tabulator[data-edit_mode="1"] .tabulator-cell:not(.tabulator-editable) {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.edit-mode.tabulator-col {
+    animation: tilt-shaking 0.75s infinite;
+    border-radius: 5px;
+    /* background-color: rgba(9, 9, 248, 0.782) !important; */
+}
+
+.tabulator-editable {
+    border: 1px solid blue !important;
+    /* animation: tilt-shaking 0.5s infinite; */
+    cursor: pointer;
+}
+
+.tabulator-editable:hover {
+    background-color: var(--edit-color) !important;
+}
+
+.tabulator-notification {
+    position: relative;
+    max-width: 80%;
+    margin: 0 auto 10px auto;
+    /* transform: translateX(-50%) translateY(-100%); */
+    outline: 1px solid blue;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 1000;
+    box-shadow: 0 0 10px 0 rgba(0,0,0,0.5);
+}
+
+.tabulator-notification-hint {
+    color: blue;
 }
