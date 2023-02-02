@@ -16,6 +16,7 @@
     --third-color: rgb(215, 217, 232);
     
     --info-color: rgb(49, 89, 231); /*notifications*/
+    --info-color: midnightblue;
 
     --neutral-color: lightgray
 
@@ -24,8 +25,9 @@
     --bad-red: #F15156;
 
     --header-height: 100px;
+    --header-shadow: 0 4px 2px -2px gray;
 
-    --sidebar-width: 250px;
+    --sidebar-width: 350px;
     --sidebar-width-collapsed: 75px;
     --sidebar-icon-width: 40px;
 
@@ -169,7 +171,6 @@ body {
 .sidebar {
     transition: var(--transition);
     position: fixed;
-    outline: 1px solid blue;
     width: var(--sidebar-width);
     min-height: 100%;
     background-color: var(--secondary-color);
@@ -200,15 +201,20 @@ body {
     box-sizing: border-box;
 }
 
-.toggle-sidebar_container {
+.sidebar > *:not(.toggle-sidebar-container):hover {
+    background-color: var(--edit-color);
+}
+
+.toggle-sidebar-container {
     height: var(--header-height);
     margin: 0;
-    box-shadow: 0px 0px 4px rgba(0,0,0,.6);
+    box-shadow: var(--header-shadow);
     cursor: pointer;
 }
 
 .sidebar > * > :first-child {
     display: flex;
+    margin:auto;
 }
 
 .sidebar-icon {
@@ -251,7 +257,8 @@ body {
     padding: 0 var(--body-padding);
     height: var(--header-height);
     background-color: var(--secondary-color);
-    box-shadow: 0px 0px 4px rgba(0,0,0,.6);
+    box-shadow: var(--header-shadow);
+    z-index: 10000;
 }
 
 .main-area.main-area-collapsed .header {
@@ -440,12 +447,9 @@ body {
     -moz-transform: rotate(0deg);
     -o-transform: rotate(0deg);
     transform: rotate(0deg);
-    -webkit-transition: .5s ease-in-out;
-    -moz-transition: .5s ease-in-out;
-    -o-transition: .5s ease-in-out;
-    transition: .5s ease-in-out;
+    transition: 600ms ease-in-out;
     cursor: pointer;
-  }
+}
   
   #toggle-sidebar span {
     display: block;
@@ -460,15 +464,7 @@ body {
     -moz-transform: rotate(0deg);
     -o-transform: rotate(0deg);
     transform: rotate(0deg);
-    -webkit-transition: 600ms ease-in-out;
-    -moz-transition: 600ms ease-in-out;
-    -o-transition: 600ms ease-in-out;
     transition: 600ms ease-in-out;
-  }
-
-  
-#toggle-sidebar {
-
 }
 
 #toggle-sidebar span:nth-child(1) {
@@ -493,6 +489,10 @@ body {
   -moz-transform-origin: left center;
   -o-transform-origin: left center;
   transform-origin: left center;
+}
+
+.sidebar:not(.sidebar-collapsed) #toggle-sidebar {
+    margin-right: 8px;
 }
 
 .sidebar:not(.sidebar-collapsed) #toggle-sidebar span:nth-child(1) {

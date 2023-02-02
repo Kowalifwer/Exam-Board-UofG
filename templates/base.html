@@ -30,8 +30,8 @@
     <div class="body-inner-wrapper">
       <nav class="sidebar sidebar-collapsed">
         <!-- home -->
-        <div class="toggle-sidebar_container">
-          <div style="width: 10px; height:10px;"></div>
+        <div class="toggle-sidebar-container">
+          <img class="sidebar-icon" src="{% static 'images/UoG_colour.png'%}" style="width: 200px; height: 75px;">
           <div id="toggle-sidebar">
             <span></span>
             <span></span>
@@ -44,15 +44,31 @@
           <img class="sidebar-icon" src="{% static 'icons/home.svg'%}">
         </a>
 
+        <a href="{%url 'general:all_students'%}">
+          <span>Students</span>
+          <img class="sidebar-icon" src="{% static 'icons/students.svg'%}">
+        </a>
+
+        <a href="{%url 'general:all_courses'%}">
+          <span>Courses</span>
+          <img class="sidebar-icon" src="{% static 'icons/courses.svg'%}">
+        </a>
+
+        <a href="{%url 'general:degree_classification'%}">
+          <span>Degree Classification</span>
+          <img class="sidebar-icon" src="{% static 'icons/degree_classification.svg'%}">
+        </a>
+
+        <a href="{%url 'general:grading_rules'%}">
+          <span>Grading rules</span>
+          <img class="sidebar-icon" src="{% static 'icons/grade_settings.svg'%}">
+        </a>
       </nav>
+
       <div class="main-area">
         <div class="header">
-          <a href="{%url 'general:home'%}"><h1>Exam board app</h1></a>
+          <a href="{%url 'general:home'%}"><p><b>Welcome to UofG</b> Exam board management system</p></a>
           <div class="header-sections">
-            <a class="underline" href="{%url 'general:all_students'%}"><p>Students</p></a>
-            <a class="underline" href="{%url 'general:all_courses'%}"><p>Courses</p></a>
-            <a class="underline" href="{%url 'general:degree_classification'%}"><p>Degree Classification</p></a>
-            <a class="underline" href="{%url 'general:grading_rules'%}"><p>Grading Rules</p></a>
           </div>
           <form class="header-search" action="{% url 'general:global_search'%}" method="POST">
             {%csrf_token%}
