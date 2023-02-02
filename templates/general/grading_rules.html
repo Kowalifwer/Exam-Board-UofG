@@ -6,21 +6,15 @@
 {% endblock %}
 
 {% block body %}
-    Grading Rules page for the Academic year {{current_year.year}}-{{current_year.year|add:1}}
-    <p>view other years</p>
-    {%for year in other_years%}
-        <a class="underline" href="{%url 'general:grading_rules_exact' year.year%}">{{year.year}}-{{year.year|add:1}}</a>
-    {%endfor%}
+    Grading Rules page for the Academic year {{selected_year.year}}-{{selected_year.year|add:1}}
 
     <p>Classification Rules</p>
 
-    <div class="tabulator_table" id="grading_rules_table" style="max-width: 1200px;"></div>
+    <div class="tabulator_table" id="grading_rules_table" style="max-width: 1200px; width: 750px;"></div>
 
-    <input type="hidden" name="year_id" value="{{current_year.id}}" class="api_prefill">
+    <input type="hidden" name="year_id" value="{{selected_year.id}}" class="api_prefill">
 
     <script>
-        load_grading_rules_table(`{{current_year.degree_classification_settings_for_table|safe}}`)
+        load_grading_rules_table(`{{selected_year.degree_classification_settings_for_table|safe}}`)
     </script>
-
-    <p>Msc/MEng (level 5)</p>
 {%endblock%}

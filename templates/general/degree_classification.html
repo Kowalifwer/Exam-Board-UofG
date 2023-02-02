@@ -6,12 +6,6 @@
 {% endblock %}
 
 {% block body %}
-    Degree classification page for the Academic year {{current_year.year}}-{{current_year.year|add:1}}
-    <p>view other years</p>
-    {%for year in other_years%}
-        <a class="underline" href="{%url 'general:degree_classification_exact' year.year%}">{{year.year}}-{{year.year|add:1}}</a>
-    {%endfor%}
-
     <div style="display: flex; overflow: auto;">
         <canvas id="degree_classification_chart_4">loading chart</canvas>
     </div>

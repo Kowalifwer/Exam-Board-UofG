@@ -1188,12 +1188,17 @@ function load_grading_rules_table(data_json){
         let edit_button = document.createElement('button')
         let table_element = table.getElement()
         edit_button.innerHTML = "Edit Classification rules"
-        edit_button.style.maxWidth = "250px"
+        edit_button.stored_width = table_element.style.width
         edit_button.addEventListener('click', function(){
             if (table_element.dataset.edit_mode == 1) {
                 table.removeNotification()
                 this.innerHTML = "Edit Classification rules"
                 table_element.dataset.edit_mode = 0
+
+                //increase the width of the table
+                console.log(edit_button.stored_width)
+                table_element.style.width = edit_button.stored_width
+
                 table.setColumns(columns.map(col => {
                     return {...col, editor: false, cssClass: ""}
                 }))
@@ -1215,6 +1220,12 @@ function load_grading_rules_table(data_json){
                 table.addNotification()
                 this.innerHTML = "Save changes"
                 table_element.dataset.edit_mode = 1
+
+                //decrease the width of the table
+                console.log(edit_button.stored_width)
+                // table_element.style.width = edit_button.stored_width
+                table_element.style.width = "100%"
+
                 table.setColumns(columns.map(col => {
                     return {...col, visible: true}
                 }))

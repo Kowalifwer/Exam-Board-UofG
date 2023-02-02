@@ -26,7 +26,7 @@ class AcademicYear(models.Model):
         return json.dumps(list(self.degree_classification_settings.values()))
 
     def __str__(self):
-        return f"{self.year} - {'Currently active' if self.is_current else 'Not current year'}"
+        return f"{self.year}{'(Active)' if self.is_current else '(Inactive)'}"
 
 class User(AbstractUser, UUIDModel):
     level_choices = [

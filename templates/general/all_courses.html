@@ -7,11 +7,7 @@
 
 {% block body %}
     
-    <h2>All courses offered for the Academic year {{current_year.year}}-{{current_year.year|add:1}}</h2>
-    <p>view other years</p>
-    {%for year in other_years%}
-        <a class="underline" href="{%url 'general:all_courses_exact' year.year%}">{{year.year}}-{{year.year|add:1}}</a>
-    {%endfor%}
+    <h2>All courses offered for the Academic year {{selected_year.year}}-{{selected_year.year|add:1}}</h2>
     <div id="courses_table" class="tabulator_table" style="max-width: 1200px;"></div>
     <script>
         load_courses_table({}, false, {})

@@ -31,7 +31,7 @@
       <nav class="sidebar sidebar-collapsed">
         <!-- home -->
         <div class="toggle-sidebar-container">
-          <img class="sidebar-icon" src="{% static 'images/UoG_colour.png'%}" style="width: 200px; height: 75px;">
+          <img class="sidebar-icon" src="{% static 'images/UoG_colour.png'%}" style="width: 175px; height: 60px;">
           <div id="toggle-sidebar">
             <span></span>
             <span></span>
@@ -41,27 +41,27 @@
 
         <a href="{%url 'general:home'%}">
           <span>Home</span>
-          <img class="sidebar-icon" src="{% static 'icons/home.svg'%}">
+          <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/home.svg'%}">
         </a>
 
         <a href="{%url 'general:all_students'%}">
           <span>Students</span>
-          <img class="sidebar-icon" src="{% static 'icons/students.svg'%}">
+          <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/students.svg'%}">
         </a>
 
         <a href="{%url 'general:all_courses'%}">
           <span>Courses</span>
-          <img class="sidebar-icon" src="{% static 'icons/courses.svg'%}">
+          <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/courses.svg'%}">
         </a>
 
         <a href="{%url 'general:degree_classification'%}">
           <span>Degree Classification</span>
-          <img class="sidebar-icon" src="{% static 'icons/degree_classification.svg'%}">
+          <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/degree_classification.svg'%}">
         </a>
 
         <a href="{%url 'general:grading_rules'%}">
           <span>Grading rules</span>
-          <img class="sidebar-icon" src="{% static 'icons/grade_settings.svg'%}">
+          <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/grade_settings.svg'%}">
         </a>
       </nav>
 
@@ -72,11 +72,21 @@
           </div>
           <form class="header-search" action="{% url 'general:global_search'%}" method="POST">
             {%csrf_token%}
-            <input type="text" name="global_search" placeholder="search student/course">
-            <button type="submit">
-              <img class="grow" src="{% static 'icons/search.png' %}" alt="submit" />
+            <input type="text" class="input_default" name="global_search" placeholder="search student/course">
+            <button class="button_default" type="submit">
+              <img class="color-image" src="{% static 'icons/search.png' %}" alt="submit" />
             </button>
           </form>
+          <div class="header-user-profile">
+            <img class="color-img-blue-uofg" src="{% static 'icons/profile.svg' %}">
+            <div>
+              {%if request.user.is_authenticated%}
+                <p>{{request.user.get_name_verbose}}</p>
+              {%else%}
+                <p>Anonymous user</p>
+              {%endif%}
+            </div>
+          </div>
           <button class="button-30">
             {%if request.user.is_authenticated%}
               <a href="{%url 'general:logout'%}">Logout</a>
@@ -86,8 +96,24 @@
           </button>
         </div>
         <div class="content-wrapper">
-          {%block body%}
-          {%endblock%}
+          {%if all_years%}
+            <div class="content-extra-header visible">
+              <div class="content-years">
+                <div>
+                  {%for year in all_years%}
+                      <a class="{%if year.obj.is_current%}active-year{%else%}old-year{%endif%}{%if year.obj == selected_year%} selected-year{%endif%}" href="{{year.url}}">{{year.obj}}</a>
+                    {%if not forloop.last%}
+                      <span>></span>
+                    {%endif%}
+                  {%endfor%}
+                </div>
+              </div>
+            </div>
+          {%endif%}
+          <div class="content-body{%if all_years%} extra-padding-top{%endif%}">
+            {%block body%}
+            {%endblock%}
+          </div>
         </div>
       </div>
     </div>

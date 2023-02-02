@@ -10,7 +10,7 @@ import json
 from exam_board.tools import server_print, get_query_count
 from django.db import transaction
 from django.utils import timezone
-
+from django.urls import reverse
 
 def is_fetching_table_data(request):
     return request.method == 'GET' and request.GET.get('fetch_table_data')
@@ -128,17 +128,10 @@ def all_students_view(request):
     return render(request, "general/all_students.html")
 
 def all_courses_view(request, year=None):
-    context = {'other_years': []}
-    all_years = AcademicYear.objects.all()
-    for academic_year in all_years:
-        if year and year == academic_year.year:
-            context['current_year'] = academic_year
-        elif academic_year.is_current and 'current_year' not in context:
-            context['current_year'] = academic_year
-        else:
-            context['other_years'].append(academic_year)
+    context = {}
+    update_context_with_other_years(context, 'general:all_courses', "View courses from other years", year=year)
 
-    all_courses = Course.objects.filter(academic_year=context['current_year'].year)
+    all_courses = Course.objects.filter(academic_year=context['selected_year'].year)
     if is_fetching_table_data(request):
         assessment_data = fetch_assessment_data_if_relevant(request)
         if assessment_data:
@@ -310,28 +303,30 @@ def course_view(request, code, year):
         get_query_count("after fetching course")
         return JsonResponse({"data": all_students_json, "extra_cols":extra_cols}, safe=False)
     
-    context = {
-        'course_other_years': []
-    }
-    
-    for course in Course.objects.filter(code=code).select_related("lecturer"):
-        if course.academic_year == year:
-            context['current_course'] = course
-        else:
-            context['course_other_years'].append(course)
+    context = {}
+    update_context_with_other_years(context, 'general:all_courses', "View courses from other years", year=year)
 
     return render(request, "general/course.html", context)
 
-def degree_classification_view(request, year=None):
-    context = {'other_years': []}
-    all_years = AcademicYear.objects.all()
+def update_context_with_other_years(context, reverse_name, title="View other years!", year=None, all_years=None):
+    if not all_years:
+        all_years = AcademicYear.objects.all()
+
+    context['all_years'] = context.get('all_years', [])
     for academic_year in all_years:
+        is_exact = False
         if year and year == academic_year.year:
-            context['current_year'] = academic_year
-        elif academic_year.is_current and 'current_year' not in context:
-            context['current_year'] = academic_year
-        else:
-            context['other_years'].append(academic_year)
+            context['selected_year'] = academic_year
+            is_exact = True
+        elif academic_year.is_current and 'selected_year' not in context:
+            context['selected_year'] = academic_year
+            is_exact = True
+        final_url = reverse(reverse_name + "_exact", args=[academic_year.year]) if not is_exact else reverse(reverse_name)
+        context['all_years'].append({'obj':academic_year, 'url':final_url})
+
+def degree_classification_view(request, year=None):
+    context = {}
+    update_context_with_other_years(context, 'general:degree_classification', "View degree classifications of other years", year=year)
 
     get_query_count("before fetching degree classification", False)
     if is_fetching_table_data(request):
@@ -340,7 +335,7 @@ def degree_classification_view(request, year=None):
             return JsonResponse([], safe=False)
         
         masters = level == "5"
-        students = set(Student.objects.filter(end_academic_year=context['current_year'].year, current_academic_year=context['current_year'].year, is_masters=False if not masters else True).prefetch_related("results__course", "results__assessment", "courses", "courses__assessments"))
+        students = set(Student.objects.filter(end_academic_year=context['selected_year'].year, current_academic_year=context['selected_year'].year, is_masters=False if not masters else True).prefetch_related("results__course", "results__assessment", "courses", "courses__assessments"))
         student_course_map_lvl5 = {}
         student_results_map_lvl5 = {}
         student_course_map_lvl4 = {}
@@ -348,7 +343,7 @@ def degree_classification_view(request, year=None):
         student_course_map_lvl3 = {}
         student_results_map_lvl3 = {}
         no_course_students = set()
-        base_year = context['current_year'].year - 1 if not masters else context['current_year'].year - 2
+        base_year = context['selected_year'].year - 1 if not masters else context['selected_year'].year - 2
         for student in students:
             if student.current_level != int(level):
                 no_course_students.add(student)
@@ -397,16 +392,8 @@ def degree_classification_view(request, year=None):
     return render(request, "general/degree_classification.html", context)
 
 def grading_rules_view(request, year=None):
-    context = {'other_years': []}
-    all_years = AcademicYear.objects.all()
-    for academic_year in all_years:
-        if year and year == academic_year.year:
-            context['current_year'] = academic_year
-        elif academic_year.is_current and 'current_year' not in context:
-            context['current_year'] = academic_year
-        else:
-            context['other_years'].append(academic_year)
-    print(context)
+    context = {}
+    update_context_with_other_years(context, 'general:grading_rules', "View grading rules of other years", year=year)
     return render(request, "general/grading_rules.html", context)
 
 #GUID, FULL_NAME, FINAL BAND, FINAL GPA, L4 BAND, L4 GPA, L3 BAND, L3 GPA, >A, >B, >C, >D, ... Project, Team ...

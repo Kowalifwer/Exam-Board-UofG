@@ -15,19 +15,47 @@ function wrap(el, wrapper) {
 
 pagination_size = 1000
 
+function toggle_based_on_sidebar_state(sidebar, hardset_state=null) {
+    let sidebar_is_collapsed = null
+    if (hardset_state != null) {
+        sidebar_is_collapsed = hardset_state
+        sessionStorage.setItem("sidebar-collapsed", sidebar_is_collapsed)
+        console.log("session storage is", sessionStorage.getItem("sidebar-collapsed"))
+    } else {
+
+        sidebar_is_collapsed = sidebar.classList.contains("sidebar-collapsed")
+        let session_sidebar_collapsed = sessionStorage.getItem("sidebar-collapsed")
+        
+        if (session_sidebar_collapsed == "true") {
+            sidebar_is_collapsed = true
+        } else if (session_sidebar_collapsed == "false") {
+            sidebar_is_collapsed = false
+        } else { //if session is not set
+            sessionStorage.setItem("sidebar-collapsed", sidebar_is_collapsed)
+        }
+    }
+
+    console.log("sidebar is collapsed", sidebar_is_collapsed)
+
+    let main_area = document.querySelector(".main-area")
+    if (!sidebar_is_collapsed) {
+        main_area.classList.add("main-area-collapsed")
+        sidebar.classList.remove("sidebar-collapsed")
+    } else {
+        main_area.classList.remove("main-area-collapsed")
+        sidebar.classList.add("sidebar-collapsed")
+    }
+}
+
 window.onload = function() {
     let sidebar = document.querySelector(".sidebar")
-    let sidebar_toggle_button = document.getElementById("toggle-sidebar")
-    console.log(sidebar)
+    toggle_based_on_sidebar_state(sidebar)
+
+    let sidebar_toggle_button = document.querySelector(".toggle-sidebar-container")
     if (sidebar && sidebar_toggle_button) {
         sidebar_toggle_button.addEventListener("click", function() {
-            let sidebar_is_collapsed = sidebar.classList.toggle("sidebar-collapsed")
-            let main_area = document.querySelector(".main-area")
-            if (!sidebar_is_collapsed) {
-                main_area.classList.add("main-area-collapsed")
-            } else {
-                main_area.classList.remove("main-area-collapsed")
-            }
+            let siderbar_collapsed = sidebar.classList.toggle("sidebar-collapsed")
+            toggle_based_on_sidebar_state(sidebar, siderbar_collapsed)
         })
     }
 }
