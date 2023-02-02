@@ -16,7 +16,20 @@ function wrap(el, wrapper) {
 pagination_size = 1000
 
 window.onload = function() {
-    
+    let sidebar = document.querySelector(".sidebar")
+    let sidebar_toggle_button = document.getElementById("toggle-sidebar")
+    console.log(sidebar)
+    if (sidebar && sidebar_toggle_button) {
+        sidebar_toggle_button.addEventListener("click", function() {
+            let sidebar_is_collapsed = sidebar.classList.toggle("sidebar-collapsed")
+            let main_area = document.querySelector(".main-area")
+            if (!sidebar_is_collapsed) {
+                main_area.classList.add("main-area-collapsed")
+            } else {
+                main_area.classList.remove("main-area-collapsed")
+            }
+        })
+    }
 }
 
 function get_cookie(name) {
@@ -184,7 +197,7 @@ const Popup = {
         popup_wrapper.appendChild(popup_inner)
 
         //make everythihing except the popup wrapper be blurred
-        let main_body = document.querySelector(".body-inner")
+        let main_body = document.querySelector(".body-inner-wrapper")
         main_body.classList.add("disabled-body")
         
         let close_button = document.createElement("button")
@@ -211,7 +224,7 @@ const Popup = {
         if (wrapper) wrapper.remove()
         
         if (!document.querySelector(".popup-wrapper"))
-            document.querySelector(".body-inner").classList.remove("disabled-body")
+            document.querySelector(".body-inner-wrapper").classList.remove("disabled-body")
         
         delete this
     },

@@ -166,6 +166,10 @@ const custom_average_calculator = function(values, data, calcParams){
 const default_formatter = formatter_to_band_letter
 
 function init_table(table_id, columns, prefil_data = null, extra_constructor_params = {}, settings={}) {
+    let title = ""
+    if (settings.title)
+        title = settings.title
+
     let table_constructor = {
         // layout:"fitColumns",
         // responsiveLayout:"hide",
@@ -179,11 +183,11 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         rowHeight: 30,
         groupToggleElement: "header",
 
-
         paginationSize: 100,
         paginationSizeSelector:[25, 50, 100, 1000],
         layout:"fitDataStretch", //fitDataStretch
         movableColumns: true,
+        dataLoaderLoading:`<span>Loading ${title} table data</span>`,
         // layoutColumnsOnNewData:true
         downloadConfig:{
             columnHeaders:true, //do not include column headers in downloaded table
@@ -508,60 +512,14 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     return table
 }
 
-var headerMenu = function(){
-    var menu = [];
-    var columns = this.getColumns();
-
-    for(let column of columns){
-
-        //create checkbox element using font awesome icons
-        let icon = document.createElement("i");
-        icon.classList.add("fas");
-        icon.classList.add(column.isVisible() ? "fa-check-square" : "fa-square");
-
-        //build label
-        let label = document.createElement("span");
-        let title = document.createElement("span");
-
-        title.textContent = " " + column.getDefinition().title;
-
-        label.appendChild(icon);
-        label.appendChild(title);
-
-        //create menu item
-        menu.push({
-            label:label,
-            action:function(e){
-                //prevent menu closing
-                e.stopPropagation();
-
-                //toggle current column visibility
-                column.toggle();
-
-                //change menu item icon
-                if(column.isVisible()){
-                    icon.classList.remove("fa-square");
-                    icon.classList.add("fa-check-square");
-                }else{
-                    icon.classList.remove("fa-check-square");
-                    icon.classList.add("fa-square");
-                }
-            }
-        });
-    }
-
-   return menu;
-};
-
 //define various table setups below
-function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={}){
+function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={'title': 'Students'}){
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
-        {title: "GUID", field: "GUID", headerFilter: "input", "frozen": true, headerContextMenu:headerMenu},
+        {title: "GUID", field: "GUID", headerFilter: "input", "frozen": true},
         {title: "Name", field: "name", headerFilter: "input"},
         {
             title: "Degree info",
-            headerMenu: headerMenu,
             columns: [
                 {title: "Title", field: "degree_title"},
                 {title: "Name", field: "degree_name"},
@@ -572,7 +530,6 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
         },
         {
             title: "Year data",
-            headerMenu: headerMenu,
             columns: [
                 {title: "Current level", field: "current_year"},
                 {title: "Start year", field: "start_year"},
@@ -621,13 +578,13 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
         initialSort: [{column: 'current_year', dir: 'dsc'}],
         placeholder: "Student data loading...",
     }
-    let table = init_table("students_table", columns, null, final_extra_constructor_params, settings)
+    let table = init_table("students_table", columns, null, final_extra_constructor_params, settings={...settings, ...{title: "Students"}})
 
     table.setReloadFunction(load_students_table, [extra_constructor_params, extra_cols, settings])
 
     table.on("tableBuilt", function() {
         table.setGroupHeader(function(value, count, data, group){
-            return `Number of ${value} students: ${count}`; //return the header contents
+            return `Number of ${value} students:<span class='info-text'>${count}</span>`; //return the header contents
         });
     })
 
@@ -722,11 +679,10 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
 function load_degree_classification_table(level=4) {
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
-        {title: "GUID", field: "GUID", topCalc: "count", headerFilter: "input", "frozen": true, headerContextMenu:headerMenu},
+        {title: "GUID", field: "GUID", topCalc: "count", headerFilter: "input", "frozen": true},
         {title: "Name", field: "name", headerFilter: "input"},
         {
             title: "Degree info",
-            headerMenu: headerMenu,
             columns: [
                 {title: "Title", field: "degree_title"},
                 {title: "Name", field: "degree_name"},
@@ -737,7 +693,6 @@ function load_degree_classification_table(level=4) {
         },
         {
             title: "Year data",
-            headerMenu: headerMenu,
             columns: [
                 {title: "Current level", field: "current_year"},
                 {title: "Start year", field: "start_year"},
@@ -789,7 +744,7 @@ function load_degree_classification_table(level=4) {
             "fetch_table_data": true,
             "level": level,
         }
-    })
+    }, {'title': 'Degree classification data for level '+level+' students'})
 
     table.addChartLink([document.getElementById("degree_classification_chart_"+level), function(table_inner) {
         let table_data = table_inner.getData()
@@ -1004,9 +959,9 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
                 let course_credits = data.reduce(function(a, b) {
                     return a + b["credits"]
                 }, 0)
-                return `${count} courses in ${value}, for a total of <span class='${(course_credits < 120) ? "error-color":"success-color"}'>${course_credits} credits<span>`; //return the header contents
+                return `<span class='info-text'>${count}</span> courses in ${value}, for a total of <span class='${(course_credits < 120) ? "error-color":"success-color"}'>${course_credits} credits<span>`; //return the header contents
             } else {
-                return `${count} courses offered in ${value}`; //return the header contents
+                return `<span class='info-text'>${count}</span> courses offered in ${value}`; //return the header contents
             }
         });
     })
