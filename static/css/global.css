@@ -129,8 +129,8 @@
 
 *::-webkit-scrollbar {
     position: absolute;
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
 }
 
 *::-webkit-scrollbar-track {
@@ -443,7 +443,6 @@ body {
     background-color: var(--primary-color);
     border-radius: 4px;
     height: 50px;
-    /* padding-left: 20px; */
     justify-content: center;
     overflow: hidden;
     align-items: center;
@@ -456,9 +455,6 @@ body {
     outline: none;
     border: none;
     height: 100%;
-    /* width: 100%; */
-    /* width: 300px; */
-    /* background-color: var(--primary-color); */
     padding-left: 20px;
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
@@ -470,10 +466,15 @@ body {
     justify-content: center;
     align-items: center;
     border: none !important;
-    min-width: 25px;
+    min-width: 30px;
+    max-width: 60px;
     border-top-left-radius: 0 !important;
     border-bottom-left-radius: 0 !important;
     border-left: 1px solid rgba(var(--p-color), 0.15) !important;
+}
+
+.tabulator .tabulator-footer .tabulator-calcs-holder {
+    display: none;
 }
 
 .header-search > button:hover {
@@ -815,14 +816,78 @@ button:not(.button_default):hover:disabled {
 
 
 
+/* LAYOUT */
+.collapsable-section {
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+}
+
+.collapsable-section > :first-child {
+    margin: 0;
+    margin-bottom: 3px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1rem;
+    height: calc(var(--header-height) / 2);
+    background-color: var(--secondary-color);
+    /* border-bottom: 1px solid rgba(var(--p-color), 0.1); */
+}
+
+.collapsable-section > :last-child {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 25px;
+    background-color: var(--secondary-color);
+    border-bottom: 1px solid rgba(var(--p-color), 0.1);
+}
 
 
+/* STUDENT PAGE */
 
+.student-page-top-section {
+    display: flex;
+    /* make it a 50/50 flex */
+    flex-direction: row;
+    outline: 1px solid green;
+    gap: 20px;
+}
 
+.student-page-top-section > :first-child {
+    flex-grow: 1;
+    flex-shrink: 1;
+    outline: 1px solid red;
+}
 
+.student-page-top-section > :last-child {
+    /* flex: 1; */
+    width: 706px;
+    outline: 1px solid blue;
+}
+
+.student-page-top-section > :last-child .tabulator-components {
+    display: none;
+}
+
+.student-page-top-section > :last-child .tabulator {
+    width: 100%;
+    outline: none;
+    border: none;
+}
+
+.student-page-top-section > :last-child > :first-child {
+    margin-bottom: 20px;
+}
+
+.student-page-top-section > :last-child > :last-child {
+    margin-top: 20px;
+}
 
 .tabulator {
-    max-height: 600px;
+    /* max-height: 600px; */
     /* max-width: 100% !important; */
     /* box-shadow: var(--shadow); */
     border: 1px solid rgba(var(--p-color), 0.55);
@@ -834,9 +899,10 @@ button:not(.button_default):hover:disabled {
     position: relative;
     display: flex;
     flex-direction: column;
-    width: 1000px;
+    /* width: 1000px; */
     /* align-items: center; */
-    margin: 0 auto;
+    /* width: 100%; */
+    /* margin: 0 auto; */
     /* background-color: white !important; */
     /* padding: 50px; */
 }

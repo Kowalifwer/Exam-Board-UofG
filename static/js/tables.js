@@ -173,7 +173,19 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     let table_constructor = {
         // layout:"fitColumns",
         // responsiveLayout:"hide",
+        // responsiveLayout:true,
         // data: table_data,
+        // columns: columns.map((column) => {
+        //     // if (column.columns) {
+        //     //     column.columns = column.columns.forEach((sub_column) => {
+        //     //         sub_column.minWidth = 100
+        //     //         return sub_column
+        //     //     })
+        //     // }
+        //     if (!column.minWidth)
+        //         column.minWidth = 100
+        //     return column
+        // }),
         columns: columns,
         pagination: true,
         paginationMode: "local",
@@ -182,10 +194,15 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         selectable:true,
         rowHeight: 30,
         groupToggleElement: "header",
+        autoResize: false,
+
+        height: "800px",
 
         paginationSize: 100,
         paginationSizeSelector:[25, 50, 100, 1000],
-        layout:"fitDataStretch", //fitDataStretch
+
+        layout: "fitColumns", //"fitColumns", //fitDataStretch
+
         movableColumns: true,
         dataLoaderLoading:`<span>Loading ${title} table data</span>`,
         // layoutColumnsOnNewData:true
@@ -224,40 +241,42 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     for (let key in extra_constructor_params){
         table_constructor[key] = extra_constructor_params[key]
     }
-    table_constructor.rowContextMenu.push({
-        separator: true
-    })
-    table_constructor.rowContextMenu.push({
-        label:"<div class='inline-icon' title='The following actions will affect all the selected rows. Note that all the actions in this category are reversible - so do not worry if you accidentally click something.'><img src='/static/icons/info.svg'></i><span>Multi-row actions</span></div>",
-        menu:[
-            {
-                label:"<div class='inline-icon' title='Note that this is simply hiding the rows, meaning no table data gets manipulated.'><img src='/static/icons/info.svg'></i><span>Hide row(s)</span></div>",
-                action:function(e, row){
-                    let selected_rows = table.getSelectedRows()
-                    selected_rows.forEach(function(inner_row){
-                        table.hidden_rows.push(inner_row.getData())
-                        inner_row.getElement().classList.add('hidden-row')
-                    })
-                    if (table.hidden_rows) {
-                        document.getElementById('unhide-rows').classList.remove('hidden')
+    if (!settings.no_multirow) {
+        table_constructor.rowContextMenu.push({
+            separator: true
+        })
+        table_constructor.rowContextMenu.push({
+            label:"<div class='inline-icon' title='The following actions will affect all the selected rows. Note that all the actions in this category are reversible - so do not worry if you accidentally click something.'><img src='/static/icons/info.svg'></i><span>Multi-row actions</span></div>",
+            menu:[
+                {
+                    label:"<div class='inline-icon' title='Note that this is simply hiding the rows, meaning no table data gets manipulated.'><img src='/static/icons/info.svg'></i><span>Hide row(s)</span></div>",
+                    action:function(e, row){
+                        let selected_rows = table.getSelectedRows()
+                        selected_rows.forEach(function(inner_row){
+                            table.hidden_rows.push(inner_row.getData())
+                            inner_row.getElement().classList.add('hidden-row')
+                        })
+                        if (table.hidden_rows) {
+                            document.getElementById('unhide-rows').classList.remove('hidden')
+                        }
                     }
-                }
-            },
-            {
-                label:"<div class='inline-icon' title='Note that this action properly removes data from the table (locally, and not from the database), - this can be useful for preparing the table for data extraction, such as generating an excel file, for example.'><img src='/static/icons/info.svg'></i><span>Delete row(s)</span></div>",
-                action:function(e, row){
-                    let selected_rows = table.getSelectedRows()
-                    selected_rows.forEach(function(inner_row){
-                        table.deleted_rows.push(inner_row.getData())
-                        inner_row.delete()
-                    })
-                    if (table.deleted_rows) {
-                        document.getElementById('undelete-rows').classList.remove('hidden')
+                },
+                {
+                    label:"<div class='inline-icon' title='Note that this action properly removes data from the table (locally, and not from the database), - this can be useful for preparing the table for data extraction, such as generating an excel file, for example.'><img src='/static/icons/info.svg'></i><span>Delete row(s)</span></div>",
+                    action:function(e, row){
+                        let selected_rows = table.getSelectedRows()
+                        selected_rows.forEach(function(inner_row){
+                            table.deleted_rows.push(inner_row.getData())
+                            inner_row.delete()
+                        })
+                        if (table.deleted_rows) {
+                            document.getElementById('undelete-rows').classList.remove('hidden')
+                        }
                     }
-                }
-            },
-        ]
-    })
+                },
+            ]
+        })    
+    }
 
     let table_element = (isElement(table_id)) ? table_id : document.getElementById(table_id)
     table_element.dataset.edit_mode = 0
@@ -1255,8 +1274,9 @@ function load_student_comments_table(data_json){
         "pagination": false,
         "layout": "fitColumns",
         "footerElement": footer_element,
-        "rowHeight": 30,
+        "rowHeight": 35,
         "index": "id",
+        "height": "300px", 
         rowContextMenu:[
             {
                 label:"Delete comment",
@@ -1281,7 +1301,7 @@ function load_student_comments_table(data_json){
         ],
     }
     
-    let table = init_table("student_comments_table", columns, data_json, final_extra_constructor_params)
+    let table = init_table("student_comments_table", columns, data_json, final_extra_constructor_params, {no_multirow: true})
     table.on("tableBuilt", function(){
         let footer = table.getWrapper().querySelector('.tabulator-footer-contents')
         let add_comment_button = footer.querySelector('#add_comment_button')

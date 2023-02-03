@@ -7,30 +7,48 @@
 
 {% block body %}
     <input type="hidden" name="student_id" value="{{student.id}}" class="api_prefill">
-    
-    <p>Student: {{student}}</p>
-    <p>Completed years: ... show all.</p>
-    <p>Faster route: {{student.is_faster_route}}</p>
-    <p>Current level: XD</p>
 
-    Final Classification: {{student.get_final_classification}}
+    <div class="student-page-top-section">
+        <div>
+            <div class="collapsable-section">
+                <h3>Student information</h3>
+                <div>
+                    <p>Student: {{student}}</p>
+                    <p>Completed years: ... show all.</p>
+                    <p>Faster route: {{student.is_faster_route}}</p>
+                    <p>Current level: XD</p>
+                    Final Classification: {{student.get_final_classification}}
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="collapsable-section">
+                <h3>Lecturer comments</h3>
+                <div>
+                    {% with comments=student.student_comments_for_table|safe%}
+                    {%if comments == '[]'%} <p>There are no comments right now. Feel free to add the first comment!</p>{%endif%}
+                    <div class="tabulator_table" id="student_comments_table" style="width:700px;"></div>
+                    <script>
+                        let user_full_name = '{{user.get_name_verbose}}'
+                        load_student_comments_table(`{{comments}}`)
+                    </script>
+                {%endwith%}
+                </div>
+            </div>
+            <div class="collapsable-section">
+                <h3>GPA across all completed years</h3>
+                <div>
+                    <canvas id="student_level_chart"></canvas>
+                </div>
+            </div>
+        </div>
 
-    <canvas id="student_level_chart"></canvas>
+    </div>
 
     <p>If graduated: Do something about it!!!</p>
 
-    {% with comments=student.student_comments_for_table|safe%}
-        <p>Lecturer Comments:</p>
-        {%if comments == '[]'%} <p>There are no comments right now. Feel free to add the first comment!</p>{%endif%}
-        <div class="tabulator_table" id="student_comments_table" style="max-width: 1200px;"></div>
-        <script>
-            let user_full_name = '{{user.get_name_verbose}}'
-            load_student_comments_table(`{{comments}}`)
-        </script>
-    {%endwith%}
-
     <p>Course grades for student:</p>
-    <div class="tabulator_table" id="courses_table" style="max-width: 1200px;"></div>
+    <div class="tabulator_table" id="courses_table" style="width: 100%;"></div>
     <script>
         load_courses_table({}, true, settings={student: JSON.parse(`{{student.get_data_for_table_json|safe}}`)})
     </script>
