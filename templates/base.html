@@ -16,12 +16,9 @@
 
     <!-- https://iconoir.com/ for icons -->
 
-    <link href='https://css.gg/css' rel='stylesheet'>
-
-    <script type="text/javascript" src="{% static 'js/libraries/xlsx.full.min.js'%}"></script>
-
-    <script type="text/javascript" src="{% static 'js/libraries/jspdf.umd.min.js' %}"></script>
-    <script type="text/javascript" src="{% static 'js/libraries/jspdf.plugin.autotable.min.js' %}"></script>
+    <script defer type="text/javascript" src="{% static 'js/libraries/xlsx.full.min.js'%}"></script>
+    <script defer type="text/javascript" src="{% static 'js/libraries/jspdf.umd.min.js' %}"></script>
+    <script defer type="text/javascript" src="{% static 'js/libraries/jspdf.plugin.autotable.min.js' %}"></script>
 
     {%block head%}
     {%endblock%}
@@ -32,7 +29,7 @@
       <nav class="sidebar {%if request.COOKIES.sidebar_collapsed == 'true'%}sidebar-collapsed{%endif%}">
         <!-- home -->
         <div class="toggle-sidebar-container">
-          <img class="sidebar-icon" src="{% static 'images/UoG_colour.png'%}" style="width: 175px; height: 60px;">
+          <img class="sidebar-icon" src="{% static 'images/UoG_colour.png'%}" style="width: 185px; height: 60px;">
           <div id="toggle-sidebar">
             <span></span>
             <span></span>
@@ -73,8 +70,8 @@
           </div>
           <form class="header-search" action="{% url 'general:global_search'%}" method="POST">
             {%csrf_token%}
-            <input type="text" class="input_default" name="global_search" placeholder="search student/course">
-            <button class="button_default" type="submit">
+            <input type="text" name="global_search" placeholder="search student/course">
+            <button type="submit">
               <img class="color-image" src="{% static 'icons/search.png' %}" alt="submit" />
             </button>
           </form>

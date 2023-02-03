@@ -8,7 +8,6 @@
 {% block body %}
     <input type="hidden" name="course_id" value="{{current_course.id}}" class="api_prefill">
 
-
     <p>currently viewing: {{current_course.verbose_name}}</p>
     <p>Lecturer: {{current_course.lecturer}}</p>
     {%if current_course.lecturer_comment%}

@@ -34,10 +34,90 @@
     --sidebar-icon-width: 40px;
 
     --transition: transform 600ms ease, width 600ms ease, opacity 400ms, margin 600ms ease;
+
+    --uog-dark: #0b345f;
+
+    /* #003865 */
+    --uog-dark-2: rgb(0,56,101);
+    
+    /* #005398 */
+    --uog-normal: rgb(0,83,152);
+
+    --uog-light: #005398;
+
+    /* #f7f7f7 */
+    --uog-light-grey: rgb(247,247,247);
+
+    /* #006630 */
+    --uog-green: rgb(0,102,48);
+
+    /* #951272 */
+    --uog-purple: rgb(149,18,114);
+
+    /* #5b4d94 */
+    --uog-pimp: rgb(91,77,148);
+
 }
 
+/* lexend-300 - latin */
+@font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Lexend';
+    font-style: normal;
+    font-weight: 300;
+    src: url('../fonts/lexend-v17-latin-300.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+ */
+         url('../fonts/lexend-v17-latin-300.woff') format('woff'); /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  }
+  /* lexend-regular - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Lexend';
+    font-style: normal;
+    font-weight: 400;
+    src: url('../fonts/lexend-v17-latin-regular.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+ */
+         url('../fonts/lexend-v17-latin-regular.woff') format('woff'); /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  }
+  /* lexend-700 - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Lexend';
+    font-style: normal;
+    font-weight: 700;
+    src: url('../fonts/lexend-v17-latin-700.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+ */
+         url('../fonts/lexend-v17-latin-700.woff') format('woff'); /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  }
+
+  /* inter-300 - latin */
+@font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 300;
+    src: url('../fonts/inter-v12-latin-300.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+ */
+         url('../fonts/inter-v12-latin-300.woff') format('woff'); /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  }
+  /* inter-regular - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 400;
+    src: url('../fonts/inter-v12-latin-regular.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+ */
+         url('../fonts/inter-v12-latin-regular.woff') format('woff'); /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  }
+  /* inter-700 - latin */
+  @font-face {
+    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 700;
+    src: url('../fonts/inter-v12-latin-700.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+ */
+         url('../fonts/inter-v12-latin-700.woff') format('woff'); /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+  }
+
 * {
-    font-family: 'Verdana';
+    /* font-family: 'Verdana'; */
+    font-family: 'Inter';
     color: var(--dark-color);
 }
 
@@ -316,13 +396,14 @@ body {
 .header-search {
     display: flex;
     background-color: var(--primary-color);
-    border-radius: 7.5px;
+    border-radius: 4px;
     height: 50px;
-    padding-left: 20px;
+    /* padding-left: 20px; */
     justify-content: center;
     overflow: hidden;
     align-items: center;
     min-width: 250px;
+    outline: 1px solid rgb(0, 0, 0, 0.15)
 }
 
 .header-search > input {
@@ -330,7 +411,16 @@ body {
     border: none;
     height: 100%;
     width: 100%;
+    min-width: 350px;
     background-color: var(--primary-color);
+    padding-left: 20px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.header-search > input:focus {
+    /* outline: 1px solid rgb(0, 0, 0, 0.15); */
+    border: 1px solid rgb(0, 0, 0, 0.25);
 }
 
 .header-search > input:focus::placeholder {
@@ -338,10 +428,15 @@ body {
 }
 
 .header-search > button {
-    all: initial;
-    border: 0;
-    background: transparent;
+    border: 0 !important;
+    background-color: var(--primary-color) !important;
     width: 40px;
+    border-left: 1px solid rgb(0, 0, 0, 0.15) !important;
+}
+
+.header-search > button:hover {
+    background-color: rgb(0, 0, 0, 0.10) !important;
+    /* border-left: 1px solid rgb(0, 0, 0, 0.25); */
 }
 
 .header-search > button > img {
@@ -507,17 +602,25 @@ body {
     background: var(--info-color-light) !important;
 } */
 
-.tabulator-row.tabulator-selectable.tabulator-selected {
+/* .tabulator-row.tabulator-selectable.tabulator-selected {
     background: var(--info-color-light) !important;
-}
+} */
 
 .tabulator-menu-item {
     min-height: 30px;
 }
 
-.tabulator-row .tabulator-cell {
-    border-right: initial !important;
+.tabulator-row.tabulator-row-even {
+    background-color: white !important;
 }
+
+/* .tabulator-cell tabulator-frozen tabulator-frozen-right {
+    border-right: initial !important;
+} */
+
+/* .tabulator-row.tabulator-row-odd {
+    background-color: var(--primary-color) !important;
+} */
 
 /* Close button toggle */
 #toggle-sidebar {
@@ -613,7 +716,6 @@ button:not(.button_default) {
   color: rgba(0, 0, 0, 0.85);
   cursor: pointer;
   /* display: inline-flex; */
-  font-family: system-ui,-apple-system,system-ui,"Helvetica Neue",Helvetica,Arial,sans-serif;
   font-size: 16px;
   font-weight: 600;
   justify-content: center;
@@ -670,8 +772,7 @@ button:not(.button_default):hover:disabled {
     border-radius: .25rem;
     box-shadow: rgba(0, 0, 0, 0.02) 0 1px 3px 0;
     box-sizing: border-box;
-    color: rgba(0, 0, 0, 0.85);
-    font-family: system-ui,-apple-system,system-ui,"Helvetica Neue",Helvetica,Arial,sans-serif;
+    color: rgba(0, 0, 0, 1);
     font-size: 16px;
     font-weight: 400;
     line-height: 1.25;
@@ -689,8 +790,12 @@ button:not(.button_default):hover:disabled {
 
 :where(input[type="text"], input[type="search"]):not(.input_default):focus, textarea:not(.input_default):focus, select:focus {
     border: 1px solid rgba(0, 0, 0, 0.55);
-    color: rgba(0, 0, 0, 0.65);
+    /* color: rgba(0, 0, 0, 1) !important; */
     outline: none;
+}
+
+:where(input[type="text"], input[type="search"]):not(.input_default):focus::placeholder, textarea:not(.input_default):focus::placeholder, select:focus::placeholder {
+    color: rgb(0, 0, 0, 0.55) !important;
 }
 
 
