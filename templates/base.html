@@ -1,4 +1,5 @@
 {% load static %}
+{% load tags%}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -28,7 +29,7 @@
 
   <body>
     <div class="body-inner-wrapper">
-      <nav class="sidebar sidebar-collapsed">
+      <nav class="sidebar {%if request.COOKIES.sidebar_collapsed == 'true'%}sidebar-collapsed{%endif%}">
         <!-- home -->
         <div class="toggle-sidebar-container">
           <img class="sidebar-icon" src="{% static 'images/UoG_colour.png'%}" style="width: 175px; height: 60px;">
@@ -39,33 +40,33 @@
           </div>
         </div>
 
-        <a href="{%url 'general:home'%}">
-          <span>Home</span>
+        <a href="{%url 'general:home'%}" title="Dashboard" {%if '/' == request.path%}class="selected-page"{%endif%}>
+          <span>Dashboard</span>
           <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/home.svg'%}">
         </a>
 
-        <a href="{%url 'general:all_students'%}">
-          <span>Students</span>
+        <a href="{%url 'general:all_students'%}" title="All students page" {%if 'students' in request.path%}class="selected-page"{%endif%}>
+          <span>All students</span>
           <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/students.svg'%}">
         </a>
 
-        <a href="{%url 'general:all_courses'%}">
-          <span>Courses</span>
+        <a href="{%url 'general:all_courses'%}" title="All courses" {%if 'courses' in request.path%}class="selected-page"{%endif%}>
+          <span>All courses</span>
           <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/courses.svg'%}">
         </a>
 
-        <a href="{%url 'general:degree_classification'%}">
+        <a href="{%url 'general:degree_classification'%}" title="Degree classification" {%if 'degree_classification' in request.path%}class="selected-page"{%endif%}>
           <span>Degree Classification</span>
           <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/degree_classification.svg'%}">
         </a>
 
-        <a href="{%url 'general:grading_rules'%}">
+        <a href="{%url 'general:grading_rules'%}" title="Grading rules" {%if 'grading_rules' in request.path%}class="selected-page"{%endif%}>
           <span>Grading rules</span>
           <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/grade_settings.svg'%}">
         </a>
       </nav>
 
-      <div class="main-area">
+      <div class="main-area{%if request.COOKIES.sidebar_collapsed == 'false'%} main-area-collapsed{%endif%}">
         <div class="header">
           <a href="{%url 'general:home'%}"><p><b>Welcome to UofG</b> Exam board management system</p></a>
           <div class="header-sections">
@@ -96,7 +97,7 @@
           </button>
         </div>
         <div class="content-wrapper">
-          {%if all_years%}
+          {%if all_years and request.user.is_authenticated%}
             <div class="content-extra-header visible">
               <div class="content-years">
                 <div>
@@ -110,9 +111,19 @@
               </div>
             </div>
           {%endif%}
-          <div class="content-body{%if all_years%} extra-padding-top{%endif%}">
-            {%block body%}
-            {%endblock%}
+          <div class="content-body{%if all_years and request.user.is_authenticated%} extra-padding-top{%endif%}">
+            {%if request.user.is_authenticated%}
+              {%block body%}
+              {%endblock%}
+            {%else%}
+              <div>
+                <h2>
+                  You are not logged in, therefore you cannot view any pages. <br><br>
+                  Please click the login button in the top right corner to login.<br>
+                  You will be logged in as a random user from the population script.
+                </h2>
+              </div>
+            {%endif%}
           </div>
         </div>
       </div>

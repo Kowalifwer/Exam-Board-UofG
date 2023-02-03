@@ -211,17 +211,23 @@ body {
     box-sizing: border-box;
 }
 
-.sidebar > *:not(.toggle-sidebar-container):hover {
+.sidebar > *:not(.toggle-sidebar-container):hover, .selected-page {
     /* background-color: var(--edit-color); */
     border-top: 1px solid var(--primary-color);
     box-shadow: var(--header-shadow);
 }
+
+/* .selected-page {
+    border-color: rgba(0, 0, 0, 0.15);
+    box-shadow: rgba(0, 0, 0, 0.3) 0 4px 12px;
+} */
 
 .toggle-sidebar-container {
     height: var(--header-height);
     margin: 0;
     box-shadow: var(--header-shadow);
     cursor: pointer;
+    margin-bottom: 35px;
 }
 
 .sidebar > * > :first-child {
@@ -359,7 +365,6 @@ body {
 
 .content-years a:hover {
     text-decoration: underline;
-    color: var(--neutral-color);
 }
 
 .selected-year {
@@ -597,7 +602,6 @@ body {
   left: 8px;
 }
 
-
 /* CSS */
 button:not(.button_default) {
   align-items: center;
@@ -660,7 +664,7 @@ button:not(.button_default):hover:disabled {
     color: rgba(0, 0, 0, 0.25) !important;
 }
 
-:where(input[type="text"], input[type="search"]):not(.input_default), textarea:not(.input_default) {
+:where(input[type="text"], input[type="search"]):not(.input_default), textarea:not(.input_default), select {
     background-color: #FFFFFF;
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: .25rem;
@@ -683,8 +687,10 @@ button:not(.button_default):hover:disabled {
     width: auto;
 }
 
-:where(input[type="text"], input[type="search"]):not(.input_default):focus, textarea:not(.input_default):focus {
+:where(input[type="text"], input[type="search"]):not(.input_default):focus, textarea:not(.input_default):focus, select:focus {
     border: 1px solid rgba(0, 0, 0, 0.55);
     color: rgba(0, 0, 0, 0.65);
     outline: none;
 }
+
+

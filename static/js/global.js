@@ -17,25 +17,21 @@ pagination_size = 1000
 
 function toggle_based_on_sidebar_state(sidebar, hardset_state=null) {
     let sidebar_is_collapsed = null
+    
     if (hardset_state != null) {
         sidebar_is_collapsed = hardset_state
-        sessionStorage.setItem("sidebar-collapsed", sidebar_is_collapsed)
-        console.log("session storage is", sessionStorage.getItem("sidebar-collapsed"))
+        setCookie("sidebar_collapsed", sidebar_is_collapsed)
     } else {
-
         sidebar_is_collapsed = sidebar.classList.contains("sidebar-collapsed")
-        let session_sidebar_collapsed = sessionStorage.getItem("sidebar-collapsed")
-        
+        let session_sidebar_collapsed = getCookie("sidebar_collapsed")
         if (session_sidebar_collapsed == "true") {
             sidebar_is_collapsed = true
         } else if (session_sidebar_collapsed == "false") {
             sidebar_is_collapsed = false
         } else { //if session is not set
-            sessionStorage.setItem("sidebar-collapsed", sidebar_is_collapsed)
+            setCookie("sidebar_collapsed", sidebar_is_collapsed)
         }
     }
-
-    console.log("sidebar is collapsed", sidebar_is_collapsed)
 
     let main_area = document.querySelector(".main-area")
     if (!sidebar_is_collapsed) {
@@ -60,7 +56,7 @@ window.onload = function() {
     }
 }
 
-function get_cookie(name) {
+function getCookie(name) {
     var cookieValue = null;
     if (document.cookie && document.cookie !== '') {
         var cookies = document.cookie.split(';');
@@ -76,6 +72,14 @@ function get_cookie(name) {
     return cookieValue;
 }
 
+//set to expire in 10 minutes
+function setCookie(cname, cvalue, exdays=1) {
+    const d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));  
+    let expires = "expires="+ d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
 function api_factory(method) {
     function api(action, data) {
         return new Promise((resolve, reject) => {
@@ -89,7 +93,7 @@ function api_factory(method) {
             if (data)
                 form_data.append("data", JSON.stringify(data))
             if (form_data.get("csrfmiddlewaretoken") == null) {
-                form_data.append("csrfmiddlewaretoken", get_cookie("csrftoken"))
+                form_data.append("csrfmiddlewaretoken", getCookie("csrftoken"))
             }
             
             if (method == "GET") {
@@ -140,7 +144,7 @@ const api_get = api_factory("GET")
 
 //         form_data.append("data", JSON.stringify(data))
 //         if (form_data.get("csrfmiddlewaretoken") == null) {
-//             form_data.append("csrfmiddlewaretoken", get_cookie("csrftoken"))
+//             form_data.append("csrfmiddlewaretoken", getCookie("csrftoken"))
 //         }
 //         fetch("/api/", {
 //             method: "POST",

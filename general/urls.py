@@ -31,5 +31,10 @@ urlpatterns = [
     path('grading_rules/', grading_rules_view, name=grading_rules_verbose),
     path('grading_rules/<int:year>/', grading_rules_view, name=grading_rules_verbose+"_exact"),
 
-    path('api/', api_view, name='api')
+    path('api/', api_view, name='api'),
+
+
+    #urls for incomplete views
+    path('login/', login_view, name='login'),
+    path('logout/', logout_view, name='logout'),
 ]

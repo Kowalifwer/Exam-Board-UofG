@@ -11,10 +11,13 @@ from exam_board.tools import server_print, get_query_count
 from django.db import transaction
 from django.utils import timezone
 from django.urls import reverse
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+
 
 def is_fetching_table_data(request):
     return request.method == 'GET' and request.GET.get('fetch_table_data')
-    
 
 # Create your views here.
 
@@ -42,6 +45,21 @@ def test_queries_2_view(request):
     # result = HttpResponse("Hello!")
     result = render(request, "general/test_queries_2.html", context)
     return result
+
+def update_context_with_other_years(context, reverse_name, title="View other years!", year=None, all_years=None):
+    if not all_years:
+        all_years = AcademicYear.objects.all()
+
+    context['all_years'] = context.get('all_years', [])
+    for academic_year in all_years:
+        if year and year == academic_year.year:
+            context['selected_year'] = academic_year
+        elif academic_year.is_current and 'selected_year' not in context:
+            context['selected_year'] = academic_year
+   
+        context['all_years'].append({'obj':academic_year, 'url':reverse(reverse_name + "_exact", args=[academic_year.year])})
+    
+    print(context['all_years'])
 
 def test_queries_3_view(request):  # This view fetches all Assessment Results, and creates a python dictionary, of all students, and their results, for each course.
     context = {}
@@ -308,22 +326,6 @@ def course_view(request, code, year):
 
     return render(request, "general/course.html", context)
 
-def update_context_with_other_years(context, reverse_name, title="View other years!", year=None, all_years=None):
-    if not all_years:
-        all_years = AcademicYear.objects.all()
-
-    context['all_years'] = context.get('all_years', [])
-    for academic_year in all_years:
-        is_exact = False
-        if year and year == academic_year.year:
-            context['selected_year'] = academic_year
-            is_exact = True
-        elif academic_year.is_current and 'selected_year' not in context:
-            context['selected_year'] = academic_year
-            is_exact = True
-        final_url = reverse(reverse_name + "_exact", args=[academic_year.year]) if not is_exact else reverse(reverse_name)
-        context['all_years'].append({'obj':academic_year, 'url':final_url})
-
 def degree_classification_view(request, year=None):
     context = {}
     update_context_with_other_years(context, 'general:degree_classification', "View degree classifications of other years", year=year)
@@ -547,3 +549,22 @@ def api_view(request):
             response["status"] = "No action provided."
     
     return JsonResponse(response)
+
+
+
+
+##Incomplete functionality views - DO NOT USE IN PRODUCTION
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("general:home")
+    else:
+        ##get a random user from the User model, and log this anonymous user in.
+        #this is a test view, that allows anyone to login with a click of a button
+        #this is not a production view, and should not be used in production
+        user = User.objects.order_by("?").first()
+        login(request, user)
+        return redirect("general:home")
+
+def logout_view(request):
+    logout(request)
+    return redirect("general:home")

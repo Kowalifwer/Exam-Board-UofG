@@ -1196,7 +1196,6 @@ function load_grading_rules_table(data_json){
                 table_element.dataset.edit_mode = 0
 
                 //increase the width of the table
-                console.log(edit_button.stored_width)
                 table_element.style.width = edit_button.stored_width
 
                 table.setColumns(columns.map(col => {
@@ -1222,7 +1221,6 @@ function load_grading_rules_table(data_json){
                 table_element.dataset.edit_mode = 1
 
                 //decrease the width of the table
-                console.log(edit_button.stored_width)
                 // table_element.style.width = edit_button.stored_width
                 table_element.style.width = "100%"
 
