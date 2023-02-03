@@ -515,7 +515,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 //define various table setups below
 function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={'title': 'Students'}){
     let columns = [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
+        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
         {title: "GUID", field: "GUID", headerFilter: "input", "frozen": true},
         {title: "Name", field: "name", headerFilter: "input"},
         {
@@ -678,7 +678,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
 
 function load_degree_classification_table(level=4) {
     let columns = [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
+        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
         {title: "GUID", field: "GUID", topCalc: "count", headerFilter: "input", "frozen": true},
         {title: "Name", field: "name", headerFilter: "input"},
         {
@@ -794,7 +794,6 @@ function load_degree_classification_table(level=4) {
 function create_student_course_detailed_table_popup(student_GUID=null, course_id=null, parent_table_to_reload=null){
     if (student_GUID && course_id) {
         let columns = [
-            // {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
             {title: "Assessment type", field: "type"},
             {title: "Assessment name", field: "name"},
             {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},
@@ -877,11 +876,10 @@ function create_student_course_detailed_table_popup(student_GUID=null, course_id
 }
 
 function load_courses_table(extra_constructor_params = {}, extra_cols=true, settings={}){
-    console.log(settings)
     let columns = [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false},
+        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
+        {title: "Code", field: "code", headerFilter: "input", frozen:true},
         {title: "Name", field: "name", headerFilter: "input"},
-        {title: "Code", field: "code", headerFilter: "input"},
         {title: "Academic year", field: "academic_year"},
         {title: "Credits", field: "credits", bottomCalc: "sum"},
         {title: "Taught now?", field: "is_taught_now", formatter: "tickCross"},
@@ -955,7 +953,6 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
         table.setGroupHeader(function(value, count, data, group){
             if (settings.student) {
                 //reduce the "credits" in each row of data
-                console.log(data)
                 let course_credits = data.reduce(function(a, b) {
                     return a + b["credits"]
                 }, 0)
@@ -1092,7 +1089,7 @@ function render_course_moderation_section(course_id, parent_table=null) {
     document.body.appendChild(wrapper)
     
     let columns = [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", headerSort:false},
+        {formatter:"rowSelection", titleFormatter:"rowSelection", headerSort:false, frozen:true},
         {title: "Assessment type", field: "type"},
         {title: "Assessment name", field: "name"},
         {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},
@@ -1151,7 +1148,6 @@ function load_grading_rules_table(data_json){
     // }
 
     let columns = [
-        // {formatter:"rowSelection", titleFormatter:"rowSelection", align:"center", headerSort:false},
         {title: "Name", field: "name", editor: false, clickPopup: "Hello"},
         {title: "Standard lower GPA", field: "std_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1}, cssClass: "edit-mode"},
         {title: "Discretionary lower GPA", field: "disc_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1}, cssClass: "edit-mode"},

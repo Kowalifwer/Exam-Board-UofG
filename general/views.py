@@ -59,8 +59,6 @@ def update_context_with_other_years(context, reverse_name, title="View other yea
    
         context['all_years'].append({'obj':academic_year, 'url':reverse(reverse_name + "_exact", args=[academic_year.year])})
     
-    print(context['all_years'])
-
 def test_queries_3_view(request):  # This view fetches all Assessment Results, and creates a python dictionary, of all students, and their results, for each course.
     context = {}
     # all_assessment_results = AssessmentResult.objects.all().filter().select_related("student", "course", "assessment")
@@ -273,6 +271,7 @@ def fetch_assessment_data_if_relevant(request):
 
 def course_view(request, code, year):
     get_query_count("before fetching course", False)
+    course = Course.objects.filter(code=code, academic_year=year)
     if is_fetching_table_data(request):
         ##extra tables fetching
         student_course_table = fetch_student_course_table_data_if_relevant(request)
@@ -283,7 +282,7 @@ def course_view(request, code, year):
             return course_assessmets_table
         ##end of extra tables fetching
 
-        course = Course.objects.filter(code=code, academic_year=year).prefetch_related("assessments").first()
+        course = course.prefetch_related("assessments").first()
         students = course.students.all().prefetch_related("results__course", "results__assessment", "courses")
         course_assessments = course.assessments.all()
 
@@ -321,7 +320,9 @@ def course_view(request, code, year):
         get_query_count("after fetching course")
         return JsonResponse({"data": all_students_json, "extra_cols":extra_cols}, safe=False)
     
-    context = {}
+    context = {
+        "current_course": course.first(),
+    }
     update_context_with_other_years(context, 'general:all_courses', "View courses from other years", year=year)
 
     return render(request, "general/course.html", context)
@@ -425,10 +426,8 @@ def api_view(request):
                     return JsonResponse({"status": "Server error. Invalid data recieved.", "data": None}, safe=False)
                 
                 value = int(value)
-                print("value", value)
                 ass_result_to_update_map = {}
                 course = Course.objects.filter(id=course_id).first()
-                print("course", course, course_id)
 
                 def value_converseion_based_on_mode(value, existing_value=0):
                     if mode == "increase":
@@ -463,7 +462,6 @@ def api_view(request):
                 Assessment.objects.bulk_create(new_to_create)
                 course.assessments.add(*new_assessment_refs)
                 for key, value in ass_result_to_update_map.items():
-                    print(key, value)
                     value.update(assessment=key)
                 Assessment.objects.filter(courses=None).exclude(moderation=0).delete()
                 
@@ -486,7 +484,6 @@ def api_view(request):
             
             #PREPONDERANCE
             if action == "update_preponderance":
-                print(data)
                 results_to_save = [] ##make sure we save at the very end, to make sure all data is valid
                 for row in data:
                     result_id = row.get("result_id", "")
