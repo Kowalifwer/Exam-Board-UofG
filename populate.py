@@ -272,8 +272,8 @@ class Populator:
             else:
                 attempts += 1
 
-            # if (credits_total >= (3*total_credits/4) and decision(0.05)): # 5% chance of getting between 90-120 credits (incomplete course selection)
-            #     return course_set
+            if (credits_total >= (3*REQUIRED_CREDITS_PER_COURSE/4) and decision(0.05)): # 5% chance of getting between 90-120 credits (incomplete course selection)
+                return course_set
 
             if credits_total == total_credits or len(candidate_courses) == 0:
                 return course_set
