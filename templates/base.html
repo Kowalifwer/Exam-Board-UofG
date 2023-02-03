@@ -11,8 +11,8 @@
     <script src="{% static 'js/libraries/chart.min.js'%}"></script>
     <script src="{% static 'js/libraries/tabulator.min.js'%}"></script>
     <script src="{% static 'js/global.js'%}"></script>
-    <link rel="stylesheet" href="{% static 'css/global.css'%}">
     <link rel="stylesheet" href="{% static 'css/libraries/tabulator_semanticui.min.css'%}">
+    <link rel="stylesheet" href="{% static 'css/global.css'%}">
 
     <!-- https://iconoir.com/ for icons -->
 
@@ -29,7 +29,7 @@
       <nav class="sidebar {%if request.COOKIES.sidebar_collapsed == 'true'%}sidebar-collapsed{%endif%}">
         <!-- home -->
         <div class="toggle-sidebar-container">
-          <img class="sidebar-icon" src="{% static 'images/UoG_colour.png'%}" style="width: 185px; height: 60px;">
+          <img class="sidebar-icon" src="{% static 'images/UoG_keyline.png'%}" style="width: 185px; height: 60px;">
           <div id="toggle-sidebar">
             <span></span>
             <span></span>
@@ -39,33 +39,33 @@
 
         <a href="{%url 'general:home'%}" title="Dashboard" {%if '/' == request.path%}class="selected-page"{%endif%}>
           <span>Dashboard</span>
-          <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/home.svg'%}">
+          <img class="sidebar-icon color-img-white" src="{% static 'icons/home.svg'%}">
         </a>
 
         <a href="{%url 'general:all_students'%}" title="All students page" {%if 'students' in request.path%}class="selected-page"{%endif%}>
           <span>All students</span>
-          <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/students.svg'%}">
+          <img class="sidebar-icon color-img-white" src="{% static 'icons/students.svg'%}">
         </a>
 
         <a href="{%url 'general:all_courses'%}" title="All courses" {%if 'courses' in request.path%}class="selected-page"{%endif%}>
           <span>All courses</span>
-          <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/courses.svg'%}">
+          <img class="sidebar-icon color-img-white" src="{% static 'icons/courses.svg'%}">
         </a>
 
         <a href="{%url 'general:degree_classification'%}" title="Degree classification" {%if 'degree_classification' in request.path%}class="selected-page"{%endif%}>
           <span>Degree Classification</span>
-          <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/degree_classification.svg'%}">
+          <img class="sidebar-icon color-img-white" src="{% static 'icons/degree_classification.svg'%}">
         </a>
 
         <a href="{%url 'general:grading_rules'%}" title="Grading rules" {%if 'grading_rules' in request.path%}class="selected-page"{%endif%}>
           <span>Grading rules</span>
-          <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/grade_settings.svg'%}">
+          <img class="sidebar-icon color-img-white" src="{% static 'icons/grade_settings.svg'%}">
         </a>
       </nav>
 
       <div class="main-area{%if request.COOKIES.sidebar_collapsed == 'false'%} main-area-collapsed{%endif%}">
         <div class="header">
-          <a href="{%url 'general:home'%}"><p><b>Welcome to UofG</b> Exam board management system</p></a>
+          <a href="{%url 'general:home'%}"><h2><b>Welcome</b> to UofG Exam board management system</h2></a>
           <div class="header-sections">
           </div>
           <form class="header-search" action="{% url 'general:global_search'%}" method="POST">
@@ -76,7 +76,7 @@
             </button>
           </form>
           <div class="header-user-profile">
-            <img class="color-img-blue-uofg" src="{% static 'icons/profile.svg' %}">
+            <img class="color-img-white" src="{% static 'icons/profile.svg' %}">
             <div>
               {%if request.user.is_authenticated%}
                 <p>{{request.user.get_name_verbose}}</p>
