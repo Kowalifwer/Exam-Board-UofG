@@ -7,13 +7,14 @@ from django.db.models import Prefetch
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
 import json
-from exam_board.tools import server_print, get_query_count
+from exam_board.tools import server_print, get_query_count, degree_progression_levels, degree_classification_levels
 from django.db import transaction
 from django.utils import timezone
 from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
+from django.http import Http404
 
 
 def is_fetching_table_data(request):
@@ -46,11 +47,12 @@ def test_queries_2_view(request):
     result = render(request, "general/test_queries_2.html", context)
     return result
 
-def update_context_with_other_years(context, reverse_name, title="View other years!", year=None, all_years=None):
+def update_context_with_extra_header_data(context, reverse_name, title="View other years!", year=None, all_years=None, extra_level_iterator=None):
     if not all_years:
         all_years = AcademicYear.objects.all()
     
-    course = context.get("current_course")
+    url_course = context.get("current_course")
+    url_level = context.get("current_level")
 
     context['all_years'] = context.get('all_years', [])
     for academic_year in all_years:
@@ -60,9 +62,19 @@ def update_context_with_other_years(context, reverse_name, title="View other yea
             context['selected_year'] = academic_year
         
         args = [academic_year.year]
-        if course:
-            args.insert(0, course.code)
+        if url_course:
+            args.insert(0, url_course.code)
+        if url_level:
+            args.insert(0, url_level)
         context['all_years'].append({'obj':academic_year, 'url':reverse(reverse_name, args=args)})
+    
+    if extra_level_iterator:
+        context['all_levels'] = []
+        for level in extra_level_iterator:
+            if level == url_level:
+                context['selected_level'] = level
+            args = [level, context['selected_year'].year]
+            context['all_levels'].append({'title': extra_level_iterator[level], 'level':level, 'url':reverse(reverse_name, args=args)})     
     
 def test_queries_3_view(request):  # This view fetches all Assessment Results, and creates a python dictionary, of all students, and their results, for each course.
     context = {}
@@ -150,7 +162,7 @@ def all_students_view(request):
 
 def all_courses_view(request, year=None):
     context = {}
-    update_context_with_other_years(context, 'general:all_courses_exact', "View courses from other years", year=year)
+    update_context_with_extra_header_data(context, 'general:all_courses_exact', "View courses from other years", year=year)
 
     all_courses = Course.objects.filter(academic_year=context['selected_year'].year)
     if is_fetching_table_data(request):
@@ -262,14 +274,15 @@ def fetch_assessment_data_if_relevant(request):
     if course_id and is_assessments:
         course = Course.objects.filter(id=course_id).first()
         if course:
-            data = [
-                {"type": assessment.get_type_display(),
+            data = [{
+                "type": assessment.get_type_display(),
                 "name": assessment.name,
                 "weighting": assessment.weighting,
                 "moderation": f"{'' if assessment.moderation <= 0 else '+'}{assessment.moderation} bands.",
                 "moderation_user": assessment.moderated_by.get_name_verbose if assessment.moderated_by else "Not moderated",
                 "moderation_date": assessment.moderation_datetime.strftime("%d/%m/%Y %H:%M") if assessment.moderation_datetime else "Not moderated",
-                "id": str(assessment.id)}
+                "id": str(assessment.id)
+            }
             for assessment in course.assessments.all().order_by("weighting").select_related("moderated_by")]
             return JsonResponse(data, safe=False)
     return None
@@ -328,13 +341,27 @@ def course_view(request, code, year):
     context = {
         "current_course": course.first(),
     }
-    update_context_with_other_years(context, 'general:course', "View courses from other years", year=year)
+    update_context_with_extra_header_data(context, 'general:course', "View courses from other years", year=year)
 
     return render(request, "general/course.html", context)
 
-def degree_classification_view(request, year=None):
-    context = {}
-    update_context_with_other_years(context, 'general:degree_classification_exact', "View degree classifications of other years", year=year)
+def level_progression_view(request, level, year=None):
+    if level not in degree_progression_levels.keys():
+        raise Http404("Invalid level")
+    context = {
+        'current_level': level,
+    }
+    update_context_with_extra_header_data(context, 'general:level_progression_exact', "View level progression of other years", year=year, all_years=None, extra_level_iterator=degree_progression_levels)
+
+    return render(request, "general/degree_classification.html", context)
+
+def degree_classification_view(request, level, year=None):
+    if level not in degree_classification_levels.keys():
+        raise Http404("Invalid level")
+    context = {
+        'current_level': level,
+    }
+    update_context_with_extra_header_data(context, 'general:degree_classification_exact', "View degree classifications of other years", year=year, all_years=None, extra_level_iterator=degree_classification_levels)
 
     get_query_count("before fetching degree classification", False)
     if is_fetching_table_data(request):
@@ -401,7 +428,7 @@ def degree_classification_view(request, year=None):
 
 def grading_rules_view(request, year=None):
     context = {}
-    update_context_with_other_years(context, 'general:grading_rules_exact', "View grading rules of other years", year=year)
+    update_context_with_extra_header_data(context, 'general:grading_rules_exact', "View grading rules of other years", year=year)
     return render(request, "general/grading_rules.html", context)
 
 #GUID, FULL_NAME, FINAL BAND, FINAL GPA, L4 BAND, L4 GPA, L3 BAND, L3 GPA, >A, >B, >C, >D, ... Project, Team ...
