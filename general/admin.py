@@ -1,5 +1,5 @@
 from django.contrib import admin
-from general.models import Student, Course, Assessment, AssessmentResult, User, AcademicYear, Comment
+from general.models import Student, Course, Assessment, AssessmentResult, User, AcademicYear, StudentComment, CourseComment
 from django.contrib.auth import admin as auth_admin
 from django.db import connection, reset_queries
 from django.utils.safestring import mark_safe
@@ -8,6 +8,10 @@ from django.utils.safestring import mark_safe
 class User_Admin(auth_admin.UserAdmin):
     change_password_form = auth_admin.AdminPasswordChangeForm
 
+class CourseCommentInline(admin.TabularInline):
+    model = CourseComment
+    extra = 0
+
 @admin.register(Course)
 class Course_Admin(admin.ModelAdmin):
     list_display = ('code', 'name', 'credits', 'academic_year')
@@ -15,13 +19,14 @@ class Course_Admin(admin.ModelAdmin):
     search_fields = ('code', 'academic_year')
     exclude = ('assessments',)
     readonly_fields = ('assessment_data',)
+    inlines = [CourseCommentInline]
 
     def assessment_data(self, obj):
         return mark_safe('<br>'.join([str(assessment) for assessment in obj.assessments.all().order_by('weighting')]))
 
-#create Comment inline
+#create StudentComment inline
 class CommentInline(admin.TabularInline):
-    model = Comment
+    model = StudentComment
     extra = 0
 
 @admin.register(Student)
@@ -40,7 +45,6 @@ class Student_Admin(admin.ModelAdmin):
         total_credits = 0
         current_year = -1
         for course in courses:
-            assessments = course.assessments.all()
             # results = course.results.all()
             if current_year != course.academic_year:
                 current_year = course.academic_year
@@ -66,5 +70,5 @@ class AssessmentResult_Admin(admin.ModelAdmin):
 
 #register default models with all fields
 admin.site.register(AcademicYear)
-admin.site.register(Comment)
+admin.site.register(StudentComment)
 admin.site.register(Assessment)
