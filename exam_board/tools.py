@@ -96,6 +96,19 @@ band_integer_to_band_letter_map = {
         22: "A1",
     }
 
+degree_progression_levels = {
+    1: "Level 1",
+    2: "Level 2",
+    3: "Level 3",
+    4: "Level 4 (Honours)",
+    5: "Level 5 (Masters)",
+}
+
+degree_classification_levels = {
+    4: "BsC/BEng",
+    5: "MSc/MEng",
+}
+
 def band_integer_to_class_caluclator(integer):
     if integer >= 18:
         return "1st"
