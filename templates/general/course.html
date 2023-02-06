@@ -8,21 +8,47 @@
 {% block body %}
     <input type="hidden" name="course_id" value="{{current_course.id}}" class="api_prefill">
 
-    <p>currently viewing: {{current_course.verbose_name}}</p>
-    <p>Lecturer: {{current_course.lecturer}}</p>
-    {%if current_course.lecturer_comment%}
-        <p>Lecturer comment: {{current_course.lecturer_comment}}</p>
-    {%endif%}
+    <div class="student-page-top-section">
+        <div>
+            <div class="collapsable-section student-information-panel">
+                <h3><b>Course information: </b>&nbsp {{current_course}}</h3>
+                <div>
+                    <p><b>Course name:</b> {{current_course.name}}</p>
+                    <p><b>Course code:</b> {{current_course.code}}</p>
+                    <p><b>Year offered in:</b> {{current_course.academic_year}}</p>
+                    <p><b>Lecturer:</b> {{current_course.lecturer}}</p>
+                    <p><b>Lecturers course description:</b> {{current_course.lecturer_comment}}</p>
+                    <p><b>Credits:</b> {{current_course.credits}}</p>
+                    
 
-    <div style="width: 80%">
-        <canvas id="students_final_grade"></canvas>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="collapsable-section">
+                <h3><b>Course notes</b></h3>
+                <div>
+                    <div class="tabulator_table" id="comments_table"></div>
+                    <script>
+                        user_full_name = '{{user.get_name_verbose}}'
+                        load_comments_table(`{{current_course.comments_for_table|safe}}`)
+                    </script>
+                </div>
+            </div>
+            <div class="collapsable-section">
+                <h3><b>Final grade distribution across all enrolled students</b></h3>
+                <div class="chart-block">
+                    <canvas id="students_final_grade"></canvas>
+                </div>
+            </div>
+        </div>
     </div>
 
     <p>Students enrolled onto course</p>
-    <div class="tabulator_table" id="students_table" style="max-width: 1200px;"></div>
+    <div class="tabulator_table" id="students_table" style="width: 100%;"></div>
     <script>
         let backend_course_id = "{{current_course.id}}"
-        load_students_table({},true,{backend_course_id:backend_course_id})
+        load_students_table({}, true, {backend_course_id:backend_course_id})
     </script>
     <p>Assessment breakdown for the course.</p>
 {%endblock%}
