@@ -7,6 +7,18 @@ import json
 from math import ceil as math_ceil
 from exam_board.tools import band_integer_to_band_letter_map, band_integer_to_class_caluclator
 
+class CommentsForTableMixin():
+    @property
+    def comments_for_table(self):
+        return json.dumps([{
+            "comment": comment.comment.replace("\n", ""),
+            "added_by": comment.added_by.get_name_verbose,
+            "timestamp": comment.timestamp.strftime("%d/%m/%Y %H:%M"),
+            "id": str(comment.id),
+        } for comment in self.comments.all().select_related('added_by')])
+
+    def add_comment(self, comment, added_by):
+        self.comments.create(comment=comment, added_by=added_by)
 
 # Create your models here.
 class UUIDModel(models.Model):
@@ -64,7 +76,7 @@ class User(AbstractUser, UUIDModel):
         return self.get_full_name()
 
 
-class Student(UUIDModel):
+class Student(UUIDModel, CommentsForTableMixin):
     GUID = models.CharField(max_length=8, unique=True)
     full_name = models.CharField(max_length=225)
     degree_name = models.CharField(max_length=225)
@@ -109,15 +121,6 @@ class Student(UUIDModel):
     @property
     def page_url(self):
         return reverse('general:student', args=[self.GUID])
-    
-    @property
-    def student_comments_for_table(self):
-        return json.dumps([{
-            "comment": comment.comment.replace("\n", ""),
-            "added_by": comment.added_by.get_name_verbose,
-            "timestamp": comment.timestamp.strftime("%d/%m/%Y %H:%M"),
-            "id": str(comment.id),
-        } for comment in self.comments.all().select_related('added_by')])
     
     def get_data_for_table(self, extra_data=None):
         table_data = {
@@ -356,7 +359,7 @@ class Student(UUIDModel):
         ordering = ['current_academic_year']
 
 
-class Course(UUIDModel):
+class Course(UUIDModel, CommentsForTableMixin):
     code = models.CharField(max_length=11)
     name = models.CharField(max_length=255, null=True)
     academic_year = models.PositiveIntegerField()
@@ -528,22 +531,33 @@ class AssessmentResult(UUIDModel):
         ('CR', 'Credit Refused'),
     ]
     preponderance = models.CharField(choices=preponderance_choices, default='NA', max_length=2)
-    # comment = models.TextField(null=True, blank=True)
     date_submitted = models.DateField(auto_now_add=True)
     date_updated = models.DateField(auto_now=True)
 
     def __str__(self):
         return f'{self.student.full_name} - {self.assessment.name} - {self.grade}%'
 
-class Comment(UUIDModel):
-    added_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
+def CommentMixin(related_name_user):
+    class Comment_Mixin(UUIDModel):
+        added_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name=related_name_user)
+
+        comment = models.TextField(blank=False, null=False)
+        timestamp = models.DateTimeField(auto_now=True)
+
+        class Meta:
+            indexes = [
+                models.Index(fields=['timestamp']),
+            ]
+            ordering = ['-timestamp']
+            abstract = True
+        
+        def __str__(self):
+            return f"{self.added_by} - {self.timestamp} - {self.comment}"
+    
+    return Comment_Mixin
+
+class StudentComment(CommentMixin(related_name_user="student_comments")):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="comments")
 
-    comment = models.TextField(blank=False, null=False)
-    timestamp = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        indexes = [
-            models.Index(fields=['timestamp']),
-        ]
-        ordering = ['timestamp']
+class CourseComment(CommentMixin(related_name_user="course_comments")):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="comments")

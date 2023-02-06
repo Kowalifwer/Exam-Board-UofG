@@ -1,6 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
-from general.models import Student, Course, Assessment, AssessmentResult, User, AcademicYear, Comment
+from general.models import Student, Course, Assessment, AssessmentResult, User, AcademicYear, StudentComment, CourseComment
 from django.db import connection, reset_queries
 import time
 from django.db.models import Prefetch
@@ -49,6 +49,8 @@ def test_queries_2_view(request):
 def update_context_with_other_years(context, reverse_name, title="View other years!", year=None, all_years=None):
     if not all_years:
         all_years = AcademicYear.objects.all()
+    
+    course = context.get("current_course")
 
     context['all_years'] = context.get('all_years', [])
     for academic_year in all_years:
@@ -56,8 +58,11 @@ def update_context_with_other_years(context, reverse_name, title="View other yea
             context['selected_year'] = academic_year
         elif academic_year.is_current and 'selected_year' not in context:
             context['selected_year'] = academic_year
-   
-        context['all_years'].append({'obj':academic_year, 'url':reverse(reverse_name + "_exact", args=[academic_year.year])})
+        
+        args = [academic_year.year]
+        if course:
+            args.insert(0, course.code)
+        context['all_years'].append({'obj':academic_year, 'url':reverse(reverse_name, args=args)})
     
 def test_queries_3_view(request):  # This view fetches all Assessment Results, and creates a python dictionary, of all students, and their results, for each course.
     context = {}
@@ -145,7 +150,7 @@ def all_students_view(request):
 
 def all_courses_view(request, year=None):
     context = {}
-    update_context_with_other_years(context, 'general:all_courses', "View courses from other years", year=year)
+    update_context_with_other_years(context, 'general:all_courses_exact', "View courses from other years", year=year)
 
     all_courses = Course.objects.filter(academic_year=context['selected_year'].year)
     if is_fetching_table_data(request):
@@ -323,13 +328,13 @@ def course_view(request, code, year):
     context = {
         "current_course": course.first(),
     }
-    update_context_with_other_years(context, 'general:all_courses', "View courses from other years", year=year)
+    update_context_with_other_years(context, 'general:course', "View courses from other years", year=year)
 
     return render(request, "general/course.html", context)
 
 def degree_classification_view(request, year=None):
     context = {}
-    update_context_with_other_years(context, 'general:degree_classification', "View degree classifications of other years", year=year)
+    update_context_with_other_years(context, 'general:degree_classification_exact', "View degree classifications of other years", year=year)
 
     get_query_count("before fetching degree classification", False)
     if is_fetching_table_data(request):
@@ -396,7 +401,7 @@ def degree_classification_view(request, year=None):
 
 def grading_rules_view(request, year=None):
     context = {}
-    update_context_with_other_years(context, 'general:grading_rules', "View grading rules of other years", year=year)
+    update_context_with_other_years(context, 'general:grading_rules_exact', "View grading rules of other years", year=year)
     return render(request, "general/grading_rules.html", context)
 
 #GUID, FULL_NAME, FINAL BAND, FINAL GPA, L4 BAND, L4 GPA, L3 BAND, L3 GPA, >A, >B, >C, >D, ... Project, Team ...
@@ -508,40 +513,48 @@ def api_view(request):
                     response["status"] = "No changes detected."
 
             #STUDENT COMMENTS
-            if action in ["add_student_comment", "delete_student_comment"]:
-                student_id = request.POST.get("student_id", None)
+            if action in ["add_comment", "delete_comments"]:
+                obj_for_comments = None
                 if student_id:
-                    student = Student.objects.filter(id=student_id).first()
-                    if student:
-                        if action == "add_student_comment":
-                            comment = data
-                            if comment != "" and type(comment) == str and len(comment) <= 200:
-                                comment_instance = Comment.objects.create(student=student, comment=comment, added_by=request.user)
-                                student.comments.add(comment_instance)
+                    obj_for_comments = Student.objects.filter(id=student_id).first()
+                    comment_object = StudentComment
+                elif course_id:
+                    obj_for_comments = Course.objects.filter(id=course_id).first()
+                    comment_object = CourseComment
 
-                                response["status"] = "Comment added succesfully!"
-                                response["data"] = student.student_comments_for_table
+                if obj_for_comments:
+                    if action == "add_comment":
+                        comment = data
+                        if comment != "" and type(comment) == str and len(comment) <= 250:
+                            obj_for_comments.add_comment(comment=comment, added_by=request.user)
+                            response["status"] = "Comment added succesfully!"
+                            response["data"] = obj_for_comments.comments_for_table
+                        else:
+                            response["status"] = "Comment too short/long or invalid format. Please try again."
+                    
+                    elif action == "delete_comments":
+                        comment_id_list = data
+                        if comment_id_list:
+                            comments = comment_object.objects.filter(id__in=comment_id_list).select_related("added_by")
+                            status_string = "Deletion cancelled. Please address the following issues, and try again:\n"
+                            n_comments = 0
+                            for comment in comments:
+                                n_comments += 1
+                                if comment.added_by != request.user:
+                                    status_string += f"Comment {n_comments} not deleted. You are not the author of this comment.\n"
+                            
+                            if n_comments == len(comment_id_list):
+                                comments.delete()
+                                response["status"] = f"{n_comments} selected comment{'s' if n_comments>1 else ''} deleted succesfully!"
+                                response["data"] = obj_for_comments.comments_for_table
                             else:
-                                response["status"] = "Invalid comment."
-                        elif action == "delete_student_comment":
-                            comment_id = data
-                            if comment_id:
-                                comment = Comment.objects.filter(id=comment_id).select_related("added_by").first()
-                                if comment:
-                                    if comment.added_by != request.user:
-                                        response["status"] = "You are not allowed to delete this comment."
-                                    else:
-                                        comment.delete()
-                                        response["status"] = "Comment deleted succesfully!"
-                                        response["data"] = student.student_comments_for_table
-                                else:
-                                    response["status"] = "Comment not found."
-                            else:
-                                response["status"] = "No comment id provided."
-                    else:
-                        response["status"] = "Student not found."
+                                response["status"] = "Recieved comments do not match the comments to be deleted. Please refresh the page and try again."
+                            
+                            response["data"] = obj_for_comments.comments_for_table
+                        else:
+                            response["status"] = "No comment id's provided, for deletion."
                 else:
-                    response["status"] = "No student id provided."
+                    response["status"] = "Server error. Student or course not found."
         else:
             response["status"] = "No action provided."
     
