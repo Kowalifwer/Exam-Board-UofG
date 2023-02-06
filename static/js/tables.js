@@ -146,18 +146,37 @@ const formatter_to_percentage = function(cell, formatterParams, onRendered){
 const custom_average_calculator = function(values, data, calcParams){
     let total = 0;
     let count = 0;
-
+    let credit_mode = false;
+    let total_credits = 0;
+    let credit_values = [];
+    if (data?.[0]?.credits) {
+        credit_mode = true;
+    }
+    
     let check_list = [...preponderance_list, "N/A", ""]
 
-    values.forEach(function(value){
-        if (!check_list.includes(value)) {
-            total += parseInt(value);
-            count++;
+    if (credit_mode) {
+        for (let i = 0; i < data.length; i++) {
+            let row = data[i];
+            if (row.credits) {
+                total_credits += row.credits;
+                credit_values.push(row.credits);
+            }
         }
-    });
+    }
+
+    for (let i = 0; i < values.length; i++) {
+        if (!check_list.includes(values[i])) {
+            total += (credit_mode && credit_values[i]) ? parseInt(values[i]) * credit_values[i]: parseInt(values[i]);
+            count++;
+        } else { // if the value is N/A or MV, then we need to subtract the credit value from the total
+            total_credits -= credit_values[i];
+            credit_values[i] = 0;
+        }
+    }
 
     if (count) {
-        return total / count;
+        return (credit_mode) ? (total/total_credits) : (total / count);
     } else {
         return "N/A";
     }
@@ -182,8 +201,12 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         //     //         return sub_column
         //     //     })
         //     // }
-        //     if (!column.minWidth)
-        //         column.minWidth = 100
+        //     // if (!column.minWidth)
+        //     //     // column.minWidth = 100
+        //     // if (column.titleFormatter) {
+        //     //     // column.minWidth = 20
+        //     //     column.width = 20
+        //     // }
         //     return column
         // }),
         columns: columns,
@@ -194,16 +217,20 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         selectable:true,
         rowHeight: 30,
         groupToggleElement: "header",
+
         autoResize: false,
 
-        height: "800px",
+        // height: 700,
+        // maxHeight: "800px",
+        placeholder: "Table is empty",
 
         paginationSize: 100,
         paginationSizeSelector:[25, 50, 100, 1000],
 
-        layout: "fitColumns", //"fitColumns", //fitDataStretch
+        layout: "fitDataFill", //"fitColumns", //fitDataStretch
 
         movableColumns: true,
+
         dataLoaderLoading:`<span>Loading ${title} table data</span>`,
         // layoutColumnsOnNewData:true
         downloadConfig:{
@@ -371,6 +398,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                 </select>
             `
         )
+        select_element.classList.add('tabulator-format-select')
 
         select_element.addEventListener("change", function(e){
             if (this.value == "P") {
@@ -519,7 +547,8 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                         }
                     }
                 },
-                responsive : true,            }
+                responsive : true,            
+            }
             let final_setup = {...default_setup, ...chart_setup}
 
             let chart = new Chart(link_data[0], final_setup)
@@ -1251,65 +1280,77 @@ function load_grading_rules_table(data_json){
     })
 }
 
-function load_student_comments_table(data_json){
-
+function load_comments_table(data_json){
     let columns = [
-        {title: "Comment", field: "comment", tooltip:true},
-        {title: "Lecturer", field: "added_by", vertAlign:"middle"},
-        {title: "Date added", field: "timestamp", vertAlign:"middle"},
+        {title: "Comment", field: "comment", vertAlign:"middle", widthGrow: 1},
+        {title: "Lecturer", field: "added_by", vertAlign:"middle", minWidth: 200, maxWidth: 300},
+        {title: "Date added", field: "timestamp", vertAlign:"middle", width:150},
         {title: "Comment ID", field: "id", visible: false, vertAlign:"middle"}
     ]
 
     let footer_element = 
-        `<div style='display: flex; align-items: center; gap: 5px;'>
+        `<div class='comment-table-footer'>
             <textarea type="text" id="comment_input" placeholder="Write your comment here.."></textarea>
             <button id="add_comment_button">Add comment</button>
+            <button class="button_warning hidden" id="delete_comments_button">Delete selected comment(s)</button>
         </div>`
     let final_extra_constructor_params = {
         "selectable": true,
         selectableCheck:function(row){
-            //row - row component
-            return row.getData().added_by == user_full_name; //allow selection of rows where the age is greater than 18
+            return user_full_name == "SUPER-ADMIN" || row.getData().added_by == user_full_name; //allow selection of rows where the age is greater than 18
         },
         "pagination": false,
         "layout": "fitColumns",
         "footerElement": footer_element,
-        "rowHeight": 35,
+        "rowHeight": 60,
+        "autoResize": true,
+        "height": "100%",
         "index": "id",
-        "height": "300px", 
+        "placeholder":"There are no comments right now. Feel free to add the first comment!",
         rowContextMenu:[
             {
-                label:"Delete comment",
+                label:"Delete selected comment(s)",
                     action:function(e, row){
-                        if(row.getData().added_by == user_full_name) {
-                            if (confirm("Are you sure you want to delete this comment?")) {
-                                api_post("delete_student_comment", row.getData().id).then(response => {
-                                    if (response.data) {
-                                        table.setData(response.data).then(function () {
-                                            setTimeout(() => {alert(response.status)}, 10)
-                                        })
-                                    } else {
-                                        alert(response.status)
-                                    }
-                                })
-                            }
-                        } else {
-                            alert("You can only delete your own comments")
+                        let selected_rows = row.getTable().getSelectedRows()
+                        let confirm_message = "Are you sure you want to delete this comment?"
+                        if (selected_rows.length > 1) {
+                            confirm_message = `Are you sure you want to delete these ${selected_rows.length} comments?`
+                        }
+                        if (confirm(confirm_message)) {
+                            api_post("delete_comments", selected_rows.map(
+                                row => row.getData().id
+                            )).then(response => {
+                                if (response.data) {
+                                    table.setData(response.data).then(function () {
+                                        setTimeout(() => {alert(response.status)}, 10)
+                                    })
+                                } else {
+                                    alert(response.status)
+                                }
+                            })
                         }
                     }
             },
         ],
     }
-    
-    let table = init_table("student_comments_table", columns, data_json, final_extra_constructor_params, {no_multirow: true})
+    let table = init_table("comments_table", columns, data_json, final_extra_constructor_params, {no_multirow: true})
+    table.on("rowSelectionChanged", function(data, rows){
+        if (rows.length >= 1) {
+            document.getElementById('delete_comments_button').classList.remove("hidden")
+        } else {
+            document.getElementById('delete_comments_button').classList.add("hidden")
+        }
+    })
+
     table.on("tableBuilt", function(){
         let footer = table.getWrapper().querySelector('.tabulator-footer-contents')
         let add_comment_button = footer.querySelector('#add_comment_button')
+        let delete_comments_button = footer.querySelector('#delete_comments_button')
         let comment_input = footer.querySelector('#comment_input')
         add_comment_button.addEventListener('click', function(){
             let comment = comment_input.value
             if (comment.length > 0) {
-                api_post("add_student_comment", comment).then(response => {
+                api_post("add_comment", comment).then(response => {
                     if (response.data) {
                         table.setData(response.data).then(function () {
                             comment_input.value = ""
@@ -1321,6 +1362,27 @@ function load_student_comments_table(data_json){
                 })
             } else {
                 alert("Please enter a non empty comment.")
+            }
+        })
+
+        delete_comments_button.addEventListener('click', function(){
+            let selected_rows = table.getSelectedRows()
+            let confirm_message = "Are you sure you want to delete this comment?"
+            if (selected_rows.length > 1) {
+                confirm_message = `Are you sure you want to delete these ${selected_rows.length} comments?`
+            }
+            if (confirm(confirm_message)) {
+                api_post("delete_comments", selected_rows.map(
+                    row => row.getData().id
+                )).then(response => {
+                    if (response.data) {
+                        table.setData(response.data).then(function () {
+                            setTimeout(() => {alert(response.status)}, 10)
+                        })
+                    } else {
+                        alert(response.status)
+                    }
+                })
             }
         })
     })
