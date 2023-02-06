@@ -1,13 +1,46 @@
 :root {
-        /* #f0f0f0 in decimal RGB */
+
+    --uog-dark: #0b345f;
+
+    /* #003865 */
+    --uog-dark-2: rgb(0,56,101);
+    
+    /* #005398 */
+    --uog-normal: rgb(0,83,152);
+
+    --uog-light: #005398;
+
+    /* #f7f7f7 */
+    --uog-light-grey: rgb(247,247,247);
+
+    /* #006630 */
+    --uog-green: rgb(0,102,48);
+
+    /* #951272 */
+    --uog-purple: rgb(149,18,114);
+
+    /* #5b4d94 */
+    --uog-pimp: rgb(91,77,148);
+
+
+    /* #f0f0f0 in decimal RGB */
     --p-color: 0,56,101;
       
     --p-c-main-01: rgba(var(--p-color), 0.8);
     --p-c-text-main: rgba(var(--p-color), 1);
+    --primary-color: #f5f5f5; /*gradients, some backgrounds, highlights, animations*/
+    --secondary-color: #FFFFFA; /*text and gradients, backgrounds*/
 
 
-    --primary-color: #FFFFFA; /*text and gradients, backgrounds*/
-    --secondary-color: #f5f5f5; /*gradients, some backgrounds, highlights, animations*/
+    /* --p-color: 255,255,255;
+
+    --primary-color: var(--uog-light-grey);
+    --secondary-color: var(--uog-normal);
+    --p-c-main-01: rgba(var(--p-color), 0.8);
+    --p-c-text-main: rgba(var(--p-color), 1); */
+
+
+
     --primary-color-dim: rgb(118,16,118,0.5); /*text and gradients, backgrounds*/
     --dark-color: var(--p-c-text-main);
     --error-color: rgb(231, 36, 36);
@@ -34,7 +67,7 @@
     --bad-red: #F15156;
 
     --header-height: 100px;
-    --header-shadow: 0 4px 2px -2px gray;
+    --header-shadow: 0 4px 2px -2px rgba(var(--p-color), 0.6);
 
     --sidebar-width: 350px;
     --sidebar-width-collapsed: 75px;
@@ -42,27 +75,6 @@
 
     --transition: transform 600ms ease, width 600ms ease, opacity 400ms, margin 600ms ease;
 
-    --uog-dark: #0b345f;
-
-    /* #003865 */
-    --uog-dark-2: rgb(0,56,101);
-    
-    /* #005398 */
-    --uog-normal: rgb(0,83,152);
-
-    --uog-light: #005398;
-
-    /* #f7f7f7 */
-    --uog-light-grey: rgb(247,247,247);
-
-    /* #006630 */
-    --uog-green: rgb(0,102,48);
-
-    /* #951272 */
-    --uog-purple: rgb(149,18,114);
-
-    /* #5b4d94 */
-    --uog-pimp: rgb(91,77,148);
 }
 
 /* lexend-300 - latin */
@@ -400,12 +412,12 @@ body {
     padding-top: 70px;
 }
 
-.header {
+.header, .content-extra-header {
     transition: var(--transition);
     width: calc(100vw - var(--sidebar-width-collapsed));
     padding: 0 var(--body-padding);
-    box-sizing: border-box;
     position: fixed;
+    box-sizing: border-box;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -416,18 +428,11 @@ body {
 }
 
 .content-extra-header {
-    position: fixed;
-    width: 100%;
-    display: flex;
     padding: 17.5px var(--body-padding);
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: var(--header-shadow);
-    background: var(--secondary-color);
-    z-index: 1000;
+    height: calc(var(--header-height) / 1.5);
 }
 
-.main-area.main-area-collapsed .header {
+.main-area-collapsed .header, .main-area-collapsed .content-extra-header{
     width: calc(100vw - var(--sidebar-width));
 }
 
@@ -570,7 +575,7 @@ body {
     /* justify-content: center; */
     gap: 5px;
     margin: 5px 0;
-    padding: 20px 0;
+    padding: 40px 10px 10px 10px;
 }
 
 .tabulator-columns-menu > * {
@@ -814,7 +819,11 @@ button:not(.button_default):hover:disabled {
     color: rgba(var(--p-color), 0.40);
 }
 
-
+.button_warning {
+    background-color: #FFD9D9 !important;
+    border-color: #FFA8A8 !important;
+    color: #FF4B4B !important;
+}
 
 /* LAYOUT */
 .collapsable-section {
@@ -828,9 +837,9 @@ button:not(.button_default):hover:disabled {
     margin-bottom: 3px;
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
+    /* justify-content: space-between; */
     align-items: center;
-    padding: 1rem 1rem;
+    padding: 15px 25px;
     height: calc(var(--header-height) / 2);
     background-color: var(--secondary-color);
     /* border-bottom: 1px solid rgba(var(--p-color), 0.1); */
@@ -839,43 +848,66 @@ button:not(.button_default):hover:disabled {
 .collapsable-section > :last-child {
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
     width: 100%;
     min-height: 25px;
     background-color: var(--secondary-color);
     border-bottom: 1px solid rgba(var(--p-color), 0.1);
 }
 
+.collapsable-section .chart-block {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 380px;
+}
+
+
 
 /* STUDENT PAGE */
 
 .student-page-top-section {
-    display: flex;
-    /* make it a 50/50 flex */
-    flex-direction: row;
-    outline: 1px solid green;
-    gap: 20px;
+    display: grid;
+    overflow: hidden;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 1fr;
+    grid-column-gap: 20px;
+    margin-top: 25px;
+    width: 100%;
 }
 
 .student-page-top-section > :first-child {
-    flex-grow: 1;
-    flex-shrink: 1;
-    outline: 1px solid red;
+    /* flex-grow: 1;
+    flex-shrink: 1; */
+    /* align-self: stretch; */
 }
 
 .student-page-top-section > :last-child {
     /* flex: 1; */
-    width: 706px;
-    outline: 1px solid blue;
+    min-width: 750px;
+}
+
+#comments_table {
+    border: none;
+    height: 100%;
+}
+
+#comments_table .tabulator-tableholder {
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 300px !important;
+}
+
+#comments_table .tabulator-row .tabulator-cell {
+    white-space: initial;
+    overflow: auto;
 }
 
 .student-page-top-section > :last-child .tabulator-components {
     display: none;
-}
-
-.student-page-top-section > :last-child .tabulator {
-    width: 100%;
-    outline: none;
-    border: none;
 }
 
 .student-page-top-section > :last-child > :first-child {
@@ -886,8 +918,17 @@ button:not(.button_default):hover:disabled {
     margin-top: 20px;
 }
 
+.student-information-panel {
+    height: 100%;
+}
+
+.student-information-panel > div {
+    height: 100%;
+    padding: 15px 25px;
+}
+
 .tabulator {
-    /* max-height: 600px; */
+    max-height: 600px;
     /* max-width: 100% !important; */
     /* box-shadow: var(--shadow); */
     border: 1px solid rgba(var(--p-color), 0.55);
@@ -895,29 +936,60 @@ button:not(.button_default):hover:disabled {
     background-color: white;
 }
 
+.tabulator-header-contents {
+    background-color: var(--secondary-color);;
+}
+
+.tabulator-tableholder {
+    background-color: var(--secondary-color);;
+    /* max-height: 600px !important; */
+}
+
 .tabulator-wrapper {
     position: relative;
     display: flex;
     flex-direction: column;
-    /* width: 1000px; */
-    /* align-items: center; */
-    /* width: 100%; */
-    /* margin: 0 auto; */
-    /* background-color: white !important; */
-    /* padding: 50px; */
 }
-
 
 .tabulator_table * {
     border-color: rgba(var(--p-color), 0.3);
     /* outline-color: rgba(var(--p-color), 0.5); */
 }
 
-.tabulator-col-resize-handle {
-    /* background-color: rgba(var(--p-color), 0.5); */
-    /* width: 10px; */
-    /* margin-left: 5px;
-    margin-right: 5px; */
+.tabulator .tabulator-header, .tabulator .tabulator-header .tabulator-col {
+    background-color: var(--secondary-color);
+}
+
+.tabulator .tabulator-footer {
+    background-color: var(--secondary-color);;
+}
+
+/* .tabulator .tabulator-col-resize-handle {
+    position: relative;
+    width: 1px;
+    margin-left: 0px;
+    margin-right: 0px;
+} */
+
+/* .tabulator .tabulator-col-resize-handle::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(var(--p-color), 0.9);
+    width: 1px;
+} */
+
+.tabulator-placeholder-contents {
+    color: rgba(var(--p-color), 0.9) !important;
+    font-weight: normal !important;
+    margin-bottom: 17px;
+}
+
+.tabulator-format-select {
+    position: relative;
 }
 
 /* .tabulator-row.tabulator-selectable:hover {
@@ -967,6 +1039,25 @@ button:not(.button_default):hover:disabled {
 
 .tabulator-group {
     background-color: rgba(var(--p-color), 0.1) !important;
+}
+
+.comment-table-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    gap: 15px;
+}
+
+.comment-table-footer > textarea {
+    flex-grow: 1;
+    flex-shrink: 1;
+    height: 100%;
+    resize: none;
+}
+
+.comment-table-footer > button {
+    padding: 22.5px 15px;
 }
 
 
