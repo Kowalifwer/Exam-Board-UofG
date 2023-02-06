@@ -10,39 +10,42 @@
 
     <div class="student-page-top-section">
         <div>
-            <div class="collapsable-section">
-                <h3>Student information</h3>
+            <div class="collapsable-section student-information-panel">
+                <h3><b>Student information: </b>&nbsp {{student}}</h3>
                 <div>
-                    <p>Student: {{student}}</p>
-                    <p>Completed years: ... show all.</p>
-                    <p>Faster route: {{student.is_faster_route}}</p>
-                    <p>Current level: XD</p>
-                    Final Classification: {{student.get_final_classification}}
+                    <p><b>GUID:</b> {{student.GUID}}</p>
+                    <p><b>Full name:</b> {{student.full_name}}</p>
+                    <p><b>Degree name:</b> {{student.degree_name}}</p>
+                    <p><b>Degree title:</b> {{student.degree_title}}</p>
+                    <p><b>Current level:</b> {{student.current_level_verbose}}</p>
+                    <p><b>Faster route:</b> {{student.is_faster_route}}</p>
+                    
+                    <p><b>Current academic year:</b> {{student.current_academic_year}}</p>
+                    <p><b>Start academic year:</b> {{student.start_academic_year}}</p>
+                    <p><b>End academic year:</b> {{student.end_academic_year}}</p>
+                    
+                    <!-- Final Classification: {{student.get_final_classification}} -->
                 </div>
             </div>
         </div>
         <div>
             <div class="collapsable-section">
-                <h3>Lecturer comments</h3>
+                <h3><b>Lecturer comments</b></h3>
                 <div>
-                    {% with comments=student.student_comments_for_table|safe%}
-                    {%if comments == '[]'%} <p>There are no comments right now. Feel free to add the first comment!</p>{%endif%}
-                    <div class="tabulator_table" id="student_comments_table" style="width:700px;"></div>
+                    <div class="tabulator_table" id="comments_table"></div>
                     <script>
                         let user_full_name = '{{user.get_name_verbose}}'
-                        load_student_comments_table(`{{comments}}`)
+                        load_comments_table(`{{student.comments_for_table|safe}}`)
                     </script>
-                {%endwith%}
                 </div>
             </div>
             <div class="collapsable-section">
-                <h3>GPA across all completed years</h3>
-                <div>
+                <h3><b>GPA across all completed years</b></h3>
+                <div class="chart-block">
                     <canvas id="student_level_chart"></canvas>
                 </div>
             </div>
         </div>
-
     </div>
 
     <p>If graduated: Do something about it!!!</p>
