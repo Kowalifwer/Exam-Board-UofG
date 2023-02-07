@@ -352,7 +352,7 @@ def level_progression_view(request, level, year=None):
         'current_level': level,
     }
     update_context_with_extra_header_data(context, 'general:level_progression_exact', "View level progression of other years", year=year, all_years=None, extra_level_iterator=degree_progression_levels)
-    get_query_count("before fetching level progression", False)
+    get_query_count("before fetching level progression", True)
     if is_fetching_table_data(request):
         student_course_map = {}
         # students = Student.objects.filter(courses__academic_year=context['selected_year']).prefetch_related("results__course", "results__assessment", "courses", "courses__assessments")

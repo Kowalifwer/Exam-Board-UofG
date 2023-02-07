@@ -1,4 +1,7 @@
 //helper functions
+const c_good = "#7DDE92"
+const c_mid = "#FF9B71"
+const c_poor = "#F15156"
 const preponderance_list = ["NA", "MV", "CW", "CR"]
 const boundary_map = {
     0: "H",
@@ -35,18 +38,21 @@ const boundary_map = {
 
 const preponderance_formatter = function (cell) {
     let value = cell.getValue()
-    if (value == "N/A"){
-        cell.getElement().style.backgroundColor = "#E06666"
-    } else if (value == "NA") {
-        cell.getElement().style.backgroundColor = "#BBDBB4"
-    } else if (value == "MV"){
-        cell.getElement().style.backgroundColor = "#648DE5"
-    } else if (value == "CW"){
-        //set cell colour to dark gray
-        cell.getElement().style.backgroundColor = "#EFF2F1"
-    } else if (value == "CR"){
-        //set cell colour to dark red
-        cell.getElement().style.backgroundColor = "#A64253"
+    let element = cell.getElement()
+    if (element) {
+        if (value == "N/A"){
+            element.style.backgroundColor = "#E06666"
+        } else if (value == "NA") {
+            element.style.backgroundColor = "#BBDBB4"
+        } else if (value == "MV"){
+            element.style.backgroundColor = "#648DE5"
+        } else if (value == "CW"){
+            //set cell colour to dark gray
+            element.style.backgroundColor = "#EFF2F1"
+        } else if (value == "CR"){
+            //set cell colour to dark red
+            element.style.backgroundColor = "#A64253"
+        }
     }
     return value
 }
@@ -80,7 +86,7 @@ function percent_to_integer_band(percent, round_up=true) {
             return 16
         else if (bound_check(percent,66.5,69.5))
             return 17
-    } else if (bound_check(percent,29.5, 49.5)) {
+    } else if (bound_check(percent, 29.5, 49.5)) {
         if (percent < 33.5)
             return 6
         else if (bound_check(percent,33.5,36.5))
@@ -93,7 +99,7 @@ function percent_to_integer_band(percent, round_up=true) {
             return 10
         else if (bound_check(percent,46.5,49.5))
             return 11
-    } else if (bound_check(percent,69.5, 91.5)) {
+    } else if (percent >= 69.5) {
         if (percent < 73.5)
             return 18
         else if (bound_check(percent,73.5,78.5))
@@ -104,7 +110,7 @@ function percent_to_integer_band(percent, round_up=true) {
             return 21
         else if (percent >= 91.5)
             return 22
-    } else if (bound_check(percent,0, 29.5)) {
+    } else if (percent < 29.5) {
         if (percent < 9.5)
             return 0
         else if (bound_check(percent,9.5,14.5))
@@ -240,7 +246,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             rowGroups:false, //do not include row groups in downloaded table
             columnCalcs:false, //do not include column calcs in downloaded table
         },
-        rowContextMenu: []
+        rowContextMenu: [],
         //downloadRowRange:"selected", //download selected rows
     }
 
@@ -343,6 +349,15 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                 existing_cols[col_definition.title] = col_definition
             }
         });
+
+        const downloadAccessor = function(value, data, type, params, column){
+            //mimic the behavior of the object (cell) that gets passed to the formatter. Doing so, will allow downloads to be formatted the same way as the table
+            return formatter({
+                getValue: () => value,
+                getElement: () => null,
+            })
+        }
+
         var extract_cols = Object.values(existing_cols)
         extract_cols.forEach(function(col){
             if (col.columns) {
@@ -350,6 +365,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                     if (col_inner.cssClass && col_inner.cssClass.includes(cssClass)) {
                         if (formatter) {
                             col_inner.formatter = formatter
+                            col_inner.accessorDownload = downloadAccessor
                             if (new_bottom_calc_function) {
                                 col_inner.bottomCalc = new_bottom_calc_function
                                 col_inner.bottomCalcFormatter = formatter
@@ -363,6 +379,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                 if (col.cssClass && col.cssClass.includes(cssClass)) {
                     if (formatter) {
                         col.formatter = formatter
+                        col.accessorDownload = downloadAccessor
                         if (new_bottom_calc_function) {
                             col.bottomCalc = new_bottom_calc_function
                             col.bottomCalcFormatter = formatter
@@ -562,6 +579,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 }
 
 //define various table setups below
+
 function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={'title': 'Students'}){
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
@@ -652,7 +670,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
             })
 
             //make abc grades pleasant green color, d grade yellow, and e f g h red
-            let colors = ["#7DDE92","#7DDE92","#7DDE92","#FF9B71","#F15156","#F15156","#F15156","#F15156"]
+            let colors = [c_good,c_good,c_good,c_mid,c_poor,c_poor,c_poor,c_poor]
 
             return {
                 data: {
@@ -697,8 +715,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
 
                     }
                 }
-            } 
-            
+            }   
         }
     ])
     }
@@ -735,7 +752,7 @@ function load_level_progression_table(level){
 
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
-        {title: "GUID", field: "GUID", topCalc: "count", headerFilter: "input", frozen: true},
+        {title: "GUID", field: "GUID", headerFilter: "input", frozen: true},
         {title: "Name", field: "name", headerFilter: "input"},
         {
             title: "Degree info",
@@ -763,7 +780,7 @@ function load_level_progression_table(level){
         // average coursework grade across all courses
         // average overall grade across all courses
         {title: "Total credits taken", field: "total_credits_taken"},
-        {title: "Total credits GPA TOTAL", field: "final_p"},
+        {title: "Total credits GPA TOTAL", field: "final_p", cssClass: "format_grade"},
         // {title: "> A", field: "greater_than_a"},
         // {title: "> B", field: "greater_than_b"},
         // {title: "> C", field: "greater_than_c"},
@@ -802,11 +819,11 @@ function load_level_progression_table(level){
             // console.log(data)
             let message = ""
             if (value == "discretionary") {
-                message = `Number of student who will progress under schools discretion: ${count}`
+                message = `Students who will progress under schools discretion (${count})`
             } else if (value == "no") {
-                message = `Number of student who will not progress: ${count}`
+                message = `Students who will not progress (${count})`
             } else if (value == "yes") {
-                message = `Number of student who are guaranteed to progress: ${count}`
+                message = `Students who are guaranteed to progress (${count})`
             }
             return message
         },
@@ -815,9 +832,74 @@ function load_level_progression_table(level){
 
     }, {'title': 'Degree classification data for level '+level+' students'})
 
+
+    // table.addChartLink([
+    //     document.getElementById("students_final_grade"), function(table_inner) {
+    //         let table_data = table_inner.getData()
+    //         let chart_data = {};
+    //         let boundaries = ["A","B","C","D","E","F","G","H"]
+    //         for (let x in boundaries) {
+    //             chart_data[boundaries[x]] = 0
+    //         }
+    //         table_data.forEach(function(row){
+    //             let band_grade = boundary_map[percent_to_integer_band(row.final_grade)][0]
+    //             chart_data[band_grade] = (chart_data[band_grade] || 0) + 1;
+    //         })
+
+    //         //make abc grades pleasant green color, d grade yellow, and e f g h red
+    //         let colors = [c_good,c_good,c_good,c_mid,c_poor,c_poor,c_poor,c_poor]
+
+    //         return {
+    //             data: {
+    //                 labels: Object.values(boundaries),
+    //                 datasets: [
+    //                     {
+    //                         label: "Number of students",
+    //                         data: Object.values(chart_data),
+    //                         barPercentage: 0.90,
+    //                         backgroundColor: colors,
+    //                     }
+    //                 ]
+    //             },
+    //             options: {
+    //                 scales: {
+    //                     y: {
+    //                         beginAtZero: true,
+    //                         title: {
+    //                             display: true,
+    //                             text: "Number of students",
+    //                         }
+    //                     },
+    //                     x: {
+    //                         title: {
+    //                             display: true,
+    //                             text: "Final grade for course",
+    //                         }
+    //                     }
+    //                 },
+    //                 plugins: {
+    //                     tooltip: {
+    //                         callbacks: {
+    //                             footer: function(tooltipItems) {
+    //                                 return "Percentage of students: " + (tooltipItems[0].parsed.y / table_data.length * 100).toFixed(2) + "%"
+    //                             }
+    //                         }
+    //                     },
+    //                     title: {
+    //                         display: true,
+    //                         text: "Final grade distribution for course",
+    //                     }
+
+    //                 }
+    //             }
+    //         }   
+    //     }
+    // ])
+
     table.addChartLink([document.getElementById("level_progression_chart"), function(table_inner) {
         let table_data = table_inner.getData()
         let classes = ["yes", "discretionary", "no"]
+        let colors = [c_good,c_mid,c_poor]
         let chart_data = []
         for (let x in classes) {
             chart_data[classes[x]] = 0
@@ -832,6 +914,7 @@ function load_level_progression_table(level){
                     {
                         label: "Number of students",
                         data: Object.values(chart_data),
+                        backgroundColor: colors,
                     }
                 ]
             }
@@ -919,7 +1002,7 @@ function load_degree_classification_table(level) {
 
     table.addChartLink([document.getElementById("degree_classification_chart"), function(table_inner) {
         let table_data = table_inner.getData()
-        let classes = ["Fail", "3rd", "2:2", "2:1", "1st"]
+        let classes = ["1st", "2:1", "2:2", "3rd", "Fail"]
         let chart_data = []
         for (let x in classes) {
             chart_data[classes[x]] = 0
@@ -934,6 +1017,7 @@ function load_degree_classification_table(level) {
                     {
                         label: "Number of students",
                         data: Object.values(chart_data),
+                        backgroundColor: [c_good, c_good, c_good, c_mid, c_poor],
                     }
                 ]
             }
@@ -1113,13 +1197,10 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
             }
         });
     })
-    
-    
 
     if (settings.student) {
         table.addChartLink([document.getElementById("student_level_chart"), function(table_inner) {
         let student_data = settings.student
-        let table_data = table_inner.getData()
         let chart_data = {};
         let year_datas = []
 
