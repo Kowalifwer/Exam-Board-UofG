@@ -145,6 +145,61 @@ class Student(UUIDModel, CommentsForTableMixin):
     def get_data_for_table_json(self, extra_data=None):
         return json.dumps(self.get_data_for_table(extra_data))
     
+    def get_extra_data_level_progression(self, course_map):
+        extra_data = {
+            "progress_to_next_level": "no", #yes, discretionary, no
+            "final_band": 0,
+            "final_gpa": 0,
+            # "greater_than_a": 0,
+            # "greater_than_b": 0,
+            # "greater_than_c": 0,
+            # "greater_than_d": 0,
+            # "greater_than_e": 0,
+            # "greater_than_f": 0,
+            # "greater_than_g": 0,
+            # "greater_than_h": 0,
+            "final_p": 0,
+            "total_credits_taken": 0,
+            "project": 0,
+            "team": 0,
+        }
+
+        grade_adder_tuples = [0, 0]
+        for course, assessment_results in course_map.items():
+            credits = course.credits
+            extra_data["total_credits_taken"] += credits
+            course_grade = 0
+            for expected_assessment_result_tuples in assessment_results:
+                assessment, result = expected_assessment_result_tuples
+                grade = 0
+                if result:
+                    grade = result.grade
+                else:
+                    no_res_counter += 1
+                course_grade += grade * assessment.weighting / 100
+                # if course.credits == 60:
+                #     extra_data["project_masters"] = course_grade
+                # elif course.credits == 40:
+                #     pass
+
+            grade_adder_tuples[0] += course_grade * credits
+            grade_adder_tuples[1] += credits
+        if grade_adder_tuples[1] == 0: ##no courses taken at level 4
+            extra_data["final_gpa"] = "N/A"
+            extra_data["final_band"] = "N/A"
+        else:
+            final_grade = grade_adder_tuples[0] / grade_adder_tuples[1]
+            extra_data["final_p"] = final_grade
+            extra_data["final_gpa"] = math_ceil(final_grade / (100/22))
+            extra_data["final_band"] = band_integer_to_band_letter_map[extra_data["final_gpa"]]
+
+        if final_grade >= 59.5:
+            extra_data["progress_to_next_level"] = "yes"
+        elif final_grade >= 49.5:
+            extra_data["progress_to_next_level"] = "discretionary"
+        
+        return extra_data
+    
     def get_extra_data_degree_classification(self, masters, lvl3_courses, lvl3_results, lvl4_courses, lvl4_results, lvl5_courses={}, lvl5_results={}):
         extra_data = {
             "class": "N/A",

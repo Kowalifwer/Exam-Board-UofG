@@ -352,8 +352,58 @@ def level_progression_view(request, level, year=None):
         'current_level': level,
     }
     update_context_with_extra_header_data(context, 'general:level_progression_exact', "View level progression of other years", year=year, all_years=None, extra_level_iterator=degree_progression_levels)
+    get_query_count("before fetching level progression", False)
+    if is_fetching_table_data(request):
+        student_course_map = {}
+        # students = Student.objects.filter(courses__academic_year=context['selected_year']).prefetch_related("results__course", "results__assessment", "courses", "courses__assessments")
+        # for student in students:
+        #     courses = [course for course in student.courses.all() if course.academic_year == year]
+        #     student_course_map[student] = {}
+        #     for course in courses:
+        #         student_course_map[student][course] = []
+        #         for assessment in course.assessments.all():
+        #             found_result = None
+        #             for result in student.results.all():
+        #                 if result.course == course and result.assessment == assessment:
+        #                     found_result = result
+        #                     break
+        #             student_course_map[student][course].append((assessment, found_result))
+        courses = Course.objects.filter(academic_year=context["selected_year"].year).prefetch_related("assessments", "students", "results", "results__assessment", "results__student")
+        
+        for course in courses:
+            enrolled_students = [student for student in course.students.all() if (student.current_level - (student.current_academic_year - context["selected_year"].year)) == level]
+            if not enrolled_students:
+                continue
 
-    return render(request, "general/degree_classification.html", context)
+            expected_assessments = course.assessments.all()
+            course_results = course.results.all()
+            student_id_to_results_map = {}
+            for result in course_results:
+                if result.student.id not in student_id_to_results_map:
+                    student_id_to_results_map[result.student.id] = {}
+                if course.id not in student_id_to_results_map[result.student.id]:
+                    student_id_to_results_map[result.student.id][course.id] = {}
+                student_id_to_results_map[result.student.id][course.id][result.assessment.id] = result
+            
+            for student in enrolled_students:
+                if student not in student_course_map:
+                    student_course_map[student] = {}
+                student_course_map[student][course] = []
+                for assessment in expected_assessments:
+                    student_course_map[student][course].append((assessment, student_id_to_results_map.get(student.id, {}).get(course.id, {}).get(assessment.id, None)))
+
+        all_students_json = [
+            student.get_data_for_table(
+                {
+                    "method": "get_extra_data_level_progression",
+                    "args": [course_map]
+                }
+            ) for student, course_map in student_course_map.items()
+        ]
+        get_query_count("after fetching level progression")
+        return JsonResponse(all_students_json, safe=False)
+
+    return render(request, "general/level_progression.html", context)
 
 def degree_classification_view(request, level, year=None):
     if level not in degree_classification_levels.keys():
@@ -365,11 +415,7 @@ def degree_classification_view(request, level, year=None):
 
     get_query_count("before fetching degree classification", False)
     if is_fetching_table_data(request):
-        level = request.GET.get("level")
-        if level not in ("4", "5"):
-            return JsonResponse([], safe=False)
-        
-        masters = level == "5"
+        masters = level == 5
         students = set(Student.objects.filter(end_academic_year=context['selected_year'].year, current_academic_year=context['selected_year'].year, is_masters=False if not masters else True).prefetch_related("results__course", "results__assessment", "courses", "courses__assessments"))
         student_course_map_lvl5 = {}
         student_results_map_lvl5 = {}
@@ -380,7 +426,7 @@ def degree_classification_view(request, level, year=None):
         no_course_students = set()
         base_year = context['selected_year'].year - 1 if not masters else context['selected_year'].year - 2
         for student in students:
-            if student.current_level != int(level):
+            if student.current_level != level:
                 no_course_students.add(student)
                 continue
 
@@ -409,7 +455,7 @@ def degree_classification_view(request, level, year=None):
 
             student_course_map_lvl3[student] = lvl3_courses
             student_results_map_lvl3[student] = [result for result in student.results.all() if result.course.academic_year == base_year]
-            
+
         all_students_json = [
             student.get_data_for_table(
                 {

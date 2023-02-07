@@ -1,0 +1,25 @@
+{%extends 'base.html'%}
+{%load static%}
+
+{% block head %}
+    <script src="{% static 'js/tables.js'%}"></script>
+{% endblock %}
+
+{% block body %}
+    {%if current_level == 4%}
+        <p>Level 4 Hons</p>
+    {%elif current_level == 5%}
+        <p>Level 5 (M) Hons</p>
+    {%else%}
+        <p>Level {{current_level}}</p>
+    {%endif%}
+
+    <div style="width: 80%">
+        <canvas id="level_progression_chart">loading chart</canvas>
+    </div>
+
+    <div class="tabulator_table" id="level_progression_table" style="max-width: 1200px;"></div>
+    <script>
+        load_level_progression_table(level=`{{current_level}}`)
+    </script>
+{%endblock%}

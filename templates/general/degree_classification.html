@@ -6,22 +6,18 @@
 {% endblock %}
 
 {% block body %}
-    <div style="display: flex; overflow: auto;">
-        <canvas id="degree_classification_chart_4">loading chart</canvas>
-    </div>
-
-    <p>BSc/BEng (Level 4) Graduates</p>
-    <div class="tabulator_table" id="degree_classification_table_4" style="max-width: 1200px;"></div>
+    {%if current_level == 4%}
+        <p>BSc/BEng - Level 4 Honours Graduates</p>
+    {%elif current_level == 5%}
+        <p>MSc/MEng - Level 5 (M) Honours Graduates</p>
+    {%endif%}
 
     <div style="width: 80%">
-        <canvas id="degree_classification_chart_5">loading chart</canvas>
+        <canvas id="degree_classification_chart">loading chart</canvas>
     </div>
 
-    <p>MSc/MEng (Level 5) Graduates</p>
-    <div class="tabulator_table" id="degree_classification_table_5" style="max-width: 1200px;"></div>
-
+    <div class="tabulator_table" id="degree_classification_table" style="max-width: 1200px;"></div>
     <script>
-        load_degree_classification_table(level=4)
-        load_degree_classification_table(level=5)
+        load_degree_classification_table(level=`{{current_level}}`)
     </script>
 {%endblock%}

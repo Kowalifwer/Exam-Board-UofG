@@ -59,64 +59,65 @@ const is_preponderance = function (cell) {
     return false
 }
 
+const bound_check = (value, lower_bound, upper_bound) => {
+    if (value >= lower_bound && value < upper_bound)
+        return true
+    return false
+}
+
 function percent_to_integer_band(percent, round_up=true) {
-    // if (round_up)
-    //     return Math.ceil(percent/(100/22))
-    // else
-    //     return (percent/(100/22)).toFixed(1)
-
-    const bound_check = (lower_bound, upper_bound) => {
-        if (percent >= lower_bound && percent < upper_bound)
-            return true
-        return false
+    //C3-B1, D1-E3, A5-A1, F1-H
+    if (bound_check(percent, 49.5, 69.5)) {
+        if (percent < 53.5)
+            return 12
+        else if (bound_check(percent, 53.5,56.5))
+            return 13
+        else if (bound_check(percent,56.5,59.5))
+            return 14
+        else if (bound_check(percent,59.5,63.5))
+            return 15
+        else if (bound_check(percent,63.5,66.5))
+            return 16
+        else if (bound_check(percent,66.5,69.5))
+            return 17
+    } else if (bound_check(percent,29.5, 49.5)) {
+        if (percent < 33.5)
+            return 6
+        else if (bound_check(percent,33.5,36.5))
+            return 7
+        else if (bound_check(percent,36.5,39.5))
+            return 8
+        else if (bound_check(percent,39.5,43.5))
+            return 9
+        else if (bound_check(percent,43.5,46.5))
+            return 10
+        else if (bound_check(percent,46.5,49.5))
+            return 11
+    } else if (bound_check(percent,69.5, 91.5)) {
+        if (percent < 73.5)
+            return 18
+        else if (bound_check(percent,73.5,78.5))
+            return 19
+        else if (bound_check(percent,78.5,84.5))
+            return 20
+        else if (bound_check(percent,84.5,91.5))
+            return 21
+        else if (percent >= 91.5)
+            return 22
+    } else if (bound_check(percent,0, 29.5)) {
+        if (percent < 9.5)
+            return 0
+        else if (bound_check(percent,9.5,14.5))
+            return 1
+        else if (bound_check(percent,14.5,19.5))
+            return 2
+        else if (bound_check(percent,19.5,23.5))
+            return 3
+        else if (bound_check(percent,23.5,26.5))
+            return 4
+        else if (bound_check(percent,26.5,29.5))
+            return 5
     }
-
-    if (bound_check(0,9.5))
-        return 0
-    else if (bound_check(9.5,14.5))
-        return 1
-    else if (bound_check(14.5,19.5))
-        return 2
-    else if (bound_check(19.5,23.5))
-        return 3
-    else if (bound_check(23.5,26.5))
-        return 4
-    else if (bound_check(26.5,29.5))
-        return 5
-    else if (bound_check(29.5,33.5))
-        return 6
-    else if (bound_check(33.5,36.5))
-        return 7
-    else if (bound_check(36.5,39.5))
-        return 8
-    else if (bound_check(39.5,43.5))
-        return 9
-    else if (bound_check(43.5,46.5))
-        return 10
-    else if (bound_check(46.5,49.5))
-        return 11
-    else if (bound_check(49.5,53.5))
-        return 12
-    else if (bound_check(53.5,56.5))
-        return 13
-    else if (bound_check(56.5,59.5))
-        return 14
-    else if (bound_check(59.5,63.5))
-        return 15
-    else if (bound_check(63.5,66.5))
-        return 16
-    else if (bound_check(66.5,69.5))
-        return 17
-    else if (bound_check(69.5,73.5))
-        return 18
-    else if (bound_check(73.5,78.5))
-        return 19
-    else if (bound_check(78.5,84.5))
-        return 20
-    else if (bound_check(84.5,91.5))
-        return 21
-    else if (percent >= 91.5)
-        return 22
 }
 
 //FORMATTERS
@@ -724,10 +725,131 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
     })
 }
 
-function load_degree_classification_table(level=4) {
+function load_level_progression_table(level){
+    level = parseInt(level)
+    console.log("Loading level progression table for level " + level)
+    if(![1,2,3,4,5].includes(level)) {
+        console.error("Invalid level passed to load_level_progression_table function")
+        return
+    }
+
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
-        {title: "GUID", field: "GUID", topCalc: "count", headerFilter: "input", "frozen": true},
+        {title: "GUID", field: "GUID", topCalc: "count", headerFilter: "input", frozen: true},
+        {title: "Name", field: "name", headerFilter: "input"},
+        {
+            title: "Degree info",
+            columns: [
+                {title: "Title", field: "degree_title"},
+                {title: "Name", field: "degree_name"},
+                {title: "Masters?", field: "is_masters", formatter: "tickCross"},
+                {title: "Faster route?", field: "is_faster_route", formatter: "tickCross"},
+            ],
+            headerHozAlign: "center",
+        },
+        {
+            title: "Year data",
+            columns: [
+                {title: "Current level", field: "current_year"},
+                {title: "Start year", field: "start_year"},
+                {title: "End year", field: "end_year"},
+            ],
+            headerHozAlign: "center",
+        },
+        
+        {title: `Final level ${level} band`, field: "final_band"},
+        {title: `Final level ${level} GPA`, field: "final_gpa"},
+        // average exam grade across all courses
+        // average coursework grade across all courses
+        // average overall grade across all courses
+        {title: "Total credits taken", field: "total_credits_taken"},
+        {title: "Total credits GPA TOTAL", field: "final_p"},
+        // {title: "> A", field: "greater_than_a"},
+        // {title: "> B", field: "greater_than_b"},
+        // {title: "> C", field: "greater_than_c"},
+        // {title: "> D", field: "greater_than_d"},
+        // {title: "> E", field: "greater_than_e"},
+        // {title: "> F", field: "greater_than_f"},
+        // {title: "> G", field: "greater_than_g"},
+        // {title: "> H", field: "greater_than_h"},
+
+        {title: "Progression status", field: "progress_to_next_level"}, //can be "progressed", "discretionary", "not progressed", "not applicable"
+    ]
+
+    if (level == 3) {
+        columns.push({title: "Team (lvl 3)", field: "team"})
+    } else if (level == 4) {
+        columns.push({title: "Individual (lvl 4)", field: "project"})
+    } else if (level == 5) {
+        columns.push({title: "Individual (lvl 5 M)", field: "project_masters"})
+    }
+
+    let table = init_table("level_progression_table", columns, null, {
+        rowContextMenu: [{
+            label:"View Student breakdown page",
+                action:function(e, row){
+                    if (typeof row.getData().page_url !== 'undefined') {
+                        window.location.href = row.getData().page_url
+                    }
+                } 
+        }],
+        "ajaxParams": {
+            "fetch_table_data": true,
+        },
+        groupBy: "progress_to_next_level",
+
+        groupHeader: function(value, count, data, group){
+            // console.log(data)
+            let message = ""
+            if (value == "discretionary") {
+                message = `Number of student who will progress under schools discretion: ${count}`
+            } else if (value == "no") {
+                message = `Number of student who will not progress: ${count}`
+            } else if (value == "yes") {
+                message = `Number of student who are guaranteed to progress: ${count}`
+            }
+            return message
+        },
+
+        initialSort: [{column: 'final_p', dir: 'dsc'}],
+
+    }, {'title': 'Degree classification data for level '+level+' students'})
+
+    table.addChartLink([document.getElementById("level_progression_chart"), function(table_inner) {
+        let table_data = table_inner.getData()
+        let classes = ["yes", "discretionary", "no"]
+        let chart_data = []
+        for (let x in classes) {
+            chart_data[classes[x]] = 0
+        }
+        table_data.forEach(function(row){
+            chart_data[row.progress_to_next_level] = (chart_data[row.progress_to_next_level] || 0) + 1;
+        })
+        return {
+            data: {
+                labels: classes,
+                datasets: [
+                    {
+                        label: "Number of students",
+                        data: Object.values(chart_data),
+                    }
+                ]
+            }
+        }
+    }])
+}
+    
+
+function load_degree_classification_table(level) {
+    level = parseInt(level)
+    if(![4,5].includes(level)) {
+        console.error("Invalid level passed to load_degree_classification_table function")
+        return
+    }
+
+    let columns = [
+        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
+        {title: "GUID", field: "GUID", headerFilter: "input", "frozen": true},
         {title: "Name", field: "name", headerFilter: "input"},
         {
             title: "Degree info",
@@ -779,7 +901,7 @@ function load_degree_classification_table(level=4) {
         }
     }
 
-    let table = init_table("degree_classification_table_"+level, columns, null, {
+    let table = init_table("degree_classification_table", columns, null, {
         rowContextMenu: [{
             label:"View Student breakdown page",
                 action:function(e, row){
@@ -790,11 +912,12 @@ function load_degree_classification_table(level=4) {
         }],
         "ajaxParams": {
             "fetch_table_data": true,
-            "level": level,
-        }
+        },
+
+        initialSort: [{column: 'final_gpa', dir: 'dsc'}],
     }, {'title': 'Degree classification data for level '+level+' students'})
 
-    table.addChartLink([document.getElementById("degree_classification_chart_"+level), function(table_inner) {
+    table.addChartLink([document.getElementById("degree_classification_chart"), function(table_inner) {
         let table_data = table_inner.getData()
         let classes = ["Fail", "3rd", "2:2", "2:1", "1st"]
         let chart_data = []
@@ -816,26 +939,6 @@ function load_degree_classification_table(level=4) {
             }
         }
     }])
-
-    // table.addChartLink([document.getElementById("degree_classification_chart2_"+level), function(table_data) {
-    //     let classes = ["Fail", "3rd", "2:2", "2:1", "1st"]
-    //     let chart_data = []
-    //     for (let x in classes) {
-    //         chart_data[x[1]] = 0
-    //     }
-    //     table_data.forEach(function(row){
-    //         chart_data[row.class] = (chart_data[row.class] || 0) + 1;
-    //     })
-    //     return {
-    //         labels: classes,
-    //         datasets: [
-    //             {
-    //                 label: "Number of students",
-    //                 data: Object.values(chart_data),
-    //             }
-    //         ]
-    //     }
-    // }])
 
 }
 
@@ -1189,12 +1292,6 @@ function render_course_moderation_section(course_id, parent_table=null) {
 
 
 function load_grading_rules_table(data_json){
-    // let tooltip_function = function(e, cell, onRendered){
-    //     var el = document.createElement("div");
-    //     el.innerText = "Left click cell to edit."; //return cells "field - value";
-    //     return el; 
-    // }
-
     let columns = [
         {title: "Name", field: "name", editor: false, clickPopup: "Hello"},
         {title: "Standard lower GPA", field: "std_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1}, cssClass: "edit-mode"},
