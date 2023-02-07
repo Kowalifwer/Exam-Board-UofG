@@ -28,8 +28,8 @@ class default_degree_classification_settings_dict(dict):
         super().__init__({ ## provide the default values for the degree classification settings here.
             1: {
                 "name": "First Class Honours",
-                "std_low_gpa": 19.0,
-                "disc_low_gpa": 18.1,
+                "std_low_gpa": 18.0,
+                "disc_low_gpa": 17.1,
                 "char_band": "A",
                 "percentage_above": 50,
             },
