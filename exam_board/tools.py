@@ -101,12 +101,12 @@ degree_progression_levels = {
     2: "Level 2",
     3: "Level 3",
     4: "Level 4 (Honours)",
-    5: "Level 5 (Masters)",
+    # 5: "Level 5 (Masters)",
 }
 
 degree_classification_levels = {
-    4: "BsC/BEng",
-    5: "MSc/MEng",
+    4: "BsC/BEng (Hons)",
+    5: "MSc/MEng (Hons)",
 }
 
 def band_integer_to_class_caluclator(integer):
