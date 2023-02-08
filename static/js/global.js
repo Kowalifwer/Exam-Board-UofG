@@ -86,7 +86,6 @@ function api_factory(method) {
             var form_data = new FormData();
             form_data.append("action", action)
             document.querySelectorAll(".api_prefill").forEach(element => {
-                console.log(element.name, element.value)
                 form_data.append(element.name, element.value)
             })
             

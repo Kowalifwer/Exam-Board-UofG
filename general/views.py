@@ -278,7 +278,7 @@ def fetch_assessment_data_if_relevant(request):
                 "type": assessment.get_type_display(),
                 "name": assessment.name,
                 "weighting": assessment.weighting,
-                "moderation": f"{'' if assessment.moderation <= 0 else '+'}{assessment.moderation} bands.",
+                "moderation": f"{'' if assessment.moderation <= 0 else '+'}{assessment.moderation} bands",
                 "moderation_user": assessment.moderated_by.get_name_verbose if assessment.moderated_by else "Not moderated",
                 "moderation_date": assessment.moderation_datetime.strftime("%d/%m/%Y %H:%M") if assessment.moderation_datetime else "Not moderated",
                 "id": str(assessment.id)
@@ -340,6 +340,7 @@ def course_view(request, code, year):
     
     context = {
         "current_course": course.first(),
+        "number_of_students": course.first().students.count() if course.first() else 0,
     }
     update_context_with_extra_header_data(context, 'general:course', "View courses from other years", year=year)
 
@@ -355,19 +356,6 @@ def level_progression_view(request, level, year=None):
     get_query_count("before fetching level progression", True)
     if is_fetching_table_data(request):
         student_course_map = {}
-        # students = Student.objects.filter(courses__academic_year=context['selected_year']).prefetch_related("results__course", "results__assessment", "courses", "courses__assessments")
-        # for student in students:
-        #     courses = [course for course in student.courses.all() if course.academic_year == year]
-        #     student_course_map[student] = {}
-        #     for course in courses:
-        #         student_course_map[student][course] = []
-        #         for assessment in course.assessments.all():
-        #             found_result = None
-        #             for result in student.results.all():
-        #                 if result.course == course and result.assessment == assessment:
-        #                     found_result = result
-        #                     break
-        #             student_course_map[student][course].append((assessment, found_result))
         courses = Course.objects.filter(academic_year=context["selected_year"].year).prefetch_related("assessments", "students", "results", "results__assessment", "results__student")
         
         for course in courses:
@@ -456,13 +444,18 @@ def degree_classification_view(request, level, year=None):
             student_course_map_lvl3[student] = lvl3_courses
             student_results_map_lvl3[student] = [result for result in student.results.all() if result.course.academic_year == base_year]
 
+        final_students = students.difference(no_course_students)
+        
+        if not final_students:
+            return JsonResponse([], safe=False)
+        
         all_students_json = [
             student.get_data_for_table(
                 {
                     "method": "get_extra_data_degree_classification",
                     "args": [masters, student_course_map_lvl3[student], student_results_map_lvl3[student], student_course_map_lvl4[student], student_results_map_lvl4[student], student_course_map_lvl5[student] if masters else {}, student_results_map_lvl5[student] if masters else {}]
                 }
-            ) for student in students.difference(no_course_students)
+            ) for student in final_students
         ]
 
         get_query_count("after fetching degree classification")
@@ -507,7 +500,7 @@ def api_view(request):
                 ass_result_to_update_map = {}
                 course = Course.objects.filter(id=course_id).first()
 
-                def value_converseion_based_on_mode(value, existing_value=0):
+                def value_conversion_based_on_mode(value, existing_value=0):
                     if mode == "increase":
                         return value + existing_value
                     elif mode == "decrease":
@@ -519,9 +512,9 @@ def api_view(request):
     
                 ##think about REPLACEMENT edge case. we can only delete if assessment is not used in any other course.
                 for assessment_db in assessments_db:
-                    instance = Assessment.objects.filter(name=assessment_db.name, weighting=assessment_db.weighting, type=assessment_db.type, moderation=value_converseion_based_on_mode(value, assessment_db.moderation)).first()
+                    instance = Assessment.objects.filter(name=assessment_db.name, weighting=assessment_db.weighting, type=assessment_db.type, moderation=value_conversion_based_on_mode(value, assessment_db.moderation)).first()
                     if not instance:
-                        instance = Assessment(name=assessment_db.name, weighting=assessment_db.weighting, type=assessment_db.type, moderation=value_converseion_based_on_mode(value))
+                        instance = Assessment(name=assessment_db.name, weighting=assessment_db.weighting, type=assessment_db.type, moderation=value_conversion_based_on_mode(value))
                         new_to_create.append(instance)
 
                     if instance.moderation != 0:

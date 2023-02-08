@@ -16,14 +16,14 @@
                     <p><b>Course name:</b> {{current_course.name}}</p>
                     <p><b>Course code:</b> {{current_course.code}}</p>
                     <p><b>Year offered in:</b> {{current_course.academic_year}}</p>
+                    <p><b>Number of students enrolled:</b> {{number_of_students}}</p>
                     <p><b>Lecturer:</b> {{current_course.lecturer}}</p>
                     <p><b>Lecturers course description:</b> {{current_course.lecturer_comment}}</p>
                     <p><b>Credits:</b> {{current_course.credits}}</p>
 
-                    <p><b>Total number of enrolled students:</b></p>
-                    <p><b>Number of students who have passed the course (above E1):</b></p>
-                    <p><b>Number of students who have failed the course (below D3):</b></p>
-
+                    <div class="tabulator-linked-section course-page-extra-info">
+                        <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -41,6 +41,7 @@
             <div class="collapsable-section">
                 <h3><b>Final grade distribution across all enrolled students</b></h3>
                 <div class="chart-block">
+                    <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
                     <canvas id="students_final_grade"></canvas>
                 </div>
             </div>

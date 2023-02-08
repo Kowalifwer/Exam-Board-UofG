@@ -478,9 +478,16 @@ body {
     border-left: 1px solid rgba(var(--p-color), 0.15) !important;
 }
 
+/* DISABLE OVERALL BOTTOM CALC */
 .tabulator .tabulator-footer .tabulator-calcs-holder {
     display: none;
 }
+
+/* DISABLE GROUP BOTTOM CALCS */
+/* .tabulator-row.tabulator-selectable.tabulator-calcs.tabulator-calcs-bottom.tabulator-row-odd,
+.tabulator-row.tabulator-selectable.tabulator-calcs.tabulator-calcs-bottom.tabulator-row-even {
+    display: none;
+} */
 
 .header-search > button:hover {
     background-color: rgba(var(--p-color), 0.75);
@@ -566,7 +573,7 @@ body {
 }
 
 .hidden, .hidden-row {
-    display: none;
+    display: none !important;
 }
 
 .tabulator-columns-menu {
@@ -927,6 +934,16 @@ button:not(.button_default):hover:disabled {
     padding: 15px 25px;
 }
 
+/* END OF STUDENT PAGE */
+
+/* COURSE PAGE */
+
+.course-page-extra-info * {
+    margin: 40px 0;
+}
+
+
+/* END OF COURSE PAGE */
 .tabulator {
     max-height: 600px;
     /* max-width: 100% !important; */
@@ -934,10 +951,6 @@ button:not(.button_default):hover:disabled {
     border: 1px solid rgba(var(--p-color), 0.55);
     /* background-color: rgba(var(--p-color), 0.1); */
     background-color: white;
-}
-
-.tabulator-header-contents {
-    background-color: var(--secondary-color);;
 }
 
 .tabulator-tableholder {
@@ -956,13 +969,42 @@ button:not(.button_default):hover:disabled {
     /* outline-color: rgba(var(--p-color), 0.5); */
 }
 
+.tabulator-header {
+    background-color: var(--secondary-color) !important;
+}
+
+.tabulator-header * {
+    color: var(--info-color-dark) !important;
+}
+
 .tabulator .tabulator-header, .tabulator .tabulator-header .tabulator-col {
     background-color: var(--secondary-color);
 }
 
-.tabulator .tabulator-footer {
-    background-color: var(--secondary-color);;
+.tabulator-header-contents {
+    background-color: var(--secondary-color);
 }
+
+.tabulator .tabulator-footer {
+    background-color: var(--secondary-color);
+}
+
+.tabulator-heading {
+    margin: 10px 0 20px 0;
+}
+
+.tabulator-linked-section {
+    /* padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%; */
+}
+
+/* .tabulator-row .tabulator-selectable .tabulator-calcs .tabulator-calcs-bottom {
+    display: none !important;
+} */
 
 /* .tabulator .tabulator-col-resize-handle {
     position: relative;
@@ -1025,14 +1067,6 @@ button:not(.button_default):hover:disabled {
     background-color: var(--primary-color) !important;
 } */
 
-.tabulator-header {
-    background-color: var(--secondary-color) !important;
-}
-
-.tabulator-header * {
-    color: var(--info-color-dark) !important;
-}
-
 /* .tabulator-group {
     background-color: var(--primary-color) !important;
 } */
@@ -1061,3 +1095,40 @@ button:not(.button_default):hover:disabled {
 }
 
 
+/* animated loading screen */
+
+.lds-ring {
+    display: inline-block;
+    position: relative;
+    width: 80px;
+    height: 80px;
+  }
+  .lds-ring div {
+    box-sizing: border-box;
+    display: block;
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    margin: 8px;
+    border: 8px solid var(--primary-color);
+    border-radius: 50%;
+    animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    border-color: var(--primary-color) transparent transparent transparent;
+  }
+  .lds-ring div:nth-child(1) {
+    animation-delay: -0.45s;
+  }
+  .lds-ring div:nth-child(2) {
+    animation-delay: -0.3s;
+  }
+  .lds-ring div:nth-child(3) {
+    animation-delay: -0.15s;
+  }
+  @keyframes lds-ring {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
