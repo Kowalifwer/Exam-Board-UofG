@@ -28,35 +28,40 @@ class default_degree_classification_settings_dict(dict):
         super().__init__({ ## provide the default values for the degree classification settings here.
             1: {
                 "name": "First Class Honours",
-                "std_low_gpa": 18.0,
+                "short_name": "1st",
+                "std_low_gpa": 17.5,
                 "disc_low_gpa": 17.1,
                 "char_band": "A",
                 "percentage_above": 50,
             },
             2: {
                 "name": "Upper Second Class Honours",
-                "std_low_gpa": 15.0,
+                "short_name": "2:1",
+                "std_low_gpa": 14.5,
                 "disc_low_gpa": 14.1,
                 "char_band": "B",
                 "percentage_above": 50,
             },
             3: {
                 "name": "Lower Second Class Honours",
-                "std_low_gpa": 12.0,
+                "short_name": "2:2",
+                "std_low_gpa": 11.5,
                 "disc_low_gpa": 11.1,
                 "char_band": "C",
                 "percentage_above": 50,
             },
             4: {
                 "name": "Third Class Honours",
-                "std_low_gpa": 9.0,
+                "short_name": "3rd",
+                "std_low_gpa": 8.5,
                 "disc_low_gpa": 8.1,
                 "char_band": "D",
                 "percentage_above": 50,
             },
             5: {
                 "name": "Fail",
-                "std_low_gpa": 0.0,
+                "short_name": "Fail",
+                "std_low_gpa": 8.0,
                 "disc_low_gpa": 0.0,
                 "char_band": "F",
                 "percentage_above": 0,
@@ -109,14 +114,81 @@ degree_classification_levels = {
     5: "MSc/MEng (Hons)",
 }
 
-def band_integer_to_class_caluclator(integer):
-    if integer >= 18:
-        return "1st"
-    elif integer >= 15:
-        return "2:1"
-    elif integer >= 12:
-        return "2:2"
-    elif integer >= 9:
-        return "3rd"
-    else:
-        return "Fail"
+def update_cumulative_band_credit_totals(dict_to_update, credits, course_grade):
+    full_mode = "greated_than_f" in dict_to_update
+    if course_grade >= 18:
+        dict_to_update["greater_than_a"] += credits
+        dict_to_update["greater_than_b"] += credits
+        dict_to_update["greater_than_c"] += credits
+        dict_to_update["greater_than_d"] += credits
+        dict_to_update["greater_than_e"] += credits
+        if full_mode:
+            dict_to_update["greater_than_f"] += credits
+            dict_to_update["greater_than_g"] += credits
+            dict_to_update["greater_than_h"] += credits
+    
+    elif course_grade >= 15:
+        dict_to_update["greater_than_b"] += credits
+        dict_to_update["greater_than_c"] += credits
+        dict_to_update["greater_than_d"] += credits
+        dict_to_update["greater_than_e"] += credits
+        if "greated_than_f" in dict_to_update:
+            dict_to_update["greater_than_f"] += credits
+            dict_to_update["greater_than_g"] += credits
+            dict_to_update["greater_than_h"] += credits
+    
+    elif course_grade >= 12:
+        dict_to_update["greater_than_c"] += credits
+        dict_to_update["greater_than_d"] += credits
+        dict_to_update["greater_than_e"] += credits
+        if "greated_than_f" in dict_to_update:
+            dict_to_update["greater_than_f"] += credits
+            dict_to_update["greater_than_g"] += credits
+            dict_to_update["greater_than_h"] += credits
+    
+    elif course_grade >= 9:
+        dict_to_update["greater_than_d"] += credits
+        dict_to_update["greater_than_e"] += credits
+        if "greated_than_f" in dict_to_update:
+            dict_to_update["greater_than_f"] += credits
+            dict_to_update["greater_than_g"] += credits
+            dict_to_update["greater_than_h"] += credits
+    
+    elif course_grade >= 6:
+        dict_to_update["greater_than_e"] += credits
+        if full_mode:
+            dict_to_update["greater_than_f"] += credits
+            dict_to_update["greater_than_g"] += credits
+            dict_to_update["greater_than_h"] += credits
+    
+    elif full_mode:
+        if course_grade >= 3:
+            dict_to_update["greater_than_f"] += credits
+            dict_to_update["greater_than_g"] += credits
+            dict_to_update["greater_than_h"] += credits
+        
+        elif course_grade >= 1:
+            dict_to_update["greater_than_g"] += credits
+            dict_to_update["greater_than_h"] += credits
+        
+        elif course_grade >= 0:
+            dict_to_update["greater_than_h"] += credits
+
+
+def gpa_to_class_converter(grade_data, degree_classification_settings):
+    # "final_gpa"
+    # "n_credits"
+    # "greater_than_a": 0,
+    # "greater_than_b": 0,
+    # "greater_than_c": 0,
+    # "greater_than_d": 0,
+    # "greater_than_e": 0,
+    
+    for description in list(degree_classification_settings.values())[:-1]:#ignore the fail case
+        if grade_data["final_gpa"] >= description["std_low_gpa"]:
+            return description["short_name"]
+        if grade_data["final_gpa"] >= description["disc_low_gpa"]:
+            if round((grade_data[f"greater_than_{description['char_band'].lower()}"] / grade_data["n_credits"]) * 100, 0) >= description["percentage_above"]:
+                return description["short_name"]
+        
+    return "Fail"
