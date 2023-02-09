@@ -5,6 +5,15 @@ const c_poor = "#F15156"
 const chart_colors = ["#115f9a", "#1984c5", "#22a7f0", "#48b5c4", "#76c68f", "#a6d75b", "#c9e52f", "#d0ee11", "#d0f400"]
 const chart_color_map = {
     "MV": chart_colors[1],
+    "CW": chart_colors[2],
+    "CR": chart_colors[3],
+
+    "final": chart_colors[3],
+    "lvl3": chart_colors[4],
+    "lvl4": chart_colors[5],
+    "lvl5": chart_colors[6],
+    "team": chart_colors[7],
+    "individual": chart_colors[2],
 }
 const loading_spinner = `<div class="lds-ring"><div></div><div></div><div></div><div></div></div>`
 
@@ -225,8 +234,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         }
         table_constructor.ajaxConfig = "GET"
         table_constructor.ajaxResponse = function(url, params, response) {
-            console.log(response)
-            console.log("AAAA")
             if (typeof response.extra_cols !== 'undefined') {
                 table.extra_cols = response.extra_cols
                 table.dispatchEvent("dataLoadedInitial")
@@ -1028,9 +1035,9 @@ function load_degree_classification_table(level) {
             ],
             "headerHozAlign": "center",
         },
-        {title: "Team (lvl 3 Hons)", field: "team", cssClass: "format_grade"},
-        {title: "Individual (lvl 4 Hons)", field: "project", cssClass: "format_grade"},
-        {title: "Individual (lvl 5 M)", field: "project_masters", cssClass: "format_grade"},
+        {title: "Team (lvl 3 Hons)", field: "team"},
+        {title: "Individual (lvl 4 Hons)", field: "project"},
+        {title: "Individual (lvl 5 M)", field: "project_masters"},
     ]
 
     if (level != 5) {
@@ -1067,7 +1074,7 @@ function load_degree_classification_table(level) {
             ])
     })
 
-    table.addChartLink([document.getElementById("degree_classification_chart"), function(table_inner) {
+    table.addChartLink([document.getElementById("degree_classification_chart_class"), function(table_inner) {
         let table_data = table_inner.getData()
         let classes = ["1st", "2:1", "2:2", "3rd", "Fail"]
         let chart_data = []
@@ -1091,6 +1098,53 @@ function load_degree_classification_table(level) {
         }
     }])
 
+    table.addChartLink([document.getElementById("degree_classification_chart_all"), function(table_inner) {
+        let table_data = table_inner.getData()
+        let bands = ["A", "B", "C", "D", "E", "F", "G"]
+        let chart_data = {}
+
+        let inits = (level == 5) ? [
+            ["final_band", "Final band"],
+            ["l5_band", "L5 band"],
+            ["l4_band", "L4 band"],
+            ["l3_band", "L3 band"],
+            ["team", "Team (lvl 3 Hons)"],
+            ["project", "Individual (lvl 4 Hons)"],
+            ["project_masters", "Individual (lvl 5 M)"],
+        ] : [
+            ["final_band", "Final band"],
+            ["l4_band", "L4 band"],
+            ["l3_band", "L3 band"],
+            ["team", "Team (lvl 3 Hons)"],
+            ["project", "Individual (lvl 4 Hons)"],
+        ]
+        for (let x in bands) {
+            chart_data[bands[x]] = {};
+        }
+
+        for (let i = 0; i < table_data.length; i++) {
+            let row = table_data[i]
+            for (let j = 0; j < inits.length; j++) {
+                let key = inits[j][0]
+                let band_letter = row[key][0]
+                chart_data[band_letter][key] = (chart_data[band_letter][key] || 0) + 1;
+            }
+        }
+
+        return {
+            data: {
+                labels: bands,
+                datasets: inits.map((tuple, i) => {
+                    return {
+                        label: tuple[1],
+                        data: Object.values(chart_data).map(x => x[tuple[0]]),
+                        backgroundColor: chart_colors[i],
+                        hidden: (i > 0),
+                    }
+                })
+            }
+        }
+    }])
 }
 
 function create_student_course_detailed_table_popup(student_data=null, course_id=null, parent_table_to_reload=null){
@@ -1495,6 +1549,8 @@ function load_grading_rules_table(data_json){
         "placeholder": "Grading rules loading...",
         "pagination": false,
         footerElement: "<div></div>",
+        autoResize: true,
+        layout: "fitColumns",
     }
     
     let table = init_table("grading_rules_table", columns.map(
@@ -1509,15 +1565,11 @@ function load_grading_rules_table(data_json){
         let edit_button = document.createElement('button')
         let table_element = table.getElement()
         edit_button.innerHTML = "Edit Classification rules"
-        edit_button.stored_width = table_element.style.width
         edit_button.addEventListener('click', function(){
             if (table_element.dataset.edit_mode == 1) {
                 table.removeNotification()
                 this.innerHTML = "Edit Classification rules"
                 table_element.dataset.edit_mode = 0
-
-                //increase the width of the table
-                table_element.style.width = edit_button.stored_width
 
                 table.setColumns(columns.map(col => {
                     return {...col, editor: false, cssClass: ""}
@@ -1540,10 +1592,6 @@ function load_grading_rules_table(data_json){
                 table.addNotification()
                 this.innerHTML = "Save changes"
                 table_element.dataset.edit_mode = 1
-
-                //decrease the width of the table
-                // table_element.style.width = edit_button.stored_width
-                table_element.style.width = "100%"
 
                 table.setColumns(columns.map(col => {
                     return {...col, visible: true}

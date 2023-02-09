@@ -104,7 +104,7 @@ band_integer_to_band_letter_map = {
 degree_progression_levels = {
     1: "Level 1",
     2: "Level 2",
-    3: "Level 3",
+    3: "Level 3 (Honours)",
     4: "Level 4 (Honours)",
     # 5: "Level 5 (Masters)",
 }
@@ -115,76 +115,61 @@ degree_classification_levels = {
 }
 
 def update_cumulative_band_credit_totals(dict_to_update, credits, course_grade):
-    full_mode = "greated_than_f" in dict_to_update
     if course_grade >= 18:
         dict_to_update["greater_than_a"] += credits
         dict_to_update["greater_than_b"] += credits
         dict_to_update["greater_than_c"] += credits
         dict_to_update["greater_than_d"] += credits
         dict_to_update["greater_than_e"] += credits
-        if full_mode:
-            dict_to_update["greater_than_f"] += credits
-            dict_to_update["greater_than_g"] += credits
-            dict_to_update["greater_than_h"] += credits
+        dict_to_update["greater_than_f"] += credits
+        dict_to_update["greater_than_g"] += credits
+        dict_to_update["greater_than_h"] += credits
     
     elif course_grade >= 15:
         dict_to_update["greater_than_b"] += credits
         dict_to_update["greater_than_c"] += credits
         dict_to_update["greater_than_d"] += credits
         dict_to_update["greater_than_e"] += credits
-        if "greated_than_f" in dict_to_update:
-            dict_to_update["greater_than_f"] += credits
-            dict_to_update["greater_than_g"] += credits
-            dict_to_update["greater_than_h"] += credits
+        dict_to_update["greater_than_f"] += credits
+        dict_to_update["greater_than_g"] += credits
+        dict_to_update["greater_than_h"] += credits
     
     elif course_grade >= 12:
         dict_to_update["greater_than_c"] += credits
         dict_to_update["greater_than_d"] += credits
         dict_to_update["greater_than_e"] += credits
-        if "greated_than_f" in dict_to_update:
-            dict_to_update["greater_than_f"] += credits
-            dict_to_update["greater_than_g"] += credits
-            dict_to_update["greater_than_h"] += credits
+        dict_to_update["greater_than_f"] += credits
+        dict_to_update["greater_than_g"] += credits
+        dict_to_update["greater_than_h"] += credits
     
     elif course_grade >= 9:
         dict_to_update["greater_than_d"] += credits
         dict_to_update["greater_than_e"] += credits
-        if "greated_than_f" in dict_to_update:
-            dict_to_update["greater_than_f"] += credits
-            dict_to_update["greater_than_g"] += credits
-            dict_to_update["greater_than_h"] += credits
+        dict_to_update["greater_than_f"] += credits
+        dict_to_update["greater_than_g"] += credits
+        dict_to_update["greater_than_h"] += credits
     
     elif course_grade >= 6:
         dict_to_update["greater_than_e"] += credits
-        if full_mode:
-            dict_to_update["greater_than_f"] += credits
-            dict_to_update["greater_than_g"] += credits
-            dict_to_update["greater_than_h"] += credits
+        dict_to_update["greater_than_f"] += credits
+        dict_to_update["greater_than_g"] += credits
+        dict_to_update["greater_than_h"] += credits
+
+    if course_grade >= 3:
+        dict_to_update["greater_than_f"] += credits
+        dict_to_update["greater_than_g"] += credits
+        dict_to_update["greater_than_h"] += credits
     
-    elif full_mode:
-        if course_grade >= 3:
-            dict_to_update["greater_than_f"] += credits
-            dict_to_update["greater_than_g"] += credits
-            dict_to_update["greater_than_h"] += credits
-        
-        elif course_grade >= 1:
-            dict_to_update["greater_than_g"] += credits
-            dict_to_update["greater_than_h"] += credits
-        
-        elif course_grade >= 0:
-            dict_to_update["greater_than_h"] += credits
+    elif course_grade >= 1:
+        dict_to_update["greater_than_g"] += credits
+        dict_to_update["greater_than_h"] += credits
+    
+    elif course_grade >= 0:
+        dict_to_update["greater_than_h"] += credits
 
 
-def gpa_to_class_converter(grade_data, degree_classification_settings):
-    # "final_gpa"
-    # "n_credits"
-    # "greater_than_a": 0,
-    # "greater_than_b": 0,
-    # "greater_than_c": 0,
-    # "greater_than_d": 0,
-    # "greater_than_e": 0,
-    
-    for description in list(degree_classification_settings.values())[:-1]:#ignore the fail case
+def gpa_to_class_converter(grade_data, degree_classification_settings):  
+    for description in degree_classification_settings.values():#ignore the fail case
         if grade_data["final_gpa"] >= description["std_low_gpa"]:
             return description["short_name"]
         if grade_data["final_gpa"] >= description["disc_low_gpa"]:

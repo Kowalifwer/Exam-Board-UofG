@@ -207,31 +207,27 @@ class Student(UUIDModel, CommentsForTableMixin):
         return extra_data
     
     def get_extra_data_degree_classification(self, degree_classification_settings, masters, lvl3_courses, lvl3_results, lvl4_courses, lvl4_results, lvl5_courses={}, lvl5_results={}):
-        classification_data = {
+        extra_data = {
+            "class": "N/A",
+            "final_band": 0,
+            "final_gpa": 0,
+            "l4_band": 0,
+            "l4_gpa": 0,
+            "l3_band": 0,
+            "l3_gpa": 0,
             "greater_than_a": 0,
             "greater_than_b": 0,
             "greater_than_c": 0,
             "greater_than_d": 0,
             "greater_than_e": 0,
-            "final_gpa": 0,
-            "n_credits": 0,
-        }
-
-        extra_data = {
-            "class": "N/A",
-            "final_band": 0,
-            "l4_band": 0,
-            "l4_gpa": 0,
-            "l3_band": 0,
-            "l3_gpa": 0,
             "greater_than_f": 0,
             "greater_than_g": 0,
             "greater_than_h": 0,
             "project": 0,
             "team": 0,
+            "n_credits": 0,
         }
-
-        extra_data.update(classification_data)
+        classification_data = extra_data.copy()
 
         if masters:
             extra_data.update({
@@ -324,18 +320,18 @@ class Student(UUIDModel, CommentsForTableMixin):
         if extra_data["project"] == 0:
             extra_data["project"] = "N/A"
         else:
-            extra_data["project"] = extra_data["project"]
+            extra_data["project"] = band_integer_to_band_letter_map[int(round(extra_data["project"], 0))]
         
         if extra_data["team"] == 0:
             extra_data["team"] = "N/A"
         else:
-            extra_data["team"] = extra_data["team"]
+            extra_data["team"] = band_integer_to_band_letter_map[int(round(extra_data["team"], 0))]
         
         if masters:
             if extra_data["project_masters"] == 0:
                 extra_data["project_masters"] = "N/A"
             else:
-                extra_data["project_masters"] = extra_data["project_masters"]
+                extra_data["project_masters"] = band_integer_to_band_letter_map[int(round(extra_data["project_masters"], 0))]
 
         return extra_data
 
