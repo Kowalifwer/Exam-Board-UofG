@@ -199,6 +199,7 @@ p, h1, h2, h3, h4, h5, h6, a, li {
 
 .info-text {
     color: var(--info-color) !important;
+    margin-left: 0 !important;
 }
 
 .primary-text {
@@ -479,9 +480,9 @@ body {
 }
 
 /* DISABLE OVERALL BOTTOM CALC */
-.tabulator .tabulator-footer .tabulator-calcs-holder {
+/* .tabulator .tabulator-footer .tabulator-calcs-holder {
     display: none;
-}
+} */
 
 /* DISABLE GROUP BOTTOM CALCS */
 /* .tabulator-row.tabulator-selectable.tabulator-calcs.tabulator-calcs-bottom.tabulator-row-odd,

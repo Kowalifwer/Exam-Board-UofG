@@ -207,9 +207,9 @@ def global_search_view(request):
             #     # .prefetch_related("assessments", "results")
             # ]
             #context[extra'cols ...]
-            data = [course.get_data_for_table() for course in Course.objects.filter(
+            data = [course.get_data_for_table(extra_data=None, fast_mod=True) for course in Course.objects.filter(
                 Q(code__icontains=search_term) | Q(name__icontains=search_term)
-            )]
+            ).prefetch_related("assessments")]
         get_query_count("Time to search finish")
         return JsonResponse(data, safe=False)
 
@@ -218,6 +218,7 @@ def global_search_view(request):
 
 def student_view(request, GUID):
     get_query_count("before student query")
+    student = Student.objects.filter(GUID=GUID)
     if is_fetching_table_data(request):
         student_table = fetch_student_course_table_data_if_relevant(request)
         if student_table:
@@ -226,7 +227,7 @@ def student_view(request, GUID):
         if assessment_data:
             return assessment_data
 
-        student = Student.objects.filter(GUID=GUID).prefetch_related("results__assessment", "results__course").first()
+        student = student.prefetch_related("results__assessment", "results__course").first()
         courses = student.courses.all()
         results = student.results.all()
 
@@ -244,7 +245,7 @@ def student_view(request, GUID):
         return JsonResponse(all_courses_json, safe=False)
     else:
         print("NOT FETCHING TABLE DATA")
-    context = {"student": Student.objects.filter(GUID=GUID).first()}
+    context = {"student": student.first()}
     return render(request, "general/student.html", context)
 
 def fetch_student_course_table_data_if_relevant(request):
@@ -252,14 +253,15 @@ def fetch_student_course_table_data_if_relevant(request):
     course_id = request.GET.get("course_id", "")
     if student_GUID != "" and course_id != "":
         data_for_student_course_table = []
-        all_course_assessments = Assessment.objects.filter(courses__id=course_id)
+        all_course_assessments = Assessment.objects.filter(courses__id=course_id).order_by("weighting")
         for assessment in all_course_assessments:
             result = AssessmentResult.objects.filter(student__GUID=student_GUID, course__id=course_id, assessment=assessment).first()
             data_for_student_course_table.append({
                 'type': assessment.get_type_display(),
                 'name': assessment.name,
                 'weighting': assessment.weighting,
-                'grade': result.grade if result else "Not completed",
+                'moderation': assessment.moderation,
+                'grade': min(result.grade + assessment.moderation, 22) if result else "Not completed",
                 'preponderance': result.preponderance if result else "Not completed",
                 'result_id': result.id if result else "Not completed",
             })
@@ -271,20 +273,25 @@ def fetch_student_course_table_data_if_relevant(request):
 def fetch_assessment_data_if_relevant(request):
     is_assessments = request.GET.get("assessments", None)
     course_id = request.GET.get("course_id", None)
+    print(course_id, is_assessments)
     if course_id and is_assessments:
         course = Course.objects.filter(id=course_id).first()
+        print(course)
         if course:
             data = [{
                 "type": assessment.get_type_display(),
                 "name": assessment.name,
                 "weighting": assessment.weighting,
-                "moderation": f"{'' if assessment.moderation <= 0 else '+'}{assessment.moderation} bands",
+                "moderation": assessment.moderation,
                 "moderation_user": assessment.moderated_by.get_name_verbose if assessment.moderated_by else "Not moderated",
                 "moderation_date": assessment.moderation_datetime.strftime("%d/%m/%Y %H:%M") if assessment.moderation_datetime else "Not moderated",
                 "id": str(assessment.id)
             }
-            for assessment in course.assessments.all().order_by("weighting").select_related("moderated_by")]
+                for assessment in course.assessments.all().order_by("weighting").select_related("moderated_by")
+            ]
+            print(data)
             return JsonResponse(data, safe=False)
+    print("no shot goes here")
     return None
 
 def course_view(request, code, year):
@@ -340,7 +347,6 @@ def course_view(request, code, year):
     
     context = {
         "current_course": course.first(),
-        "number_of_students": course.first().students.count() if course.first() else 0,
     }
     update_context_with_extra_header_data(context, 'general:course', "View courses from other years", year=year)
 
@@ -453,7 +459,7 @@ def degree_classification_view(request, level, year=None):
             student.get_data_for_table(
                 {
                     "method": "get_extra_data_degree_classification",
-                    "args": [masters, student_course_map_lvl3[student], student_results_map_lvl3[student], student_course_map_lvl4[student], student_results_map_lvl4[student], student_course_map_lvl5[student] if masters else {}, student_results_map_lvl5[student] if masters else {}]
+                    "args": [context["selected_year"].degree_classification_settings, masters, student_course_map_lvl3[student], student_results_map_lvl3[student], student_course_map_lvl4[student], student_results_map_lvl4[student], student_course_map_lvl5[student] if masters else {}, student_results_map_lvl5[student] if masters else {}]
                 }
             ) for student in final_students
         ]

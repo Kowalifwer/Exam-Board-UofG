@@ -16,10 +16,11 @@
                     <p><b>Course name:</b> {{current_course.name}}</p>
                     <p><b>Course code:</b> {{current_course.code}}</p>
                     <p><b>Year offered in:</b> {{current_course.academic_year}}</p>
-                    <p><b>Number of students enrolled:</b> {{number_of_students}}</p>
+                    <p><b>Number of students enrolled:</b> {{current_course.students.count}}</p>
                     <p><b>Lecturer:</b> {{current_course.lecturer}}</p>
                     <p><b>Lecturers course description:</b> {{current_course.lecturer_comment}}</p>
                     <p><b>Credits:</b> {{current_course.credits}}</p>
+                    <p><b>Is moderated?</b> {{current_course.is_moderated}}</p>
 
                     <div class="tabulator-linked-section course-page-extra-info">
                         <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
@@ -51,8 +52,7 @@
     <p>Students enrolled onto course</p>
     <div class="tabulator_table" id="students_table" style="width: 100%;"></div>
     <script>
-        let backend_course_id = "{{current_course.id}}"
-        load_students_table({}, true, {backend_course_id:backend_course_id})
+        load_students_table({}, true, settings={course: JSON.parse(`{{current_course.get_data_for_table_json|safe}}`)})
     </script>
     <p>Assessment breakdown for the course.</p>
 {%endblock%}

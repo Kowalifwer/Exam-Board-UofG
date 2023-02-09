@@ -42,6 +42,20 @@ const boundary_map = {
     22: "A1",
 }
 
+const moderation_formatter = function (cell) {
+    let value = cell.getValue()
+    //if value is 0 - return 'Not moderated'
+    //if value is positive - return +value bands
+    //if value is negative - return -value bands
+    if (value == 0) {
+        return "Not moderated"
+    } else if (value > 0) {
+        return "+" + value + " bands"
+    } else {
+        return value + " bands"
+    }
+}
+
 const preponderance_formatter = function (cell) {
     let value = cell.getValue()
     let element = cell.getElement()
@@ -211,6 +225,8 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         }
         table_constructor.ajaxConfig = "GET"
         table_constructor.ajaxResponse = function(url, params, response) {
+            console.log(response)
+            console.log("AAAA")
             if (typeof response.extra_cols !== 'undefined') {
                 table.extra_cols = response.extra_cols
                 table.dispatchEvent("dataLoadedInitial")
@@ -456,10 +472,10 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table_wrapper.querySelector(".tabulator-components").appendChild(download_pdf)
         table_wrapper.querySelector(".tabulator-components").appendChild(column_manager)
 
-        let moderate_course_button = string_to_html_element(`<button class="tabulator-moderate">Moderate course</button>`)
-        if (settings.backend_course_id) {
+        if (settings.course) {
+            let moderate_course_button = string_to_html_element(`<button class="tabulator-moderate">Moderate course</button>`)
             moderate_course_button.addEventListener("click", function(e){
-                render_course_moderation_section(settings.backend_course_id, table)
+                render_course_moderation_section(settings.course, table)
             })
             table_wrapper.querySelector(".tabulator-components").appendChild(moderate_course_button)
         }
@@ -508,6 +524,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     }
 
     table.reloadTable = (message=null) => {
+        console.log("Reloading table")
         table.destroyCharts()
         table.destroyContent()
 
@@ -609,11 +626,11 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
                 }
         },
     ]
-    if (typeof backend_course_id !== "undefined") {
+    if (settings.course) {
         rowContextMenu.push({
             label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img src='/static/icons/info.svg'></i><span>Student grades breakdown popup.</span></div>",
             action: function(e, row){
-                create_student_course_detailed_table_popup(row.getData(), backend_course_id, row.getTable())
+                create_student_course_detailed_table_popup(row.getData(), settings.course.course_id, row.getTable())
             }
         }) 
     }
@@ -639,7 +656,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
         });
     })
 
-    if (typeof backend_course_id !== "undefined") {
+    if (settings.course) {
         table.addContentLink([
             document.querySelector(".course-page-extra-info"),
             function(table) {
@@ -1044,7 +1061,10 @@ function load_degree_classification_table(level) {
     //on data loeaded, sort by final_gpa
     table.on("dataProcessed", function(){
         if (table.dataLoadedInitial)
-            table.setSort('final_gpa', 'dsc')
+            table.setSort([
+                {column: "final_gpa", dir: "dsc"},
+                {column: "class", dir: "asc"},
+            ])
     })
 
     table.addChartLink([document.getElementById("degree_classification_chart"), function(table_inner) {
@@ -1080,6 +1100,7 @@ function create_student_course_detailed_table_popup(student_data=null, course_id
             {title: "Assessment name", field: "name"},
             {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},
             {title: "Grade", field: "grade", cssClass: "format_grade"},
+            {title: "Moderation", field: "moderation", formatter: moderation_formatter},
             {title: "Preponderance", field: "preponderance", cssClass: "edit-mode", formatter: preponderance_formatter, editor: "list", editorParams: {
                 values: preponderance_list
             }},
@@ -1162,8 +1183,13 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
         {title: "Academic year", field: "academic_year"},
         {title: "Credits", field: "credits", bottomCalc: "sum"},
         {title: "Taught now?", field: "is_taught_now", formatter: "tickCross"},
+        {title: "Moderated?", field: "is_moderated", formatter: "tickCross"},
     ]
-    if (extra_cols) {
+
+    let groupBy = ['academic_year']
+    let initialSort = [{column: 'academic_year', dir: 'dsc'}, {column: 'credits', dir: 'dsc'}]
+
+    if (settings.student) {
         columns.push({
             title: "Student performance",
             headerHozAlign: "center",
@@ -1174,15 +1200,19 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
             ]
         })
     } else {
-        columns.push({
-            title: "Cohort average performance",
-            headerHozAlign: "center",
-            columns: [
-                {title: "Coursework grade", field: "coursework_avg", cssClass: "format_grade"},
-                {title: "Exam grade", field: "exam_avg", cssClass: "format_grade"},
-                {title: "Final weighted grade", field: "final_grade", cssClass: "format_grade"},
-            ]
-        })
+        if (extra_cols) {
+            columns.push({
+                title: "Cohort average performance",
+                headerHozAlign: "center",
+                columns: [
+                    {title: "Coursework grade", field: "coursework_avg", cssClass: "format_grade"},
+                    {title: "Exam grade", field: "exam_avg", cssClass: "format_grade"},
+                    {title: "Final weighted grade", field: "final_grade", cssClass: "format_grade"},
+                ]
+            })
+            groupBy = []
+            initialSort = [{column: 'credits', dir: 'dsc'}]
+        }
     }
 
     let ajaxParams = {
@@ -1205,7 +1235,7 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
         {
             label:"Moderate course grades",
             action:function(e, row){
-                render_course_moderation_section(row.getData().course_id, row.getTable())
+                render_course_moderation_section(row.getData(), row.getTable())
             }
         }
     ]
@@ -1219,11 +1249,12 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
         })
     }
 
+
     let final_extra_constructor_params = { ...extra_constructor_params,
         ajaxParams: ajaxParams,
         rowContextMenu:rowContextMenu,
-        groupBy: ['academic_year'],
-        initialSort: [{column: 'academic_year', dir: 'dsc'}],
+        groupBy: groupBy,
+        initialSort: initialSort,
         placeholder: "Course data loading...",
     }
     let table = init_table("courses_table", columns, null, final_extra_constructor_params, settings)
@@ -1237,7 +1268,7 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
                 }, 0)
                 return `<span class='info-text'>${count}</span> courses in ${value}, for a total of <span class='${(course_credits < 120) ? "error-color":"success-color"}'>${course_credits} credits<span>`; //return the header contents
             } else {
-                return `<span class='info-text'>${count}</span> courses offered in ${value}`; //return the header contents
+                return `<span class='info-text'>${count}</span> courses in ${value}`; //return the header contents
             }
         });
     })
@@ -1343,8 +1374,12 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
     })
 }
 
-function render_course_moderation_section(course_id, parent_table=null) {
-    //course_data.assessments
+function render_course_moderation_section(course_data, parent_table=null) {
+    let course_id = course_data.course_id
+    if (!course_id) {
+        console.error("Course ID not found")
+        return
+    }
     let final_extra_constructor_params = {
         ajaxParams: {
             "fetch_table_data": true,
@@ -1353,10 +1388,12 @@ function render_course_moderation_section(course_id, parent_table=null) {
         },
         pagination: false,
         placeholder: "Assessment data loading...",
+        height: "auto",
     }
     
     let wrapper = string_to_html_element(`
         <div class="moderation-popup">
+            <h4>Moderation section for <b>${course_data.name} - ${course_data.academic_year}</b></h4>
             <p>Please select one or multiple assignments, to moderate</p>
             <div id="assessments_table"></div>
             <div id="moderation-input-area" class="disabled moderation-input-area">
@@ -1385,12 +1422,14 @@ function render_course_moderation_section(course_id, parent_table=null) {
         {title: "Assessment type", field: "type"},
         {title: "Assessment name", field: "name"},
         {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},
-        {title: "Current moderation", field: "moderation", headerHozAlign: "center"},
+        {title: "Current moderation", field: "moderation", headerHozAlign: "center", formatter: moderation_formatter},
         {title: "Moderation User", field: "moderation_user", headerHozAlign: "center"},
         {title: "Moderation Date", field: "moderation_date", headerHozAlign: "center"},
     ]
-    let table = init_table(document.getElementById("assessments_table"), columns, null, final_extra_constructor_params)
+    let table = init_table("assessments_table", columns, null, final_extra_constructor_params)
+
     let popup = Popup.init(wrapper)
+    console.log(popup)
 
     const handle_moderation = (mode) => {
         let moderation_value_elt = document.getElementById("moderation-value")
