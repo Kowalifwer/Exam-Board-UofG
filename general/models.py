@@ -5,7 +5,7 @@ from django.shortcuts import reverse
 from exam_board.tools import default_degree_classification_settings_dict
 import json
 from math import ceil as math_ceil
-from exam_board.tools import band_integer_to_band_letter_map, band_integer_to_class_caluclator
+from exam_board.tools import band_integer_to_band_letter_map, gpa_to_class_converter, update_cumulative_band_credit_totals
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 class CommentsForTableMixin():
@@ -121,6 +121,16 @@ class Student(UUIDModel, CommentsForTableMixin):
     def page_url(self):
         return reverse('general:student', args=[self.GUID])
     
+    def graduation_info(self):
+        current_academic_year = AcademicYear.objects.filter(is_current=True).first().year
+        grad_diff = current_academic_year - self.end_academic_year
+        if grad_diff > 0:
+            return f"Graduated {grad_diff} years ago"
+        elif grad_diff == 0:
+            return "Due to graduate this academic year."
+        else:
+            return f"Due to graduate in {abs(grad_diff)} years"
+    
     def get_data_for_table(self, extra_data=None):
         table_data = {
             "GUID": self.GUID,
@@ -177,57 +187,7 @@ class Student(UUIDModel, CommentsForTableMixin):
                     no_res_counter += 1
                 course_grade += round(grade * assessment.weighting / 100, 0) #round to nearest integer, since course grades are integers
 
-            if course_grade >= 18:
-                extra_data["greater_than_a"] += credits
-                extra_data["greater_than_b"] += credits
-                extra_data["greater_than_c"] += credits
-                extra_data["greater_than_d"] += credits
-                extra_data["greater_than_e"] += credits
-                extra_data["greater_than_f"] += credits
-                extra_data["greater_than_g"] += credits
-                extra_data["greater_than_h"] += credits
-            
-            elif course_grade >= 15:
-                extra_data["greater_than_b"] += credits
-                extra_data["greater_than_c"] += credits
-                extra_data["greater_than_d"] += credits
-                extra_data["greater_than_e"] += credits
-                extra_data["greater_than_f"] += credits
-                extra_data["greater_than_g"] += credits
-                extra_data["greater_than_h"] += credits
-            
-            elif course_grade >= 12:
-                extra_data["greater_than_c"] += credits
-                extra_data["greater_than_d"] += credits
-                extra_data["greater_than_e"] += credits
-                extra_data["greater_than_f"] += credits
-                extra_data["greater_than_g"] += credits
-                extra_data["greater_than_h"] += credits
-            
-            elif course_grade >= 9:
-                extra_data["greater_than_d"] += credits
-                extra_data["greater_than_e"] += credits
-                extra_data["greater_than_f"] += credits
-                extra_data["greater_than_g"] += credits
-                extra_data["greater_than_h"] += credits
-            
-            elif course_grade >= 6:
-                extra_data["greater_than_e"] += credits
-                extra_data["greater_than_f"] += credits
-                extra_data["greater_than_g"] += credits
-                extra_data["greater_than_h"] += credits
-            
-            elif course_grade >= 3:
-                extra_data["greater_than_f"] += credits
-                extra_data["greater_than_g"] += credits
-                extra_data["greater_than_h"] += credits
-            
-            elif course_grade >= 1:
-                extra_data["greater_than_g"] += credits
-                extra_data["greater_than_h"] += credits
-            
-            elif course_grade >= 0:
-                extra_data["greater_than_h"] += credits
+            update_cumulative_band_credit_totals(extra_data, credits, course_grade)
 
             grade_adder_tuples[0] += course_grade * credits
             grade_adder_tuples[1] += credits
@@ -236,7 +196,7 @@ class Student(UUIDModel, CommentsForTableMixin):
             extra_data["final_band"] = "N/A"
         else:
             final_gpa = grade_adder_tuples[0] / grade_adder_tuples[1]
-            extra_data["final_gpa"] = round(final_gpa,1)
+            extra_data["final_gpa"] = round(final_gpa, 1)
             extra_data["final_band"] = band_integer_to_band_letter_map[int(round(extra_data["final_gpa"], 0))]
 
         if final_gpa >= 12:
@@ -246,27 +206,32 @@ class Student(UUIDModel, CommentsForTableMixin):
         
         return extra_data
     
-    def get_extra_data_degree_classification(self, masters, lvl3_courses, lvl3_results, lvl4_courses, lvl4_results, lvl5_courses={}, lvl5_results={}):
-        extra_data = {
-            "class": "N/A",
-            "final_band": 0,
-            "final_gpa": 0,
-            "l4_band": 0,
-            "l4_gpa": 0,
-            "l3_band": 0,
-            "l3_gpa": 0,
+    def get_extra_data_degree_classification(self, degree_classification_settings, masters, lvl3_courses, lvl3_results, lvl4_courses, lvl4_results, lvl5_courses={}, lvl5_results={}):
+        classification_data = {
             "greater_than_a": 0,
             "greater_than_b": 0,
             "greater_than_c": 0,
             "greater_than_d": 0,
             "greater_than_e": 0,
+            "final_gpa": 0,
+            "n_credits": 0,
+        }
+
+        extra_data = {
+            "class": "N/A",
+            "final_band": 0,
+            "l4_band": 0,
+            "l4_gpa": 0,
+            "l3_band": 0,
+            "l3_gpa": 0,
             "greater_than_f": 0,
             "greater_than_g": 0,
             "greater_than_h": 0,
             "project": 0,
             "team": 0,
-            "n_credits": 0,
         }
+
+        extra_data.update(classification_data)
 
         if masters:
             extra_data.update({
@@ -275,10 +240,7 @@ class Student(UUIDModel, CommentsForTableMixin):
                 "project_masters": 0,
             })
         
-        #student -> courses -> expected_assessments -> assessment_result
-        # for course in courses:
-        #     expected_assessments = course...
-        #     for assessment in expected_assessments:
+
         final_l5_grade_adder_tuples = [0,0]
         final_l4_grade_adder_tuples = [0,0]
         final_l3_grade_adder_tuples = [0,0]
@@ -286,11 +248,7 @@ class Student(UUIDModel, CommentsForTableMixin):
         def calculate_level_data(courses, results, grade_adder_tuples, update_greater_than=False, upgrade_to_masters=False):
             for course in courses:
                 credits = course.credits
-
-                if upgrade_to_masters:
-                    extra_data["n_credits"] += credits
-                elif update_greater_than:
-                    extra_data["n_credits"] += credits
+                classification_data["n_credits"] += credits
 
                 expected_assessments = course.assessments.all()
                 course_grade = 0
@@ -301,9 +259,9 @@ class Student(UUIDModel, CommentsForTableMixin):
                         grade = min(result[0].grade + assessment.moderation, 22) #grade capped at 22, with moderation
                     course_grade += grade * assessment.weighting / 100
                 
-                if course.credits == 60:
+                if credits == 60:
                     extra_data["project_masters"] = course_grade
-                elif course.credits == 40:
+                elif credits == 40:
                     if update_greater_than: #if is lvl 4 - means we have a solo project
                         extra_data["project"] = course_grade
                     else:
@@ -312,59 +270,11 @@ class Student(UUIDModel, CommentsForTableMixin):
                 grade_adder_tuples[0] += round(course_grade * credits, 0) #course grades are rounded to 0 decimal places.
                 grade_adder_tuples[1] += credits
                 
+                update_cumulative_band_credit_totals(classification_data, credits, course_grade)
                 if update_greater_than and not masters or upgrade_to_masters:
-                    if course_grade >= 18:
-                        extra_data["greater_than_a"] += credits
-                        extra_data["greater_than_b"] += credits
-                        extra_data["greater_than_c"] += credits
-                        extra_data["greater_than_d"] += credits
-                        extra_data["greater_than_e"] += credits
-                        extra_data["greater_than_f"] += credits
-                        extra_data["greater_than_g"] += credits
-                        extra_data["greater_than_h"] += credits
-                    
-                    elif course_grade >= 15:
-                        extra_data["greater_than_b"] += credits
-                        extra_data["greater_than_c"] += credits
-                        extra_data["greater_than_d"] += credits
-                        extra_data["greater_than_e"] += credits
-                        extra_data["greater_than_f"] += credits
-                        extra_data["greater_than_g"] += credits
-                        extra_data["greater_than_h"] += credits
-                    
-                    elif course_grade >= 12:
-                        extra_data["greater_than_c"] += credits
-                        extra_data["greater_than_d"] += credits
-                        extra_data["greater_than_e"] += credits
-                        extra_data["greater_than_f"] += credits
-                        extra_data["greater_than_g"] += credits
-                        extra_data["greater_than_h"] += credits
-                    
-                    elif course_grade >= 9:
-                        extra_data["greater_than_d"] += credits
-                        extra_data["greater_than_e"] += credits
-                        extra_data["greater_than_f"] += credits
-                        extra_data["greater_than_g"] += credits
-                        extra_data["greater_than_h"] += credits
-                    
-                    elif course_grade >= 6:
-                        extra_data["greater_than_e"] += credits
-                        extra_data["greater_than_f"] += credits
-                        extra_data["greater_than_g"] += credits
-                        extra_data["greater_than_h"] += credits
-                    
-                    elif course_grade >= 3:
-                        extra_data["greater_than_f"] += credits
-                        extra_data["greater_than_g"] += credits
-                        extra_data["greater_than_h"] += credits
-                    
-                    elif course_grade >= 1:
-                        extra_data["greater_than_g"] += credits
-                        extra_data["greater_than_h"] += credits
-                    
-                    elif course_grade >= 0:
-                        extra_data["greater_than_h"] += credits
-                
+                    update_cumulative_band_credit_totals(extra_data, credits, course_grade)
+                    extra_data["n_credits"] += credits
+      
             return grade_adder_tuples
         
         final_l5_grade_adder_tuples = calculate_level_data(lvl5_courses, lvl5_results, final_l5_grade_adder_tuples, upgrade_to_masters=True)
@@ -405,9 +315,11 @@ class Student(UUIDModel, CommentsForTableMixin):
             extra_data["final_gpa"] = "N/A"
             extra_data["final_band"] = "N/A"
         else:
+            classification_data["final_gpa"] = final_gpa
             extra_data["final_gpa"] = round(final_gpa, 1) #round to 1 decimal place since we calculate gpa to 1 decimal place
             extra_data["final_band"] = band_integer_to_band_letter_map[int(round(final_gpa, 0))]
-            extra_data["class"] = band_integer_to_class_caluclator(int(round(final_gpa, 0)))
+            
+            extra_data["class"] = gpa_to_class_converter(classification_data, degree_classification_settings)
 
         if extra_data["project"] == 0:
             extra_data["project"] = "N/A"
@@ -430,7 +342,9 @@ class Student(UUIDModel, CommentsForTableMixin):
     def get_extra_data_course(self, assessments, course):
         extra_data = {}
         results = AssessmentResult.objects.filter(assessment__in=assessments, course=course, student=self).select_related("assessment")
-        totals = {}
+        totals = {
+            "final": [0, 0]
+        }
         for result in results:
             result_assessment = result.assessment
             type = result_assessment.type
@@ -450,18 +364,18 @@ class Student(UUIDModel, CommentsForTableMixin):
             
             totals[type][0] += grade * weighting
             totals[type][1] += weighting
-        
-        final_grade = 0
+
         all_mv = True
-        for key, totals in totals.items():
-            if totals[1] > 0: ##if weighting across a group is > 0 AKA if any of the assessments are NOT medical void.
-                extra_data[f"{key}_grade"] = f"{totals[0] / totals[1]:.2f}"
-                final_grade += totals[0] / totals[1]
+        for key, total_counters in totals.items():
+            if total_counters[1] > 0: ##if weighting across a group is > 0 AKA if any of the assessments are NOT medical void.
+                extra_data[f"{key}_grade"] = f"{total_counters[0] / total_counters[1]:.2f}"
+                totals["final"][0] += total_counters[0]
+                totals["final"][1] += total_counters[1]
                 all_mv = False
             else:
                 extra_data[f"{key}_grade"] = "MV"
-        
-        extra_data["final_grade"] = f"{round(final_grade, 2)}" if not all_mv else "MV"
+
+        extra_data["final_grade"] = f'{round(totals["final"][0]/totals["final"][1], 2)}' if not all_mv else "MV"
         
         return extra_data
     
@@ -504,7 +418,7 @@ class Course(UUIDModel, CommentsForTableMixin):
     def level_integer(self):
         return int(self.code[-4])
     
-    def get_data_for_table(self, extra_data={}):
+    def get_data_for_table(self, extra_data={}, **kwargs):
         table_data = {
             'code': self.code,
             'name': self.name,
@@ -512,68 +426,124 @@ class Course(UUIDModel, CommentsForTableMixin):
             'lecturer_comment': self.lecturer_comment,
             'credits': self.credits,
             'is_taught_now': self.is_taught_now,
-            'course_id': self.id,
+            'course_id': str(self.id),
             
             #Extra properties
-            # 'average_coursework_data': self.average_coursework_data,
             'page_url': self.page_url,
         }
+
+        if "fast_mod" in kwargs:
+            table_data["is_moderated"] = self.is_moderated_optimized
 
         if extra_data:
             extra_data = getattr(self, extra_data["method"])(*extra_data["args"])
             table_data.update(extra_data)
         
         return table_data
+
+    def get_data_for_table_json(self, extra_data=None):
+        return json.dumps(self.get_data_for_table(extra_data))
     
     @property
     def page_url(self):
         return reverse('general:course', args=[self.code, self.academic_year])
+    
+    @property #use this function IF we prefetched the assessments for the whole queryset.
+    def is_moderated_optimized(self):
+        for assessment in self.assessments.all():
+            if assessment.moderation != 0:
+                return True
+        return False
 
-    def get_extra_data_student(self, results):
+    @property
+    def is_moderated(self):
+        return self.assessments.exclude(moderation=0).exists()
+
+    def get_extra_data_student(self, results): #this will return the students personal averages for the course
+        ##MV if all stuff are MV
         extra_data = {
-            'coursework_avg': [0, 0],
-            'exam_avg': [0, 0],
-            'final_grade': 0,
+            'coursework_avg': [0, 0, True],
+            'exam_avg': [0, 0, True],
+            'final_grade': [0, 0, True],
+            'is_moderated': False,
         }
 
         for result in results: ##tally up the averages and the final grade here
+            if result.assessment.moderation != 0:
+                extra_data['is_moderated'] = True
+
             grade = min(result.grade + result.assessment.moderation, 22) #grade capped at 22, with moderation
-            if result.assessment.type == 'E':
-                extra_data['exam_avg'][0] += grade * result.assessment.weighting
-                extra_data['exam_avg'][1] += result.assessment.weighting
+            weighting = result.assessment.weighting
+            if result.preponderance == "NA":
+                extra_data['exam_avg'][2] = False
+                extra_data['coursework_avg'][2] = False
+                extra_data['final_grade'][2] = False
             else:
-                extra_data['coursework_avg'][0] += grade * result.assessment.weighting
-                extra_data['coursework_avg'][1] += result.assessment.weighting
-            extra_data['final_grade'] += grade * result.assessment.weighting / 100
+                if result.preponderance == "MV":
+                    weighting = 0
+                else: ##if CR/CW -> credit witheld or refused - count as 0
+                    grade = 0
+
+            weighted_grade = grade * weighting
+
+            if result.assessment.type == 'E':
+                extra_data['exam_avg'][0] += weighted_grade
+                extra_data['exam_avg'][1] += weighting
+            else:
+                extra_data['coursework_avg'][0] += weighted_grade
+                extra_data['coursework_avg'][1] += weighting
+            
+            extra_data['final_grade'][0] += weighted_grade
+            extra_data['final_grade'][1] += weighting
 
         ##get the averages, and round everything up.
-        extra_data['exam_avg'] = round(extra_data['exam_avg'][0] / extra_data['exam_avg'][1], 2) if extra_data["exam_avg"][1] > 0 else "N/A"
-        extra_data['coursework_avg'] = round(extra_data['coursework_avg'][0] / extra_data['coursework_avg'][1], 2) if extra_data["coursework_avg"][1] > 0 else "N/A"
-        extra_data['final_grade'] = round(extra_data['final_grade'], 2)
+        if extra_data['exam_avg'][2]:
+            extra_data['exam_avg'] = "MV"
+        else:
+            extra_data['exam_avg'] = round(extra_data['exam_avg'][0] / extra_data['exam_avg'][1], 2) if extra_data["exam_avg"][1] > 0 else "N/A"
+        if extra_data['coursework_avg'][2]:
+            extra_data['coursework_avg'] = "MV"
+        else:
+            extra_data['coursework_avg'] = round(extra_data['coursework_avg'][0] / extra_data['coursework_avg'][1], 2) if extra_data["coursework_avg"][1] > 0 else "N/A"
+        if extra_data['final_grade'][2]:
+            extra_data['final_grade'] = "MV"
+        else:
+            extra_data['final_grade'] = round(extra_data['final_grade'][0] / extra_data['final_grade'][1], 2) if extra_data["final_grade"][1] > 0 else "N/A"
         return extra_data
 
-    def get_extra_data_general(self):
+    def get_extra_data_general(self): ##this will return the cohort averages for the course
         extra_data = {
             'coursework_avg': [0, 0],
             'exam_avg': [0, 0],
             'final_grade': [0, 0],
+            'is_moderated': False,
         }
 
         ##go over every assessment, group by cw and exam
         all_assessments = self.assessments.all()
         all_results = self.results.all()
         for assessment in all_assessments:
+            if assessment.moderation != 0:
+                extra_data['is_moderated'] = True
             for result in all_results:
                 if result.assessment == assessment:
-                    grade = min(result.grade + result.assessment.moderation, 22) #grade capped at 22, with moderation
-                    if result.assessment.type == 'E':
-                        extra_data['exam_avg'][0] += grade * result.assessment.weighting
-                        extra_data['exam_avg'][1] += result.assessment.weighting
+                    grade = min(result.grade + assessment.moderation, 22) #grade capped at 22, with moderation
+                    weighting = assessment.weighting
+                    if result.preponderance != "NA": ##if the grade has a preponderance - account for that
+                        if result.preponderance == "MV":
+                            weighting = 0
+                        else: ##if CR/CW -> credit witheld or refused - count as 0
+                            grade = 0
+
+                    if assessment.type == 'E':
+                        extra_data['exam_avg'][0] += grade * weighting
+                        extra_data['exam_avg'][1] += weighting
                     else:
-                        extra_data['coursework_avg'][0] += grade * result.assessment.weighting
-                        extra_data['coursework_avg'][1] += result.assessment.weighting
-                    extra_data['final_grade'][0] += grade * result.assessment.weighting / 100
-                    extra_data['final_grade'][1] += result.assessment.weighting / 100
+                        extra_data['coursework_avg'][0] += grade * weighting
+                        extra_data['coursework_avg'][1] += weighting
+
+                    extra_data['final_grade'][0] += grade * weighting
+                    extra_data['final_grade'][1] += weighting
         
         ##get the averages, and round everything up.
         extra_data['exam_avg'] = round(extra_data['exam_avg'][0] / extra_data['exam_avg'][1], 2) if extra_data["exam_avg"][1] > 0 else "N/A"
@@ -640,7 +610,7 @@ class AssessmentResult(UUIDModel):
     date_updated = models.DateField(auto_now=True)
 
     def __str__(self):
-        return f'{self.student.full_name} - {self.assessment.name} - {self.grade}%'
+        return f'{self.student.full_name} - {self.assessment.name} - {self.grade}/22'
 
 def CommentMixin(related_name_user):
     class Comment_Mixin(UUIDModel):
