@@ -6,8 +6,6 @@
 {% endblock %}
 
 {% block body %}
-    
-
     <div class="student-page-top-section">
         <div>
             <div class="collapsable-section student-information-panel">
@@ -15,29 +13,19 @@
                     {%if current_level == 4%}
                         <b>BSc/BEng (Level 4) Honours Graduate data - {{selected_year.year}}</b>
                     {%elif current_level == 5%}
-                        <b>MSc/MEng - Level 5 (M) Honours Graduates</b>
+                        <b>MSc/MEng - Level 5 (M) Honours Graduates - {{selected_year.year}}</b>
                     {%endif%}
                 </h3>
                 <div>
-                    <p><b>GUID:</b> {{student.GUID}}</p>
-                    <p><b>Full name:</b> {{student.full_name}}</p>
-                    <p><b>Degree name:</b> {{student.degree_name}}</p>
-                    <p><b>Degree title:</b> {{student.degree_title}}</p>
-                    <p><b>Current level:</b> {{student.current_level_verbose}}</p>
-                    <p><b>Is faster route?:</b> {{student.is_faster_route}}</p>
-                    <p><b>Current status:</b> {{student.graduation_info}}</p>
-                    
-                    <p><b>Current academic year:</b> {{student.current_academic_year}}</p>
-                    <p><b>Start academic year:</b> {{student.start_academic_year}}</p>
-                    <p><b>End academic year:</b> {{student.end_academic_year}}</p>
-                    
-                    <!-- Final Classification: {{student.get_final_classification}} -->
+                    <div class="tabulator-linked-section">
+                        <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+                    </div>
                 </div>
             </div>
         </div>
         <div>
             <div class="collapsable-section">
-                <h3><b>Overall cohort distribution stats</b>  <img title="You may hover over the chart elements to see more details. Additionally, you may toggle which data the chart shows, by left-clicking the legend elements." src="{% static 'icons/info.svg'%}"></h3>
+                <h3><b>Overall cohort distribution stats</b>  <img title="You may hover over the chart elements to see more details. Additionally, you may toggle which data the chart shows, by left-clicking the legend elements." class='color-img-dark-blue-uofg' src="{% static 'icons/info.svg'%}"></h3>
                 <div>
                     <div class="chart-block">
                         <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
@@ -54,8 +42,9 @@
             </div>
         </div>
     </div>
-
-    <div class="tabulator_table" id="degree_classification_table" style="max-width: 1200px;"></div>
+    
+    <h1><b>Full cohort data</b></h1>
+    <div class="tabulator_table" id="degree_classification_table"></div>
     <script>
         load_degree_classification_table(level=`{{current_level}}`)
     </script>
