@@ -127,25 +127,20 @@ const custom_average_calculator = function(values, data, calcParams){
     let total = 0;
     let count = 0;
     let credit_mode = false;
-    let credit_accessor = "credits"
     let total_credits = 0;
     let credit_values = [];
-    if (data[0]) {
-        if (data[0].credits) {
-            credit_mode = true;
-        } else if (data[0].weighting) {
-            credit_mode = true;
-            credit_accessor = "weighting"
-        }
+    if (data?.[0]?.credits) {
+        credit_mode = true;
     }
     
     let check_list = [...preponderance_list, "N/A", ""]
+
     if (credit_mode) {
         for (let i = 0; i < data.length; i++) {
             let row = data[i];
-            if (row[credit_accessor]) {
-                total_credits += row[credit_accessor];
-                credit_values.push(row[credit_accessor]);
+            if (row.credits) {
+                total_credits += row.credits;
+                credit_values.push(row.credits);
             }
         }
     }
@@ -258,10 +253,10 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             separator: true
         })
         table_constructor.rowContextMenu.push({
-            label:"<div class='inline-icon' title='The following actions will affect all the selected rows. Note that all the actions in this category are reversible - so do not worry if you accidentally click something.'><img class='color-img-blue-uofg' src='/static/icons/info.svg'></i><span>Multi-row actions</span></div>",
+            label:"<div class='inline-icon' title='The following actions will affect all the selected rows. Note that all the actions in this category are reversible - so do not worry if you accidentally click something.'><img src='/static/icons/info.svg'></i><span>Multi-row actions</span></div>",
             menu:[
                 {
-                    label:"<div class='inline-icon' title='Note that this is simply hiding the rows, meaning no table data gets manipulated.'><img class='color-img-blue-uofg' src='/static/icons/info.svg'></i><span>Hide row(s)</span></div>",
+                    label:"<div class='inline-icon' title='Note that this is simply hiding the rows, meaning no table data gets manipulated.'><img src='/static/icons/info.svg'></i><span>Hide row(s)</span></div>",
                     action:function(e, row){
                         let selected_rows = table.getSelectedRows()
                         selected_rows.forEach(function(inner_row){
@@ -274,7 +269,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                     }
                 },
                 {
-                    label:"<div class='inline-icon' title='Note that this action properly removes data from the table (locally, and not from the database), - this can be useful for preparing the table for data extraction, such as generating an excel file, for example.'><img class='color-img-blue-uofg' src='/static/icons/info.svg'></i><span>Delete row(s)</span></div>",
+                    label:"<div class='inline-icon' title='Note that this action properly removes data from the table (locally, and not from the database), - this can be useful for preparing the table for data extraction, such as generating an excel file, for example.'><img src='/static/icons/info.svg'></i><span>Delete row(s)</span></div>",
                     action:function(e, row){
                         let selected_rows = table.getSelectedRows()
                         selected_rows.forEach(function(inner_row){
@@ -394,7 +389,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         
         table.reformatTable(default_formatter, "format_grade", custom_average_calculator)
         //handle formatting stuff
-        let select_element = string_to_html_element(
+        var select_element = string_to_html_element(
             `
                 <select>
                     <option value="I">band integer</option>
@@ -404,18 +399,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         )
         select_element.classList.add('tabulator-format-select')
 
-        let select_download = string_to_html_element(
-            `
-                <select>
-                    <option value=0>-export table-</option>
-                    <option value="xlsx">Excel</option>
-                    <option value="pdf">PDF</option>
-                    <option value="csv">CSV</option>
-                    <option value="json">JSON</option>
-                </select>
-            `
-        )
-
         select_element.addEventListener("change", function(e){
             if (this.value == "B") {
                 table.reformatTable(formatter_to_band_letter, "format_grade", custom_average_calculator)
@@ -424,29 +407,8 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             }
         })
 
-        select_download.addEventListener("change", function(e){
-            if (this.value == "xlsx") {
-                table.download("xlsx", "data.xlsx", {});
-                this.value = 0
-            } else if (this.value == "pdf") {
-                table.downloadToTab("pdf", "data.pdf", {
-                    orientation:"landscape", //set page orientation to landscape
-                });
-                this.value = 0
-            } else if (this.value == "csv") {
-                table.download("csv", "data.csv", {});
-                this.value = 0
-            } else if (this.value == "json") {
-                table.download("json", "data.json", {});
-                this.value = 0
-            }   
-        })
-
-
-        // let download_excel = string_to_html_element(`<button class="tabulator-download">Download excel</button>`)
-        // let download_pdf = string_to_html_element(`<button class="tabulator-download">Download pdf</button>`)
-        // let download_csv = string_to_html_element(`<button class="tabulator-download">Download csv</button>`)
-        // let download_json = string_to_html_element(`<button class="tabulator-download">Download json</button>`)
+        let download_excel = string_to_html_element(`<button class="tabulator-download">Download excel</button>`)
+        let download_pdf = string_to_html_element(`<button class="tabulator-download">Download pdf</button>`)
         let unhide_rows = string_to_html_element(`<button id="unhide-rows" class="hidden">Unhide rows</button>`)
         let undelete_rows = string_to_html_element(`<button id="undelete-rows" class="hidden">Add back deleted rows</button>`)
         let column_manager = string_to_html_element(`<button class="column-manager">Column manager</button>`)
@@ -501,12 +463,21 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             undelete_rows.classList.add("hidden")
         })
 
+        download_excel.addEventListener("click", function(e){
+            table.download("xlsx", "data.xlsx", {});
+        })
+        download_pdf.addEventListener("click", function(e){
+            table.downloadToTab("pdf", "data.pdf", {
+                orientation:"landscape", //set page orientation to landscape
+            });
+        })
+
         let table_wrapper = table.getWrapper()
 
         table_wrapper.querySelector(".tabulator-components").prepend(select_element)
-        table_wrapper.querySelector(".tabulator-components").prepend(select_download)
+        table_wrapper.querySelector(".tabulator-components").appendChild(download_excel)
+        table_wrapper.querySelector(".tabulator-components").appendChild(download_pdf)
         table_wrapper.querySelector(".tabulator-components").appendChild(column_manager)
-
 
         if (settings.course) {
             let moderate_course_button = string_to_html_element(`<button class="tabulator-moderate">Moderate course</button>`)
@@ -620,19 +591,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={'title': 'Students'}){
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
-        {title: "GUID", field: "GUID", headerFilter: "input", "frozen": true, headerPopup: function(e, column){
-            // let current_formatter = column.getDefinition().formatter
-            // console.log(current_formatter)
-            // let menu = `
-            //     <select>
-            //         <option>Letter and number</option>
-            //         <option>Number only</option>
-            //     </select>`
-            // return menu
-            // column.updateDefinition(
-            //     {visible: false}
-            // )
-        }},
+        {title: "GUID", field: "GUID", headerFilter: "input", "frozen": true},
         {title: "Name", field: "name", headerFilter: "input"},
         {
             title: "Degree info",
@@ -676,7 +635,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
     ]
     if (settings.course) {
         rowContextMenu.push({
-            label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img class='color-img-blue-uofg' src='/static/icons/info.svg'></i><span>Student grades breakdown popup.</span></div>",
+            label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img src='/static/icons/info.svg'></i><span>Student grades breakdown popup.</span></div>",
             action: function(e, row){
                 create_student_course_detailed_table_popup(row.getData(), settings.course.course_id, row.getTable())
             }
@@ -745,6 +704,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
                 }
 
                 return `
+                    <h3>Course statistics</h3>
                     ${grades_breakdown_string}
                     <p><b>Number of students above pass grade (above E1):</b> ${passed_students} (${(passed_students/ n_rows * 100).toFixed(2)}%)</p>
                     <p><b>Number of students below pass grade (below D3):</b> ${failed_students} (${(failed_students/ n_rows * 100).toFixed(2)}%)</p>
@@ -874,8 +834,8 @@ function load_level_progression_table(level){
         {
             title: `Level ${level} final results`,
             columns: [
-                {title: `L${level} GPA`, field: "final_gpa"},
                 {title: `L${level} band`, field: "final_band"},
+                {title: `L${level} GPA`, field: "final_gpa"},
             ],
             headerHozAlign: "center",
         },
@@ -914,7 +874,7 @@ function load_level_progression_table(level){
             // console.log(data)
             let message = ""
             if (value == "discretionary") {
-                message = `Students who might progress at schools discretion (${count})`
+                message = `Students who will progress under schools discretion (${count})`
             } else if (value == "no") {
                 message = `Students who will not progress (${count})`
             } else if (value == "yes") {
@@ -924,13 +884,77 @@ function load_level_progression_table(level){
         },
     }, {'title': 'Degree classification data for level '+level+' students'})
 
+
+    // table.addChartLink([
+    //     document.getElementById("students_final_grade"), function(table_inner) {
+    //         let table_data = table_inner.getData()
+    //         let chart_data = {};
+    //         let boundaries = ["A","B","C","D","E","F","G","H"]
+    //         for (let x in boundaries) {
+    //             chart_data[boundaries[x]] = 0
+    //         }
+    //         table_data.forEach(function(row){
+    //             let band_grade = boundary_map[percent_to_integer_band(row.final_grade)][0]
+    //             chart_data[band_grade] = (chart_data[band_grade] || 0) + 1;
+    //         })
+
+    //         //make abc grades pleasant green color, d grade yellow, and e f g h red
+    //         let colors = [c_good,c_good,c_good,c_mid,c_poor,c_poor,c_poor,c_poor]
+
+    //         return {
+    //             data: {
+    //                 labels: Object.values(boundaries),
+    //                 datasets: [
+    //                     {
+    //                         label: "Number of students",
+    //                         data: Object.values(chart_data),
+    //                         barPercentage: 0.90,
+    //                         backgroundColor: colors,
+    //                     }
+    //                 ]
+    //             },
+    //             options: {
+    //                 scales: {
+    //                     y: {
+    //                         beginAtZero: true,
+    //                         title: {
+    //                             display: true,
+    //                             text: "Number of students",
+    //                         }
+    //                     },
+    //                     x: {
+    //                         title: {
+    //                             display: true,
+    //                             text: "Final grade for course",
+    //                         }
+    //                     }
+    //                 },
+    //                 plugins: {
+    //                     tooltip: {
+    //                         callbacks: {
+    //                             footer: function(tooltipItems) {
+    //                                 return "Percentage of students: " + (tooltipItems[0].parsed.y / table_data.length * 100).toFixed(2) + "%"
+    //                             }
+    //                         }
+    //                     },
+    //                     title: {
+    //                         display: true,
+    //                         text: "Final grade distribution for course",
+    //                     }
+
+    //                 }
+    //             }
+    //         }   
+    //     }
+    // ])
+
     //on data loeaded, sort by final_gpa
     table.on("dataProcessed", function(){
         if (table.dataLoadedInitial)
             table.setSort('final_gpa', 'dsc')
     })
 
-    table.addChartLink([document.getElementById("level_progression_chart_success"), function(table_inner) {
+    table.addChartLink([document.getElementById("level_progression_chart"), function(table_inner) {
         let table_data = table_inner.getData()
         let classes = ["yes", "discretionary", "no"]
         let colors = [c_good,c_mid,c_poor]
@@ -954,71 +978,6 @@ function load_level_progression_table(level){
             }
         }
     }])
-
-    table.addChartLink([document.getElementById("level_progression_chart_all"), function(table_inner) {
-        let table_data = table_inner.getData()
-        let bands = ["A", "B", "C", "D", "E", "F", "G"]
-        let chart_data = {}
-
-        for (let x in bands) {
-            chart_data[bands[x]] = {
-                "final_band": 0,
-            }
-        }
-
-        for (let i = 0; i < table_data.length; i++) {
-            let row = table_data[i]
-            let band_letter = row.final_band[0]
-            chart_data[band_letter].final_band = (chart_data[band_letter].final_band || 0) + 1;
-        }
-
-        return {
-            data: {
-                labels: bands,
-                datasets: [
-                    {
-                        label: "Final band",
-                        data: Object.values(chart_data).map(x => x.final_band),
-                        backgroundColor: chart_colors[5],
-                    }
-                ]
-            }
-        }
-    }])
-
-    table.addContentLink([document.querySelector(".tabulator-linked-section"), function(table_inner) {
-        let table_data = table_inner.getData()
-        let passed_students = 0
-        let discretionary = 0
-        let failed_students = 0
-        let n_rows = table_data.length
-        let final_gpa_avg = 0
-        let final_gpa_count = 0
-
-        for (let i = 0; i < n_rows; i++) {
-            let student = table_data[i]
-            if (student.progress_to_next_level == "yes") {
-                passed_students++
-            } else if (student.progress_to_next_level == "discretionary") {
-                discretionary++
-            } else if (student.progress_to_next_level == "no") {
-                failed_students++
-            }
-            if (student.final_gpa != null) {
-                final_gpa_avg += student.final_gpa
-                final_gpa_count++
-            }
-        }
-
-        return `
-            <p><b>Total number of students:</b> ${n_rows}</p>
-            <p><b>Average level ${level} GPA:</b> ${(final_gpa_avg/final_gpa_count).toFixed(1)} - (${boundary_map[(final_gpa_avg/final_gpa_count).toFixed(0)]})</p>
-            <p><b>Number of students guaranteed to progress:</b> ${passed_students} (${(passed_students/ n_rows * 100).toFixed(2)}%)</p>
-            <p><b>Number of students who might progress at schools discretion:</b> ${discretionary} (${(discretionary/ n_rows * 100).toFixed(2)}%)</p>
-            <p><b>Number of students who will not progress:</b> ${failed_students} (${(failed_students/ n_rows * 100).toFixed(2)}%)</p>
-        `
-    }])
-
 }
     
 
@@ -1054,13 +1013,13 @@ function load_degree_classification_table(level) {
         },
         {title: "Degree classification", field: "class"},
         {title: "Final band", field: "final_band"},
-        {title: "Final GPA", field: "final_gpa", bottomCalc: custom_average_calculator},
+        {title: "Final GPA", field: "final_gpa"},
         {title: "L5 band", field: "l5_band"},
-        {title: "L5 GPA", field: "l5_gpa", bottomCalc: custom_average_calculator},
+        {title: "L5 GPA", field: "l5_gpa"},
         {title: "L4 band", field: "l4_band"},
-        {title: "L4 GPA", field: "l4_gpa", bottomCalc: custom_average_calculator},
+        {title: "L4 GPA", field: "l4_gpa"},
         {title: "L3 band", field: "l3_band"},
-        {title: "L3 GPA", field: "l3_gpa", bottomCalc: custom_average_calculator},
+        {title: "L3 GPA", field: "l3_gpa"},
         {
             title: `Cumulative number of level ${level} credits graded at band`,
             columns: [
@@ -1076,9 +1035,9 @@ function load_degree_classification_table(level) {
             ],
             "headerHozAlign": "center",
         },
-        {title: "Team (lvl 3 Hons)", field: "team", bottomCalc: custom_average_calculator},
-        {title: "Individual (lvl 4 Hons)", field: "project", bottomCalc: custom_average_calculator},
-        {title: "Individual (lvl 5 M)", field: "project_masters", bottomCalc: custom_average_calculator},
+        {title: "Team (lvl 3 Hons)", field: "team"},
+        {title: "Individual (lvl 4 Hons)", field: "project"},
+        {title: "Individual (lvl 5 M)", field: "project_masters"},
     ]
 
     if (level != 5) {
@@ -1103,6 +1062,7 @@ function load_degree_classification_table(level) {
         "ajaxParams": {
             "fetch_table_data": true,
         },
+
     }, {'title': 'Degree classification data for level '+level+' students'})
 
     //on data loeaded, sort by final_gpa
@@ -1166,13 +1126,7 @@ function load_degree_classification_table(level) {
             let row = table_data[i]
             for (let j = 0; j < inits.length; j++) {
                 let key = inits[j][0]
-                let band_letter = row[key]
-                if (typeof band_letter != "string") {
-                    //band letter is actually a number, must be converted to a string band
-                    band_letter = boundary_map[band_letter.toFixed(0)][0]
-                } else {
-                    band_letter = row[key][0]
-                }
+                let band_letter = row[key][0]
                 chart_data[band_letter][key] = (chart_data[band_letter][key] || 0) + 1;
             }
         }
@@ -1191,64 +1145,6 @@ function load_degree_classification_table(level) {
             }
         }
     }])
-
-    table.addContentLink([
-        document.querySelector(".tabulator-linked-section"), 
-        function(table) {
-            let table_data = table.getData()
-
-            let inits = (level == 5) ? [
-                ["final_gpa", "Average final GPA"],
-                ["l5_gpa", "Average L5 GPA"],
-                ["project_masters", "Average L5 individual project(M) GPA"],
-                ["l4_gpa", "Average L4 GPA"],
-                ["project", "Average L4 individual project GPA"],
-                ["l3_gpa", "Average L3 GPA"],
-                ["team", "Average L3 team project GPA"],
-            ] : [
-                ["final_gpa", "Average final GPA"],
-                ["l4_gpa", "Average L4 GPA"],
-                ["project", "Average L4 individual project GPA"],
-                ["l3_gpa", "Average L3 GPA"],
-                ["team", "Average L3 team project GPA"],
-            ]
-
-            let passed_students = 0
-            let failed_students = 0
-            let n_rows = table_data.length
-
-            for (let i = 0; i < n_rows; i++) {
-                let student = table_data[i]
-                if (student.class != "Fail") {
-                    passed_students += 1
-                } else {
-                    failed_students += 1
-                }
-            }
-
-            let group_results = table.getCalcResults().bottom
-            for (let i = 0; i < inits.length; i++) {
-                let field_name = inits[i][0]
-                inits[i].push(parseFloat(group_results[field_name]))
-            }
-
-            //final, coursework, group, ind, exam
-            let grades_breakdown_string = ""
-            for (let i = 0; i < inits.length; i++) {
-                //inits[i][1] is the label
-                //inits[i][2] is the value (average)
-                grades_breakdown_string += `<p><b>${inits[i][1]}:</b> ${inits[i][2].toFixed(1)} - ${boundary_map[inits[i][2].toFixed(0)]}</p>`
-            }
-
-            return `
-                <h3>Final statistics</h3>
-                <p><b>Total number of students:</b> ${n_rows}</p>
-                ${grades_breakdown_string}
-                <p><b>Number of students graduated succesfully:</b> ${passed_students} (${(passed_students/ n_rows * 100).toFixed(2)}%)</p>
-                <p><b>Number of students failed to graduate:</b> ${failed_students} (${(failed_students/ n_rows * 100).toFixed(2)}%)</p>
-            `
-        }
-    ])
 }
 
 function create_student_course_detailed_table_popup(student_data=null, course_id=null, parent_table_to_reload=null){
@@ -1400,7 +1296,7 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
 
     if (settings.student) {
         rowContextMenu.push({
-            label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img class='color-img-blue-uofg'src='/static/icons/info.svg'></i><span>Student grades breakdown popup.</span></div>",
+            label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img src='/static/icons/info.svg'></i><span>Student grades breakdown popup.</span></div>",
             action: function(e, row){
                 create_student_course_detailed_table_popup(settings.student, row.getData().course_id, row.getTable())
             }
@@ -1631,7 +1527,7 @@ function render_course_moderation_section(course_data, parent_table=null) {
 
 function load_grading_rules_table(data_json){
     let columns = [
-        {title: "Name", field: "name", editor: false},
+        {title: "Name", field: "name", editor: false, clickPopup: "Hello"},
         {title: "Standard lower GPA", field: "std_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1}, cssClass: "edit-mode"},
         {title: "Discretionary lower GPA", field: "disc_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1}, cssClass: "edit-mode"},
         {title: "Character Band", field: "char_band", visible: false, editor: "list", cssClass: "edit-mode",
@@ -1711,9 +1607,10 @@ function load_grading_rules_table(data_json){
 
 function load_comments_table(data_json){
     let columns = [
-        {title: "Comment", field: "comment", vertAlign:"middle", widthGrow: 1, resizable:false},
-        {title: "Lecturer", field: "added_by", vertAlign:"middle", minWidth: 200, maxWidth: 300, resizable:false},
-        {title: "Date added", field: "timestamp", vertAlign:"middle", width:150, resizable:false},
+        {title: "Comment", field: "comment", vertAlign:"middle", widthGrow: 1},
+        {title: "Lecturer", field: "added_by", vertAlign:"middle", minWidth: 200, maxWidth: 300},
+        {title: "Date added", field: "timestamp", vertAlign:"middle", width:150},
+        {title: "Comment ID", field: "id", visible: false, vertAlign:"middle"}
     ]
 
     let footer_element = 
