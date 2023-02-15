@@ -5,7 +5,7 @@ import django
 django.setup()
 
 import random
-from general.models import AcademicYear, User, Student, Course, Assessment, AssessmentResult, AcademicYear
+from general.models import AcademicYear, User, Student, Course, Assessment, AssessmentResult, AcademicYear, LevelHead
 from django.utils import lorem_ipsum
 from django.db import connection, reset_queries
 import time
@@ -19,7 +19,7 @@ CURRENT_YEAR = 2022
 COMPUTER_SCIENCE_COURSE_CODE_PREFIX = 'COMPSCI'
 REQUIRED_CREDITS_PER_COURSE = 120
 
-
+TOTAL_NUMBER_OF_USERS = 20
 TOTAL_NUMBER_OF_COURSES = 7*12 #5 years of courses, 12 courses for lvl 1,2,5 and 24 for lvl 3,4
 TOTAL_NUMBER_OF_STUDENTS = 600
 
@@ -60,7 +60,6 @@ class Populator:
             "first_name": first_name,
             "last_name": last_name,
             "title": random.choices(["Dr", "Prof"], weights=[0.65, 0.35])[0],
-            "class_head_level": random.choice([0,1,2,3,4,5,10]),
         }
     
     @property
@@ -287,12 +286,16 @@ class Populator:
     def populate_database(self):
         print("Transferring current state into database")
         try:
-
             User.objects.bulk_create(self.users, ignore_conflicts=True)
+            print(f"Transferred {len(self.users)} users succesfully")
+            level_heads = []
             for i in range(FIRST_YEAR_OF_COURSES, LAST_YEAR_OF_COURSES + 1):
-                level_heads_kwargs = {f"level{i}_head":user for i, user in enumerate(random.choices(self.users, k=5), start=1)}
-                AcademicYear.objects.create(year=i, is_current=i==self.current_academic_year, **level_heads_kwargs)
-            print("Populated academic years")
+                year = AcademicYear.objects.create(year=i, is_current=i==self.current_academic_year)
+                for j, user in enumerate(random.choices(self.users, k=5), start=1):##5 random users are level heads for each year
+                    level_heads.append(LevelHead(user=user, academic_year=year, level=j))
+            LevelHead.objects.bulk_create(level_heads, ignore_conflicts=True)
+            print("Populated level heads and academic years")
+
             students = Student.objects.bulk_create(self.students, ignore_conflicts=True)
             print(f"Transferred {len(students)} students succesfully")
             courses = Course.objects.bulk_create(self.courses, ignore_conflicts=True)
@@ -374,13 +377,12 @@ def main():
     populator = Populator()
     populator.wipe_database()
     populator.create_admin()
-    populator.generate_users(20)
+    populator.generate_users(TOTAL_NUMBER_OF_USERS)
     populator.generate_students(TOTAL_NUMBER_OF_STUDENTS)
     populator.generate_courses(TOTAL_NUMBER_OF_COURSES)
     populator.generate_assessment_groups()
 
     populator.populate_database()
-
 
 if __name__ == "__main__":
     main()
