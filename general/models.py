@@ -7,6 +7,7 @@ import json
 from math import ceil as math_ceil
 from exam_board.tools import band_integer_to_band_letter_map, gpa_to_class_converter, update_cumulative_band_credit_totals
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.utils.safestring import mark_safe
 
 class CommentsForTableMixin():
     @property
@@ -28,7 +29,7 @@ class UUIDModel(models.Model):
     class Meta:
         abstract = True
 
-class AcademicYear(models.Model):
+class AcademicYear(UUIDModel):
     year = models.IntegerField(unique=True)
     is_current = models.BooleanField(default=True)  # TODO: Ensure that only 1 year is current at a time
     degree_classification_settings = models.JSONField(null=False, blank=False, default=default_degree_classification_settings_dict)
@@ -41,23 +42,24 @@ class AcademicYear(models.Model):
     def __str__(self):
         return f"{self.year}{'(Active)' if self.is_current else '(Inactive)'}"
 
-class User(AbstractUser, UUIDModel):
+class LevelHead(UUIDModel):
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='level_head')
+    academic_year = models.ForeignKey('AcademicYear', on_delete=models.CASCADE, related_name='level_heads')
+
     level_choices = [
-        (0, 'No levels'),
         (1, 'Level 1'),
         (2, 'Level 2'),
         (3, 'Level 3'),
         (4, 'Level 4'),
         (5, 'Level 5'),
-        (10, 'All levels'),
     ]
-    class_head_level = models.IntegerField(choices=level_choices, default=0)
+    level = models.IntegerField(choices=level_choices, default=0)
 
+    def __str__(self):
+        return f"{self.user.get_name_verbose} - {self.academic_year.year}"
+
+class User(AbstractUser, UUIDModel):
     title = models.CharField(max_length=20, blank=True, null=True)
-
-    @property
-    def is_classhead(self):
-        return self.level > 0
     
     @property
     def get_name_verbose(self):
@@ -124,12 +126,14 @@ class Student(UUIDModel, CommentsForTableMixin):
     def graduation_info(self):
         current_academic_year = AcademicYear.objects.filter(is_current=True).first().year
         grad_diff = current_academic_year - self.end_academic_year
+        link_to_relevant = reverse('general:degree_classification_exact', args=[5 if self.is_masters else 4, self.end_academic_year])
         if grad_diff > 0:
-            return f"Graduated {grad_diff} years ago"
+            return mark_safe(f"Graduated {grad_diff} years ago. <a class='fancy_a' href='{link_to_relevant}'>View degree classification page</a>")
         elif grad_diff == 0:
-            return "Due to graduate this academic year."
+            return mark_safe(f"Due to graduate this academic year. <a class='fancy_a' href='{link_to_relevant}'>View degree classification page</a>")
         else:
-            return f"Due to graduate in {abs(grad_diff)} years"
+            link_to_relevant = reverse('general:level_progression_exact', args=[self.current_level, self.end_academic_year])
+            return mark_safe(f"Due to graduate in {abs(grad_diff)} years. <a class='fancy_a' href='{link_to_relevant}'>View current level progression page</a>")
     
     def get_data_for_table(self, extra_data=None):
         table_data = {
@@ -183,8 +187,7 @@ class Student(UUIDModel, CommentsForTableMixin):
                 grade = 0
                 if result:
                     grade = min(result.grade + assessment.moderation, 22) #grade capped at 22, with moderation
-                else:
-                    no_res_counter += 1
+
                 course_grade += round(grade * assessment.weighting / 100, 0) #round to nearest integer, since course grades are integers
 
             update_cumulative_band_credit_totals(extra_data, credits, course_grade)
@@ -199,6 +202,7 @@ class Student(UUIDModel, CommentsForTableMixin):
             extra_data["final_gpa"] = round(final_gpa, 1)
             extra_data["final_band"] = band_integer_to_band_letter_map[int(round(extra_data["final_gpa"], 0))]
 
+        
         if final_gpa >= 12:
             extra_data["progress_to_next_level"] = "yes"
         elif final_gpa >= 9:
@@ -320,18 +324,18 @@ class Student(UUIDModel, CommentsForTableMixin):
         if extra_data["project"] == 0:
             extra_data["project"] = "N/A"
         else:
-            extra_data["project"] = band_integer_to_band_letter_map[int(round(extra_data["project"], 0))]
+            extra_data["project"] = round(extra_data["project"], 1)
         
         if extra_data["team"] == 0:
             extra_data["team"] = "N/A"
         else:
-            extra_data["team"] = band_integer_to_band_letter_map[int(round(extra_data["team"], 0))]
+            extra_data["team"] = round(extra_data["team"], 1)
         
         if masters:
             if extra_data["project_masters"] == 0:
                 extra_data["project_masters"] = "N/A"
             else:
-                extra_data["project_masters"] = band_integer_to_band_letter_map[int(round(extra_data["project_masters"], 0))]
+                extra_data["project_masters"] = round(extra_data["project_masters"], 1)
 
         return extra_data
 

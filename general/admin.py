@@ -1,5 +1,5 @@
 from django.contrib import admin
-from general.models import Student, Course, Assessment, AssessmentResult, User, AcademicYear, StudentComment, CourseComment
+from general.models import Student, Course, Assessment, AssessmentResult, User, AcademicYear, StudentComment, CourseComment, LevelHead
 from django.contrib.auth import admin as auth_admin
 from django.db import connection, reset_queries
 from django.utils.safestring import mark_safe
@@ -72,3 +72,4 @@ class AssessmentResult_Admin(admin.ModelAdmin):
 admin.site.register(AcademicYear)
 admin.site.register(StudentComment)
 admin.site.register(Assessment)
+admin.site.register(LevelHead)

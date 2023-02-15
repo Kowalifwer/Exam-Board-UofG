@@ -104,8 +104,8 @@ band_integer_to_band_letter_map = {
 degree_progression_levels = {
     1: "Level 1",
     2: "Level 2",
-    3: "Level 3 (Honours)",
-    4: "Level 4 (Honours)",
+    3: "Level 3 (Hons)",
+    4: "Level 4 (Hons)",
     # 5: "Level 5 (Masters)",
 }
 
@@ -155,7 +155,7 @@ def update_cumulative_band_credit_totals(dict_to_update, credits, course_grade):
         dict_to_update["greater_than_g"] += credits
         dict_to_update["greater_than_h"] += credits
 
-    if course_grade >= 3:
+    elif course_grade >= 3:
         dict_to_update["greater_than_f"] += credits
         dict_to_update["greater_than_g"] += credits
         dict_to_update["greater_than_h"] += credits
