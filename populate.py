@@ -18,7 +18,9 @@ LAST_YEAR_OF_COURSES = 2022
 CURRENT_YEAR = 2022
 COMPUTER_SCIENCE_COURSE_CODE_PREFIX = 'COMPSCI'
 REQUIRED_CREDITS_PER_COURSE = 120
-TOTAL_NUMBER_OF_COURSES = 7*12
+
+
+TOTAL_NUMBER_OF_COURSES = 7*12 #5 years of courses, 12 courses for lvl 1,2,5 and 24 for lvl 3,4
 TOTAL_NUMBER_OF_STUDENTS = 600
 
 def decision(probability):
@@ -75,9 +77,9 @@ class Populator:
 
         is_masters = degree_title in ["Msc", "MEng"]
         is_faster_route = decision(0.1)
-        start_year_padding_for_more_frequent_higher_years = 3
+        start_year_padding_for_more_frequent_higher_years = (1 if is_faster_route else 2)
         start_academic_year = random.randint(FIRST_YEAR_OF_COURSES - start_year_padding_for_more_frequent_higher_years, LAST_YEAR_OF_COURSES)
-        end_academic_year = start_academic_year + start_year_padding_for_more_frequent_higher_years
+        end_academic_year = start_academic_year + 3
         if degree_title.startswith("M"):
             end_academic_year += 1
         if is_faster_route:
@@ -285,11 +287,12 @@ class Populator:
     def populate_database(self):
         print("Transferring current state into database")
         try:
-            for i in range(FIRST_YEAR_OF_COURSES, LAST_YEAR_OF_COURSES + 1):
-                AcademicYear.objects.create(year=i, is_current=i==self.current_academic_year)
-            print("Populated academic years")
 
             User.objects.bulk_create(self.users, ignore_conflicts=True)
+            for i in range(FIRST_YEAR_OF_COURSES, LAST_YEAR_OF_COURSES + 1):
+                level_heads_kwargs = {f"level{i}_head":user for i, user in enumerate(random.choices(self.users, k=5), start=1)}
+                AcademicYear.objects.create(year=i, is_current=i==self.current_academic_year, **level_heads_kwargs)
+            print("Populated academic years")
             students = Student.objects.bulk_create(self.students, ignore_conflicts=True)
             print(f"Transferred {len(students)} students succesfully")
             courses = Course.objects.bulk_create(self.courses, ignore_conflicts=True)
