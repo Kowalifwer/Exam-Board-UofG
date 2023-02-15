@@ -75,6 +75,8 @@
 
     --transition: transform 600ms ease, width 600ms ease, opacity 400ms, margin 600ms ease;
 
+    --border-radius: 5px;
+
 }
 
 /* lexend-300 - latin */
@@ -168,7 +170,7 @@ p, h1, h2, h3, h4, h5, h6, a, li {
 .a-fancy {
     box-shadow: rgba(var(--p-color), 0.75);
     color: rgba(var(--p-color), 0.75);
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     overflow: hidden;
     margin: 0 -.25rem;
     padding: 10px 15px;
@@ -292,7 +294,7 @@ a {
 
 /* GENERAL */
 input, textarea {
-    border-radius: 5px;
+    border-radius: var(--border-radius);
 }
 /* GENERAL */
 
@@ -447,7 +449,7 @@ body {
 .header-search {
     display: flex;
     background-color: var(--primary-color);
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     height: 50px;
     justify-content: center;
     overflow: hidden;
@@ -555,7 +557,7 @@ body {
     margin: 5px;
     padding: 5px;
     border: 1px solid black;
-    border-radius: 5px;
+    border-radius: var(--border-radius);
     background-color: white;
     z-index: 1001;
     cursor: pointer;
@@ -580,6 +582,10 @@ body {
 .tabulator-columns-menu {
     display: flex;
     flex-direction: column;
+    flex-wrap: wrap;
+    max-height: 400px;
+    max-width: 400px;
+    width: 100%;
     /* justify-content: center; */
     gap: 5px;
     margin: 5px 0;
@@ -606,13 +612,14 @@ body {
 }
 
 .edit-mode.tabulator-col {
-    animation: tilt-shaking 0.75s infinite;
-    border-radius: 5px;
+    /* animation: tilt-shaking 0.75s infinite; */
+    /* border-radius: var(--border-radius); */
     /* background-color: rgba(9, 9, 248, 0.782) !important; */
 }
 
 .tabulator-editable {
-    border: 1px solid blue !important;
+    /* border: 0.5px solid rgba(var(--p-color), 1) !important; */
+    box-shadow: inset 1px 1px 2px 1px rgba(var(--p-color), 1) !important;
     /* animation: tilt-shaking 0.5s infinite; */
     cursor: pointer;
 }
@@ -626,15 +633,15 @@ body {
     max-width: 80%;
     margin: 0 auto 10px auto;
     /* transform: translateX(-50%) translateY(-100%); */
-    outline: 1px solid blue;
+    outline: 1px solid rgba(var(--p-color), 1);
     padding: 10px;
-    border-radius: 5px;
+    border-radius: var(--border-radius);
     z-index: 1000;
     box-shadow: var(--shadow);
 }
 
 .tabulator-notification-hint {
-    color: blue;
+    color: rgba(var(--p-color), 1);
 }
 
 .inline-icon {
@@ -667,7 +674,7 @@ body {
     height: 9px;
     width: 100%;
     background: var(--info-color);
-    border-radius: 9px;
+    border-radius: var(--border-radius);
     opacity: 1;
     left: 0;
     -webkit-transform: rotate(0deg);
@@ -735,7 +742,7 @@ button:not(.button_default) {
   align-items: center;
   background-color: #FFFFFF;
   border: 1px solid rgba(var(--p-color), 0.1);
-  border-radius: .25rem;
+  border-radius: var(--border-radius);
   box-shadow: rgba(var(--p-color), 0.02) 0 1px 3px 0;
   box-sizing: border-box;
   color: rgba(var(--p-color), 0.85);
@@ -794,7 +801,7 @@ button:not(.button_default):hover:disabled {
 :where(input[type="text"], input[type="search"]):not(.input_default), textarea:not(.input_default), select {
     background-color: #FFFFFF;
     border: 1px solid rgba(var(--p-color), 0.1);
-    border-radius: .25rem;
+    border-radius: var(--border-radius);
     box-shadow: rgba(var(--p-color), 0.02) 0 1px 3px 0;
     box-sizing: border-box;
     color: rgba(var(--p-color), 1);
@@ -850,6 +857,7 @@ button:not(.button_default):hover:disabled {
     padding: 15px 25px;
     height: calc(var(--header-height) / 2);
     background-color: var(--secondary-color);
+    gap: 5px;
     /* border-bottom: 1px solid rgba(var(--p-color), 0.1); */
 }
 
@@ -861,6 +869,7 @@ button:not(.button_default):hover:disabled {
     min-height: 25px;
     background-color: var(--secondary-color);
     border-bottom: 1px solid rgba(var(--p-color), 0.1);
+    /* box-shadow: inset rgba(var(--p-color), 0.05) 0 5px 3px 0; */
 }
 
 .collapsable-section .chart-block {
@@ -901,6 +910,15 @@ button:not(.button_default):hover:disabled {
 #comments_table {
     border: none;
     height: 100%;
+    margin: 2px;
+}
+
+#comments_table .tabulator-col {
+    border: none;
+}
+
+#comments_table .tabulator-cell {
+    border: none;
 }
 
 #comments_table .tabulator-tableholder {
@@ -912,6 +930,14 @@ button:not(.button_default):hover:disabled {
 #comments_table .tabulator-row .tabulator-cell {
     white-space: initial;
     overflow: auto;
+}
+
+#degree_classification_table {
+    width: 100%;
+}
+
+#level_progression_table {
+    width: 100%;
 }
 
 .student-page-top-section > :last-child .tabulator-components {
@@ -935,12 +961,16 @@ button:not(.button_default):hover:disabled {
     padding: 15px 25px;
 }
 
+.student-information-panel p {
+    margin: 20px 0;
+}
+
 /* END OF STUDENT PAGE */
 
 /* COURSE PAGE */
 
 .course-page-extra-info * {
-    margin: 40px 0;
+    margin-bottom: 30px !important;
 }
 
 
@@ -952,6 +982,7 @@ button:not(.button_default):hover:disabled {
     border: 1px solid rgba(var(--p-color), 0.55);
     /* background-color: rgba(var(--p-color), 0.1); */
     background-color: white;
+    border-radius: var(--border-radius);
 }
 
 .tabulator-tableholder {
@@ -982,8 +1013,13 @@ button:not(.button_default):hover:disabled {
     background-color: var(--secondary-color);
 }
 
+.tabulator .tabulator-header .tabulator-col .tabulator-col-content {
+    min-height: 30px;
+}
+
 .tabulator-header-contents {
     background-color: var(--secondary-color);
+    /* min-height: 100px; */
 }
 
 .tabulator .tabulator-footer {
@@ -1043,6 +1079,13 @@ button:not(.button_default):hover:disabled {
     background: var(--info-color-light) !important;
 } */
 
+.tabulator-row {
+    position: relative;
+    box-sizing: border-box;
+    min-height: 30px;
+    background-color: #fff;
+}
+
 .tabulator-row.tabulator-group {
     border-color: rgba(var(--p-color), 1);
 }
@@ -1059,6 +1102,22 @@ button:not(.button_default):hover:disabled {
 .tabulator-row.tabulator-row-even {
     background-color: white;
 }
+
+/* .tabulator-row.tabulator-selected {
+    background-color: rgba(var(--p-color), 1);
+} */
+
+/* .tabulator-row.tabulator-selected * {
+    color: var(--primary-color);
+} */
+
+/* .tabulator-row.tabulator-selectable:hover {
+    background: var(--primary-color);
+} */
+
+/* .tabulator-row.tabulator-selectable:hover * {
+    color: var(--primary-color);
+} */
 
 /* .tabulator-cell tabulator-frozen tabulator-frozen-right {
     border-right: initial !important;
