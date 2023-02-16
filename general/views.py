@@ -15,6 +15,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.http import Http404
+from django.contrib import messages
 
 
 def is_fetching_table_data(request):
@@ -644,9 +645,6 @@ def api_view(request):
     
     return JsonResponse(response)
 
-
-
-
 ##Incomplete functionality views - DO NOT USE IN PRODUCTION
 def login_view(request, prev_path):
     if request.user.is_authenticated:
@@ -657,8 +655,10 @@ def login_view(request, prev_path):
         #this is not a production view, and should not be used in production
         user = User.objects.order_by("?").first()
         login(request, user)
+        messages.success(request, f"Logged in as {user.get_name_verbose}.")
         return redirect(prev_path)
 
 def logout_view(request, prev_path):
     logout(request)
+    messages.success(request, "Logged out succesfully.")
     return redirect(prev_path)

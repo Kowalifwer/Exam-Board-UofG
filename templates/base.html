@@ -26,6 +26,10 @@
   </head>
 
   <body>
+    {%for message in messages%}
+        <input type="hidden" id="server_message" data-message="{{message}}" data-type="{{message.level_tag}}">  
+    {%endfor%}
+
     <div class="body-inner-wrapper">
       <nav class="sidebar {%if request.COOKIES.sidebar_collapsed == 'true'%}sidebar-collapsed{%endif%}">
         <!-- home -->

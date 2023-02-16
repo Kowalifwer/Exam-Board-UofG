@@ -293,6 +293,11 @@ a {
 /* HELPER */
 
 /* GENERAL */
+.icon {
+    width: 1.5em;
+    height: 1.5em;
+}
+
 input, textarea {
     border-radius: var(--border-radius);
 }
@@ -555,6 +560,7 @@ body {
     width: 100%;
     min-height: 100px;
     background-color: transparent;
+    z-index: 100000;
 }
 
 .notification {
@@ -874,6 +880,11 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
+}
+
+.inline-icon img {
+    height: 20px;
+    width: 20px;
 }
 
 .tabulator-menu-item {

@@ -25,15 +25,22 @@ function create_notification(message, type="info", timeout=1500) {
     setTimeout(close_notification, timeout)
 }
 
-function close_notification() {
-    let notification = document.querySelector(".notification")
-    notification.classList.remove("notification-visible")
-    setTimeout(function() {
-        notification.classList = "notification"
-    }, 750)
+function create_server_notification() { // success, info, warning, error, and none
+    //if at least one server message exists - create notifications for all of them
+    let server_message = document.getElementById("server_message")
+    if (server_message)
+        create_notification(server_message.dataset.message, type=server_message.dataset.type, timeout=5000)
 }
 
-pagination_size = 1000
+function close_notification() {
+    let notification = document.querySelector(".notification")
+    if (notification) {
+        notification.classList.remove("notification-visible")
+        setTimeout(function() {
+            notification.classList = "notification"
+        }, 750)
+    }
+}
 
 function toggle_based_on_sidebar_state(sidebar, hardset_state=null) {
     let sidebar_is_collapsed = null
@@ -66,7 +73,6 @@ function toggle_based_on_sidebar_state(sidebar, hardset_state=null) {
 window.onload = function() {
     let sidebar = document.querySelector(".sidebar")
     toggle_based_on_sidebar_state(sidebar)
-
     let sidebar_toggle_button = document.querySelector(".toggle-sidebar-container")
     if (sidebar && sidebar_toggle_button) {
         sidebar_toggle_button.addEventListener("click", function() {
@@ -75,6 +81,8 @@ window.onload = function() {
         })
     }
 }
+
+window.addEventListener("DOMContentLoaded", create_server_notification)
 
 function getCookie(name) {
     var cookieValue = null;
