@@ -15,8 +15,8 @@ urlpatterns = [
     path('test_queries_3/', test_queries_3_view, name='test_queries_3'),
     path('test_queries_4/', test_queries_4_view, name='test_queries_4'),
 
-    path('login/', login_view, name='login'),
-    path('logout/', logout_view, name='logout'),
+    path('login/<path:prev_path>/', login_view, name='login'),
+    path('logout/<path:prev_path>/', logout_view, name='logout'),
     path('global_search/', global_search_view, name='global_search'),
 
     path('students/all/', all_students_view, name='all_students'),
