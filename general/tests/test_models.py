@@ -1,7 +1,6 @@
 from django.test import TestCase
 from django.db import connection, reset_queries
 from general.models import AcademicYear
-from exam_board.tools import default_degree_classification_settings_dict
 import json
 
 # Create your tests here.
