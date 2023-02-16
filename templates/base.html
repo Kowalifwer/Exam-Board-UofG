@@ -102,13 +102,12 @@
               {%endif%}
             </div>
           </div>
-          <button class="button-30">
+          
             {%if request.user.is_authenticated%}
-              <a href="{%url 'general:logout'%}">Logout</a>
+              <a href="{%url 'general:logout' request.path%}"><button class="button-30">Logout</button></a>
             {%else%}
-              <a href="{%url 'general:login'%}">Login</a>
+              <a href="{%url 'general:login' request.path%}"><button class="button-30">Login</button></a>
             {%endif%}
-          </button>
         </div>
         <div class="content-wrapper">
           {%if all_years and request.user.is_authenticated%}

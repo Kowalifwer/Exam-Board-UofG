@@ -150,9 +150,7 @@ def home_view(request):
     return render(request, "general/home.html", context)
 
 def all_students_view(request):
-    print("time taken to render home page: ", time.process_time())
     all_students = Student.objects.all()
-    # print(request.META['REMOTE_ADDR'])
     if is_fetching_table_data(request):   
         all_students_json = [student.get_data_for_table() for student in all_students]
         # return JsonResponse({'data': all_students_json, 'last_page': paginator.num_pages})
@@ -275,7 +273,6 @@ def fetch_assessment_data_if_relevant(request):
     course_id = request.GET.get("course_id", None)
     if course_id and is_assessments:
         course = Course.objects.filter(id=course_id).first()
-        print(course)
         if course:
             data = [{
                 "type": assessment.get_type_display(),
@@ -288,9 +285,7 @@ def fetch_assessment_data_if_relevant(request):
             }
                 for assessment in course.assessments.all().order_by("weighting").select_related("moderated_by")
             ]
-            print(data)
             return JsonResponse(data, safe=False)
-    print("no shot goes here")
     return None
 
 def course_view(request, code, year):
@@ -653,7 +648,7 @@ def api_view(request):
 
 
 ##Incomplete functionality views - DO NOT USE IN PRODUCTION
-def login_view(request):
+def login_view(request, prev_path):
     if request.user.is_authenticated:
         return redirect("general:home")
     else:
@@ -662,8 +657,8 @@ def login_view(request):
         #this is not a production view, and should not be used in production
         user = User.objects.order_by("?").first()
         login(request, user)
-        return redirect("general:home")
+        return redirect(prev_path)
 
-def logout_view(request):
+def logout_view(request, prev_path):
     logout(request)
-    return redirect("general:home")
+    return redirect(prev_path)
