@@ -5,7 +5,7 @@ from django.shortcuts import reverse
 from exam_board.tools import default_degree_classification_settings, default_level_progression_settings
 import json
 from math import ceil as math_ceil
-from exam_board.tools import band_integer_to_band_letter_map, gpa_to_class_converter, update_cumulative_band_credit_totals
+from exam_board.tools import band_integer_to_band_letter_map, gpa_to_class_converter, gpa_to_progression_converter, update_cumulative_band_credit_totals
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils.safestring import mark_safe
 
@@ -166,7 +166,7 @@ class Student(UUIDModel, CommentsForTableMixin):
     def get_data_for_table_json(self, extra_data=None):
         return json.dumps(self.get_data_for_table(extra_data))
     
-    def get_extra_data_level_progression(self, course_map):
+    def get_extra_data_level_progression(self, level_progression_rules, course_map):
         extra_data = {
             "progress_to_next_level": "no", #yes, discretionary, no
             "final_band": 0,
@@ -207,11 +207,7 @@ class Student(UUIDModel, CommentsForTableMixin):
             extra_data["final_gpa"] = round(final_gpa, 1)
             extra_data["final_band"] = band_integer_to_band_letter_map[int(round(extra_data["final_gpa"], 0))]
 
-        
-        if final_gpa >= 12:
-            extra_data["progress_to_next_level"] = "yes"
-        elif final_gpa >= 9:
-            extra_data["progress_to_next_level"] = "discretionary"
+        extra_data["progress_to_next_level"] = gpa_to_progression_converter(extra_data["final_gpa"], level_progression_rules)
         
         return extra_data
     

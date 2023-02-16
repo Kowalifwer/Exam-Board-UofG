@@ -390,7 +390,7 @@ def level_progression_view(request, level, year=None):
             student.get_data_for_table(
                 {
                     "method": "get_extra_data_level_progression",
-                    "args": [course_map]
+                    "args": [context["selected_year"].level_progression_settings[str(context["current_level"])] ,course_map]
                 }
             ) for student, course_map in student_course_map.items()
         ]

@@ -66,7 +66,7 @@ def default_level_progression_settings():
         "1": [
             {
                 "name": "Guaranteed progression into level 2",
-                "short_name": "pass",
+                "short_name": "yes",
                 "above": 15.0, ##B3 is level 1 to level 2 pass
             },
             {
@@ -79,7 +79,7 @@ def default_level_progression_settings():
         "2": [
             {
                 "name": "Guaranteed progression into level 3",
-                "short_name": "pass",
+                "short_name": "yes",
                 "above": 12.0, ##C3 is level 2 to level 3 pass
                 "n_credits": 60,
             },
@@ -94,7 +94,7 @@ def default_level_progression_settings():
         "3": [
             {
                 "name": "Guaranteed progression into level 4",
-                "short_name": "pass",
+                "short_name": "yes",
                 "above": 12.0, ##D3 is level 3 to level 4 pass
             },
             {
@@ -107,7 +107,7 @@ def default_level_progression_settings():
         "4": [
             {
                 "name": "Guaranteed progression into level 5",
-                "short_name": "pass",
+                "short_name": "yes",
                 "above": 12.0, ##D3 is level 4 to level 5 pass
             },
             {
@@ -227,3 +227,10 @@ def gpa_to_class_converter(grade_data, degree_classification_settings):
                 return description["short_name"]
         
     return "Fail"
+
+def gpa_to_progression_converter(final_gpa, degree_progression_settings):
+    for description in degree_progression_settings:
+        if final_gpa >= description["above"]:
+            return description["short_name"]
+        
+    return "no"
