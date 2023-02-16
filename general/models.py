@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 import uuid
 from django.shortcuts import reverse
-from exam_board.tools import default_degree_classification_settings_dict
+from exam_board.tools import default_degree_classification_settings, default_level_progression_settings
 import json
 from math import ceil as math_ceil
 from exam_board.tools import band_integer_to_band_letter_map, gpa_to_class_converter, update_cumulative_band_credit_totals
@@ -32,12 +32,17 @@ class UUIDModel(models.Model):
 class AcademicYear(UUIDModel):
     year = models.IntegerField(unique=True)
     is_current = models.BooleanField(default=True)  # TODO: Ensure that only 1 year is current at a time
-    degree_classification_settings = models.JSONField(null=False, blank=False, default=default_degree_classification_settings_dict)
+    degree_classification_settings = models.JSONField(null=False, blank=False, default=default_degree_classification_settings)
+    level_progression_settings = models.JSONField(null=False, blank=False, default=default_level_progression_settings)
 
-    #create a getter for degree_classification_settings that returns the default settings in JSON
     @property
     def degree_classification_settings_for_table(self):
-        return json.dumps(list(self.degree_classification_settings.values()))
+        return json.dumps(self.degree_classification_settings)
+
+    def level_progression_settings_for_table(self, level):
+        print(self.level_progression_settings)
+        print(self.level_progression_settings[level])
+        return json.dumps(self.level_progression_settings[level])
 
     def __str__(self):
         return f"{self.year}{'(Active)' if self.is_current else '(Inactive)'}"

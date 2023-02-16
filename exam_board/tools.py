@@ -23,50 +23,100 @@ def get_query_count(message, reset=True):
             reset_queries()
             last_timestamp = time.time()
 
-class default_degree_classification_settings_dict(dict):
-    def __init__(self):
-        super().__init__({ ## provide the default values for the degree classification settings here.
-            1: {
-                "name": "First Class Honours",
-                "short_name": "1st",
-                "std_low_gpa": 17.5,
-                "disc_low_gpa": 17.1,
-                "char_band": "A",
-                "percentage_above": 50,
+def default_degree_classification_settings():
+    return [
+        {
+            "name": "First Class Honours",
+            "short_name": "1st",
+            "std_low_gpa": 17.5,
+            "disc_low_gpa": 17.1,
+            "char_band": "A",
+            "percentage_above": 50,
+        },
+        {
+            "name": "Upper Second Class Honours",
+            "short_name": "2:1",
+            "std_low_gpa": 14.5,
+            "disc_low_gpa": 14.1,
+            "char_band": "B",
+            "percentage_above": 50,
+        },
+        {
+            "name": "Lower Second Class Honours",
+            "short_name": "2:2",
+            "std_low_gpa": 11.5,
+            "disc_low_gpa": 11.1,
+            "char_band": "C",
+            "percentage_above": 50,
+        },
+        {
+            "name": "Third Class Honours",
+            "short_name": "3rd",
+            "std_low_gpa": 8.5,
+            "disc_low_gpa": 8.1,
+            "char_band": "D",
+            "percentage_above": 50,
+        }
+    ]
+
+def default_level_progression_settings():
+    return {   
+        #guaranteed with minimum 15 GPA across all lvl 1 computing science courses,
+        #discretionary with minimum 12 GPA across all lvl 1 computing science courses
+        "1": [
+            {
+                "name": "Guaranteed progression into level 2",
+                "short_name": "pass",
+                "above": 15.0, ##B3 is level 1 to level 2 pass
             },
-            2: {
-                "name": "Upper Second Class Honours",
-                "short_name": "2:1",
-                "std_low_gpa": 14.5,
-                "disc_low_gpa": 14.1,
-                "char_band": "B",
-                "percentage_above": 50,
+            {
+                "name": "Discretionary progression into level 2",
+                "short_name": "discretionary",
+                "above": 12.0, ##C3 is level 1 to level 2 discretionary
             },
-            3: {
-                "name": "Lower Second Class Honours",
-                "short_name": "2:2",
-                "std_low_gpa": 11.5,
-                "disc_low_gpa": 11.1,
-                "char_band": "C",
-                "percentage_above": 50,
+        ],
+        #grade point average of 12.0 over 60 credits of level 2 computing science courses, at first attempt
+        "2": [
+            {
+                "name": "Guaranteed progression into level 3",
+                "short_name": "pass",
+                "above": 12.0, ##C3 is level 2 to level 3 pass
+                "n_credits": 60,
             },
-            4: {
-                "name": "Third Class Honours",
-                "short_name": "3rd",
-                "std_low_gpa": 8.5,
-                "disc_low_gpa": 8.1,
-                "char_band": "D",
-                "percentage_above": 50,
+            {
+                "name": "Discretionary progression into level 3",
+                "short_name": "discretionary",
+                "above": 9.0, ##D3 is level 2 to level 3 discretionary
+                "n_credits": 60,
+            }
+        ],
+        # GPA of 9.0 in level 3 for BSC and 12.0 for MSC. BSC below -> switch degree, MSC below -> switch to BSC.
+        "3": [
+            {
+                "name": "Guaranteed progression into level 4",
+                "short_name": "pass",
+                "above": 12.0, ##D3 is level 3 to level 4 pass
             },
-            5: {
-                "name": "Fail",
-                "short_name": "Fail",
-                "std_low_gpa": 8.0,
-                "disc_low_gpa": 0.0,
-                "char_band": "F",
-                "percentage_above": 0,
+            {
+                "name": "Discretionary progression into level 4",
+                "short_name": "discretionary",
+                "above": 9.0, ##E3 is level 3 to level 4 discretionary
+            }
+        ],
+        #minimum E3 in every course, 9.0 GPA across all courses
+        "4": [
+            {
+                "name": "Guaranteed progression into level 5",
+                "short_name": "pass",
+                "above": 12.0, ##D3 is level 4 to level 5 pass
             },
-        })
+            {
+                "name": "Discretionary progression into level 5",
+                "short_name": "discretionary",
+                "above": 9.0, ##E3 is level 4 to level 5 discretionary
+            }
+        ],
+    }
 
 band_integer_to_band_letter_map = {
         0: "H",
@@ -169,7 +219,7 @@ def update_cumulative_band_credit_totals(dict_to_update, credits, course_grade):
 
 
 def gpa_to_class_converter(grade_data, degree_classification_settings):  
-    for description in degree_classification_settings.values():#ignore the fail case
+    for description in degree_classification_settings:#ignore the fail case
         if grade_data["final_gpa"] >= description["std_low_gpa"]:
             return description["short_name"]
         if grade_data["final_gpa"] >= description["disc_low_gpa"]:
