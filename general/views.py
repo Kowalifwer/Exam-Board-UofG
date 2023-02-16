@@ -273,7 +273,6 @@ def fetch_student_course_table_data_if_relevant(request):
 def fetch_assessment_data_if_relevant(request):
     is_assessments = request.GET.get("assessments", None)
     course_id = request.GET.get("course_id", None)
-    print(course_id, is_assessments)
     if course_id and is_assessments:
         course = Course.objects.filter(id=course_id).first()
         print(course)
@@ -472,11 +471,21 @@ def degree_classification_view(request, level, year=None):
 
     return render(request, "general/degree_classification.html", context)
 
-def grading_rules_view(request, year=None):
+def degree_classification_grading_rules_view(request, year=None):
     context = {}
-    update_context_with_extra_header_data(context, 'general:grading_rules_exact', "View grading rules of other years", year=year)
-    return render(request, "general/grading_rules.html", context)
+    update_context_with_extra_header_data(context, 'general:degree_grading_rules_exact', "View grading rules of other years", year=year)
+    return render(request, "general/degree_grading_rules.html", context)
 
+def level_progression_rules_view(request, level, year=None):
+    if level not in [1, 2, 3, 4]:
+        raise Http404("Invalid level")
+    context = {
+        'current_level': level,
+    }
+    update_context_with_extra_header_data(context, 'general:level_progression_rules_exact', "View level progression rules of other years", year=year, all_years=None, extra_level_iterator=degree_progression_levels)
+    
+    context['table_settings'] = context['selected_year'].level_progression_settings_for_table(str(level))
+    return render(request, "general/level_progression_rules.html", context)
 #GUID, FULL_NAME, FINAL BAND, FINAL GPA, L4 BAND, L4 GPA, L3 BAND, L3 GPA, >A, >B, >C, >D, ... Project, Team ...
 
 def api_view(request):
@@ -548,11 +557,18 @@ def api_view(request):
             #GRADING RULES
             if action == "save_grading_rules":
                 year_id = request.POST.get("year_id", None)
+                level = request.POST.get("level", None)
                 if year_id:
                     year = AcademicYear.objects.filter(id=year_id).first()
                     if year:
-                        if year.degree_classification_settings != data:
-                            year.degree_classification_settings = data
+                        attribute = "level_progression_settings" if level else "degree_classification_settings"
+                        existing_state = getattr(year, attribute)
+                        if (existing_state if not level else existing_state[level]) != data:
+                            if level:
+                                existing_state[level] = data
+                            else:
+                                existing_state = data
+                            setattr(year, attribute, existing_state)
                             year.save()
                             response["status"] = "Degree classification updated succesfully!"
                         else:

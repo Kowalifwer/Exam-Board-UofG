@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='academicyear',
             name='degree_classification_settings',
-            field=models.JSONField(default=exam_board.tools.default_degree_classification_settings_dict),
+            field=models.JSONField(default=exam_board.tools.default_degree_classification_settings),
         ),
         migrations.DeleteModel(
             name='AcademicYearSettings',

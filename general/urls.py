@@ -1,9 +1,10 @@
 from django.urls import path
-from general.views import home_view, test_queries_view, test_queries_2_view, test_queries_3_view, test_queries_4_view, login_view, logout_view, global_search_view, student_view, course_view, all_students_view, all_courses_view, degree_classification_view, grading_rules_view, api_view, level_progression_view
+from general.views import home_view, test_queries_view, test_queries_2_view, test_queries_3_view, test_queries_4_view, login_view, logout_view, global_search_view, student_view, course_view, all_students_view, all_courses_view, degree_classification_view, degree_classification_grading_rules_view, level_progression_rules_view, api_view, level_progression_view
 
 courses_verbose = 'all_courses'
 degree_classification_verbose = 'degree_classification'
-grading_rules_verbose = 'grading_rules'
+grading_rules_verbose = 'degree_grading_rules'
+level_progression_rules_verbose = 'level_progression_rules'
 
 app_name = "general"
 urlpatterns = [
@@ -29,13 +30,16 @@ urlpatterns = [
 
     path('progression/level_<int:level>/', level_progression_view, name='level_progression'),
     path('progression/level_<int:level>/<int:year>/', level_progression_view, name='level_progression_exact'),
+
+    path('progression/level_<int:level>/grading_rules', level_progression_rules_view, name=level_progression_rules_verbose),
+    path('progression/level_<int:level>/grading_rules/<int:year>/', level_progression_rules_view, name=level_progression_rules_verbose+"_exact"),
     
     #bsc/beng msc/meng
     path('degree_classification/level_<int:level>/', degree_classification_view, name=degree_classification_verbose),
     path('degree_classification/level_<int:level>/<int:year>/', degree_classification_view, name=degree_classification_verbose+"_exact"),
 
-    path('grading_rules/', grading_rules_view, name=grading_rules_verbose),
-    path('grading_rules/<int:year>/', grading_rules_view, name=grading_rules_verbose+"_exact"),
+    path('degree_classification/grading_rules', degree_classification_grading_rules_view, name=grading_rules_verbose),
+    path('degree_classification/grading_rules/<int:year>/', degree_classification_grading_rules_view, name=grading_rules_verbose+"_exact"),
 
     path('api/', api_view, name='api'),
 
