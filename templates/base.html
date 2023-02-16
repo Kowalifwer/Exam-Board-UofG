@@ -43,6 +43,8 @@
           <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/home.svg'%}">
         </a>
 
+        <div class="sidebar-separator"></div>
+
         <a href="{%url 'general:all_students'%}" title="All students page" {%if 'students' in request.path%}class="selected-page"{%endif%}>
           <span>All students</span>
           <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/students.svg'%}">
@@ -53,7 +55,9 @@
           <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/courses.svg'%}">
         </a>
 
-        <a href="{%url 'general:level_progression' 1%}" title="Level progression" {%if 'level_progression' in request.path%}class="selected-page"{%endif%}>
+        <div class="sidebar-separator"></div>
+
+        <a href="{%url 'general:level_progression' 1%}" title="Level progression" {%if 'progression' in request.path%}class="selected-page"{%endif%}>
           <span>Level progression</span>
           <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/progression.svg'%}">
         </a>
@@ -63,9 +67,16 @@
           <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/degree_classification.svg'%}">
         </a>
 
-        <a href="{%url 'general:grading_rules'%}" title="Grading rules" {%if 'grading_rules' in request.path%}class="selected-page"{%endif%}>
+        <div class="sidebar-separator"></div>
+
+        <a href="{%url 'general:degree_grading_rules'%}" title="Degree classification rules" {%if 'degree_classification/grading_rules' in request.path%}class="selected-page"{%endif%}>
           <span>Grading rules</span>
           <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/grade_settings.svg'%}">
+        </a>
+
+        <a href="{%url 'general:level_progression_rules' 1%}" title="Level progression rules" {%if 'level_progression/grading_rules' in request.path%}class="selected-page"{%endif%}>
+            <span>Grading rules</span>
+            <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/grade_settings.svg'%}">
         </a>
       </nav>
 

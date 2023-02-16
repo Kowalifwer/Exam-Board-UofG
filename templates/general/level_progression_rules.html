@@ -1,0 +1,20 @@
+{%extends 'base.html'%}
+{%load static%}
+
+{% block head %}
+    <script src="{% static 'js/tables.js'%}"></script>
+{% endblock %}
+
+{% block body %}
+    <p>Grading Rules page for the Academic year {{selected_year.year}}-{{selected_year.year|add:1}}</p>
+    <p>The table below shows current rules used to determine progression from level {{current_level}} into level {{current_level|add:1}}.</p>
+
+    <div class="tabulator_table" id="grading_rules_table" style="max-width: 1100px;"></div>
+
+    <input type="hidden" name="year_id" value="{{selected_year.id}}" class="api_prefill">
+    <input type="hidden" name="level" value="{{current_level}}" class="api_prefill">
+
+    <script>
+        load_grading_rules_table(`{{table_settings|safe}}`, level=`{{current_level}}`)
+    </script>
+{%endblock%}

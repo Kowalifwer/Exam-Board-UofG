@@ -225,6 +225,16 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             columnCalcs:false, //do not include column calcs in downloaded table
         },
         rowContextMenu: [],
+
+        rowFormatter:function(row){
+            //row - row component
+            
+            var data = row.getData();
+            
+            if(data.col == "blue"){
+                row.getElement().style.backgroundColor = "#1e3b20";
+            }
+        },
         //downloadRowRange:"selected", //download selected rows
     }
 
@@ -1628,8 +1638,7 @@ function render_course_moderation_section(course_data, parent_table=null) {
     //Step 3: review page: shows the moderated grades. Are you sure you want to apply these grades? click next.
 }
 
-
-function load_grading_rules_table(data_json){
+function load_grading_rules_table(data_json, level=null){
     let columns = [
         {title: "Name", field: "name", editor: false},
         {title: "Standard lower GPA", field: "std_low_gpa", editor: "number", editorParams: {min: 0, max: 22, step: 0.1}, cssClass: "edit-mode"},
@@ -1647,6 +1656,13 @@ function load_grading_rules_table(data_json){
             }
         },
     ]
+
+    if (level) {
+        columns = [
+            {title: "Progression type", field: "name", editor: false},
+            {title: "Minimum GPA required to secure given progression type", field: "above", editor: "number", editorParams: {min: 0, max: 22, step: 0.1}, cssClass: "edit-mode"},
+        ]
+    }
 
     let final_extra_constructor_params = {
         "selectable": false, 
@@ -1685,11 +1701,7 @@ function load_grading_rules_table(data_json){
                     console.log("changes")
                 }
                 //api call here to save the data.
-                let posted_data = {}
-                for (i = 1; i < table_data.length + 1; i++) {
-                    posted_data[i] = table_data[i - 1]
-                }
-                api_post("save_grading_rules", posted_data).then(response => {
+                api_post("save_grading_rules", table_data).then(response => {
                     alert(response.status)
                 })
             } else {
@@ -1704,7 +1716,7 @@ function load_grading_rules_table(data_json){
                     console.log(col.getElement())
                 })
             }
-        })
+        }.bind(level))
         footer.prepend(edit_button)
     })
 }

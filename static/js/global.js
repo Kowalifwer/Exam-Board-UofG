@@ -132,107 +132,38 @@ function api_factory(method) {
 const api_post = api_factory("POST")
 const api_get = api_factory("GET")
 
-// function api_post(action, data) {
-//     return new Promise((resolve, reject) => {
-//         var form_data = new FormData();
-//         form_data.append("action", action)
-//         document.querySelectorAll(".api_prefill").forEach(element => {
-//             console.log(element.name, element.value)
-//             form_data.append(element.name, element.value)
-//         })
-
-//         form_data.append("data", JSON.stringify(data))
-//         if (form_data.get("csrfmiddlewaretoken") == null) {
-//             form_data.append("csrfmiddlewaretoken", getCookie("csrftoken"))
-//         }
-//         fetch("/api/", {
-//             method: "POST",
-//             body: form_data,
-//         }).then(response => {
-//             if (response.status == 200) {
-//                 response.json().then(data => {
-//                     resolve(data)
-//                 });
-//             } else {
-//                 reject(response)
-//             }
-//         })
-//     })
-// }
-
-function api(page_count, pagination_size) {
-    return new Promise((resolve, reject) => {
-        fetch(window.location.href + `?api_get=true&page=${page_count}&size=${pagination_size}`).then(response => {
-            if (response.status == 200) {
-                response.json().then(data => {
-                    resolve(data)
-                });
-            } else {
-                reject(response)
-            }
-        })
-    })
-    // return fetch(window.location.href, {
-    //     method: "POST",
-    //     headers: {
-    //         "Content-Type": "application/json",
-    //         "X-CSRFToken": csrf_token,
-    //     },
-    //     body: JSON.stringify({
-    //         "action": action,
-    //         "block_id": block_id,
-    //         "csrfmiddlewaretoken": csrf_token,
-    //     })
-    // })  
-}
+//theme mode switch
+// document.querySelector(".btn_toggle").addEventListener("click", function () {
+//     if (localStorage.dark_mode) {
+//         localStorage.removeItem("dark_mode");
+//         document.documentElement.classList.remove("dark-mode-root");
+//     } else {
+//         localStorage.dark_mode = true;
+//         document.documentElement.classList.add("dark-mode-root");
+//     }
+// });
 
 const Popup = {
     content: null,
     init: function(content) {
-        let z_index = 1000
+        let z_index = 900
         document.querySelectorAll(".popup-wrapper").forEach(element => {
             z_index += 1
         })
 
         let popup_wrapper = document.createElement("div")
-        popup_wrapper.style.position = "fixed"
-        popup_wrapper.style.top = 0
-        popup_wrapper.style.left = 0
-        popup_wrapper.style.width = "100%"
-        popup_wrapper.style.height = "100%"
-        popup_wrapper.style.backgroundColor = "transparent"
-        popup_wrapper.style.zIndex = z_index
-        popup_wrapper.style.display = "flex"
-        popup_wrapper.style.justifyContent = "center"
-        popup_wrapper.style.alignItems = "center"
-        popup_wrapper.style.overflow = "auto"
         popup_wrapper.classList.add("popup-wrapper")
-        popup_wrapper.style.backdropFilter =  "blur(5px)"
-
+        popup_wrapper.style.zIndex = z_index
+        
         let popup_inner = document.createElement("div")
-        popup_inner.style.backgroundColor = "white"
-        popup_inner.style.border = "1px solid black"
-        popup_inner.style.borderRadius = "5px"
-        popup_inner.style.position = "relative"
-        popup_inner.style.padding = "10px"
-        popup_inner.style.maxHeight = "80%"
-        popup_inner.style.maxWidth = "80%"
-        popup_inner.style.overflow = "auto"
-        popup_inner.style.boxShadow = "0 0 10px 0 rgba(0,0,0,0.5)"
-        popup_inner.style.zIndex = z_index + 200
-        popup_inner.style.display = "flex"
-        popup_inner.style.justifyContent = "center"
-        popup_inner.style.alignItems = "center"
-        popup_inner.style.overflow = "auto"
-
+        popup_inner.classList.add("popup-inner")
+        
         popup_wrapper.appendChild(popup_inner)
-
-        //make everythihing except the popup wrapper be blurred
         let main_body = document.querySelector(".body-inner-wrapper")
         main_body.classList.add("disabled-body")
         
         let close_button = document.createElement("button")
-        close_button.classList.add("popup-close-button")
+        close_button.classList = "popup-close-button button_default"
         close_button.innerHTML = "Close"
         close_button.onclick = () => {this.close()} //use arrow function to bind this to the popup object
         popup_inner.appendChild(close_button)

@@ -173,7 +173,7 @@ p, h1, h2, h3, h4, h5, h6, a, li {
     border-radius: var(--border-radius);
     overflow: hidden;
     margin: 0 -.25rem;
-    padding: 10px 15px;
+    padding: 10px 5px;
     transition: color 0.8s ease-in-out, box-shadow 0.8s ease-in-out;
   }
 
@@ -296,6 +296,102 @@ a {
 input, textarea {
     border-radius: var(--border-radius);
 }
+
+button:not(.button_default) {
+    align-items: center;
+    background-color: #FFFFFF;
+    border: 1px solid rgba(var(--p-color), 0.1);
+    border-radius: var(--border-radius);
+    box-shadow: rgba(var(--p-color), 0.02) 0 1px 3px 0;
+    box-sizing: border-box;
+    color: rgba(var(--p-color), 0.85);
+    cursor: pointer;
+    /* display: inline-flex; */
+    font-size: 16px;
+    font-weight: 600;
+    justify-content: center;
+    line-height: 1.25;
+    margin: 0;
+    min-height: 2rem;
+    padding: calc(.875rem - 1px) calc(1.5rem - 1px);
+    text-decoration: none;
+    transition: all 250ms;
+    user-select: none;
+    touch-action: manipulation;
+    vertical-align: baseline;
+    width: auto;
+  }
+  
+  button:not(.button_default):hover,
+  button:not(.button_default):focus {
+    border-color: rgba(var(--p-color), 0.40);
+    box-shadow: rgba(var(--p-color), 0.1) 0 4px 12px;
+    color: rgba(var(--p-color), 0.65);
+  }
+  
+  button:not(.button_default):hover {
+    transform: translateY(-1px);
+  }
+  
+  button:not(.button_default):active {
+    background-color: rgba(var(--p-color), 0.20);
+    border-color: rgba(var(--p-color), 0.15);
+    box-shadow: rgba(var(--p-color), 0.06) 0 2px 4px;
+    color: rgba(var(--p-color), 0.65);
+    transform: translateY(0);
+  }
+  
+  button:not(.button_default):disabled {
+    background-color: #F0F0F1;
+    border-color: rgba(var(--p-color), 0.1);
+    box-shadow: none;
+    color: rgba(var(--p-color), 0.25);
+    cursor: not-allowed !important;
+    /* opacity: 1; */
+  }
+  
+  button:not(.button_default):hover:disabled {
+      box-shadow: none;
+      transform: none;
+      background: none !important;
+      color: rgba(var(--p-color), 0.25) !important;
+  }
+  
+  :where(input[type="text"], input[type="search"]):not(.input_default), textarea:not(.input_default), select {
+      background-color: #FFFFFF;
+      border: 1px solid rgba(var(--p-color), 0.1);
+      border-radius: var(--border-radius);
+      box-shadow: rgba(var(--p-color), 0.02) 0 1px 3px 0;
+      box-sizing: border-box;
+      color: rgba(var(--p-color), 1);
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.25;
+      margin: 0;
+      min-height: 2rem;
+      padding: calc(.875rem - 1px) calc(1.5rem - 1px);
+      position: relative;
+      text-decoration: none;
+      transition: all 250ms;
+      user-select: none;
+      touch-action: manipulation;
+      vertical-align: baseline;
+      width: auto;
+  }
+  
+  :where(input[type="text"], input[type="search"]):not(.input_default):focus, textarea:not(.input_default):focus, select:focus {
+      border: 1px solid rgba(var(--p-color), 0.40);
+      /* color: rgba(0, 0, 0, 1) !important; */
+      outline: none;
+  }
+  
+  :where(input[type="text"], input[type="search"]):not(.input_default):focus::placeholder, textarea:not(.input_default):focus::placeholder, select:focus::placeholder {
+      color: rgba(var(--p-color), 0.30) !important;
+  }
+  
+  :where(input[type="text"], input[type="search"]):not(.input_default)::placeholder, textarea:not(.input_default)::placeholder, select::placeholder {
+      color: rgba(var(--p-color), 0.40);
+  }
 /* GENERAL */
 
 /* CSS */
@@ -324,7 +420,7 @@ body {
     min-height: 100%;
     background-color: var(--secondary-color);
     box-shadow: var(--shadow);
-    z-index: 1;
+    z-index: 999;
 }
 
 .main-area {
@@ -350,10 +446,23 @@ body {
     box-sizing: border-box;
 }
 
+.sidebar-separator {
+    padding: 0;
+    height: 4px;
+    width: 100%;
+    background-color: var(--primary-color);
+    margin: 10px 0;
+}
+
 .sidebar > *:not(.toggle-sidebar-container):hover, .selected-page {
-    /* background-color: var(--edit-color); */
-    border-top: 1px solid var(--primary-color);
-    box-shadow: var(--header-shadow);
+    background-color: rgba(var(--p-color), 0.20);
+    /* border-top: 1px solid var(--primary-color); */
+    /* box-shadow: rgba(var(--p-color), 0.50) 0 3px 10px; */
+}
+
+.selected-page {
+    background-color: rgba(var(--p-color), 0.20);
+    box-shadow: rgba(var(--p-color), 0.50) 0 3px 3px;
 }
 
 /* .selected-page {
@@ -366,7 +475,7 @@ body {
     margin: 0;
     box-shadow: var(--header-shadow);
     cursor: pointer;
-    margin-bottom: 35px;
+    margin-bottom: 150px;
 }
 
 .sidebar > * > :first-child {
@@ -427,7 +536,7 @@ body {
     height: var(--header-height);
     background-color: var(--secondary-color);
     box-shadow: var(--header-shadow);
-    z-index: 10000;
+    z-index: 999;
 }
 
 .content-extra-header {
@@ -511,6 +620,7 @@ body {
     justify-content: center;
     align-items: center;
     gap: 10px;
+    margin-left: 10px;
 }
 
 .header-user-profile > img {
@@ -550,25 +660,62 @@ body {
     gap: 5px;
 }
 
+.popup-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(var(--p-color), 0.15);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+    backdrop-filter: blur(2px);
+}
+
+.popup-inner {
+    background-color: white;
+    border: 1px solid black;
+    border-radius: var(--border-radius);
+    position: relative;
+    padding: 10px;
+    max-height: 80%;
+    max-width: 80%;
+    overflow: auto;
+    box-shadow: 0 0 10px 0 rgba(var(--p-color), 0.55);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+}
+
 .popup-close-button {
     position: absolute;
     top: 0;
     right: 0;
-    margin: 5px;
-    padding: 5px;
+    padding: 5px 10px;
     border: 1px solid black;
-    border-radius: var(--border-radius);
     background-color: white;
     z-index: 1001;
     cursor: pointer;
 }
 
 .popup-close-button:hover {
-    background-color: #FF0000;
+    background-color: var(--error-color);
+    color: white;
 }
 
 .moderation-popup {
 
+}
+
+.content-years > div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
 }
 
 .moderation-input-area {
@@ -589,7 +736,7 @@ body {
     /* justify-content: center; */
     gap: 5px;
     margin: 5px 0;
-    padding: 40px 10px 10px 10px;
+    padding: 20px 10px 10px 10px;
 }
 
 .tabulator-columns-menu > * {
@@ -738,101 +885,6 @@ body {
 }
 
 /* CSS */
-button:not(.button_default) {
-  align-items: center;
-  background-color: #FFFFFF;
-  border: 1px solid rgba(var(--p-color), 0.1);
-  border-radius: var(--border-radius);
-  box-shadow: rgba(var(--p-color), 0.02) 0 1px 3px 0;
-  box-sizing: border-box;
-  color: rgba(var(--p-color), 0.85);
-  cursor: pointer;
-  /* display: inline-flex; */
-  font-size: 16px;
-  font-weight: 600;
-  justify-content: center;
-  line-height: 1.25;
-  margin: 0;
-  min-height: 2rem;
-  padding: calc(.875rem - 1px) calc(1.5rem - 1px);
-  text-decoration: none;
-  transition: all 250ms;
-  user-select: none;
-  touch-action: manipulation;
-  vertical-align: baseline;
-  width: auto;
-}
-
-button:not(.button_default):hover,
-button:not(.button_default):focus {
-  border-color: rgba(var(--p-color), 0.40);
-  box-shadow: rgba(var(--p-color), 0.1) 0 4px 12px;
-  color: rgba(var(--p-color), 0.65);
-}
-
-button:not(.button_default):hover {
-  transform: translateY(-1px);
-}
-
-button:not(.button_default):active {
-  background-color: rgba(var(--p-color), 0.20);
-  border-color: rgba(var(--p-color), 0.15);
-  box-shadow: rgba(var(--p-color), 0.06) 0 2px 4px;
-  color: rgba(var(--p-color), 0.65);
-  transform: translateY(0);
-}
-
-button:not(.button_default):disabled {
-  background-color: #F0F0F1;
-  border-color: rgba(var(--p-color), 0.1);
-  box-shadow: none;
-  color: rgba(var(--p-color), 0.25);
-  cursor: not-allowed !important;
-  /* opacity: 1; */
-}
-
-button:not(.button_default):hover:disabled {
-    box-shadow: none;
-    transform: none;
-    background: none !important;
-    color: rgba(var(--p-color), 0.25) !important;
-}
-
-:where(input[type="text"], input[type="search"]):not(.input_default), textarea:not(.input_default), select {
-    background-color: #FFFFFF;
-    border: 1px solid rgba(var(--p-color), 0.1);
-    border-radius: var(--border-radius);
-    box-shadow: rgba(var(--p-color), 0.02) 0 1px 3px 0;
-    box-sizing: border-box;
-    color: rgba(var(--p-color), 1);
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 1.25;
-    margin: 0;
-    min-height: 2rem;
-    padding: calc(.875rem - 1px) calc(1.5rem - 1px);
-    position: relative;
-    text-decoration: none;
-    transition: all 250ms;
-    user-select: none;
-    touch-action: manipulation;
-    vertical-align: baseline;
-    width: auto;
-}
-
-:where(input[type="text"], input[type="search"]):not(.input_default):focus, textarea:not(.input_default):focus, select:focus {
-    border: 1px solid rgba(var(--p-color), 0.40);
-    /* color: rgba(0, 0, 0, 1) !important; */
-    outline: none;
-}
-
-:where(input[type="text"], input[type="search"]):not(.input_default):focus::placeholder, textarea:not(.input_default):focus::placeholder, select:focus::placeholder {
-    color: rgba(var(--p-color), 0.30) !important;
-}
-
-:where(input[type="text"], input[type="search"]):not(.input_default)::placeholder, textarea:not(.input_default)::placeholder, select::placeholder {
-    color: rgba(var(--p-color), 0.40);
-}
 
 .button_warning {
     background-color: #FFD9D9 !important;
