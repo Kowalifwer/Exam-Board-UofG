@@ -13,6 +13,26 @@ function wrap(el, wrapper) {
     return wrapper;
 }
 
+function create_notification(message, type="info", timeout=1500) {
+    //type can be info, success, warning, error
+    let notification = document.querySelector(".notification")
+    notification.querySelector('div').innerHTML = message
+    let img_element = notification.querySelector('img')
+    img_element.setAttribute("src", `${img_element.dataset.path}${type}.svg`)
+    notification.classList.add("notification-visible")
+    notification.classList.add("notification-" + type)
+    notification.onclick = close_notification
+    setTimeout(close_notification, timeout)
+}
+
+function close_notification() {
+    let notification = document.querySelector(".notification")
+    notification.classList.remove("notification-visible")
+    setTimeout(function() {
+        notification.classList = "notification"
+    }, 750)
+}
+
 pagination_size = 1000
 
 function toggle_based_on_sidebar_state(sidebar, hardset_state=null) {

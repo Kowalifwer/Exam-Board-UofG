@@ -39,13 +39,13 @@
     --p-c-main-01: rgba(var(--p-color), 0.8);
     --p-c-text-main: rgba(var(--p-color), 1); */
 
-
+    --info-color: #005398;
+    --error-color: rgb(185, 59, 59);
+    --warning-color: rgb(233, 176, 18); /*also used in one button*/
+    --success-color: rgb(6, 195, 98);
 
     --primary-color-dim: rgb(118,16,118,0.5); /*text and gradients, backgrounds*/
-    --dark-color: var(--p-c-text-main);
-    --error-color: rgb(231, 36, 36);
-    --warning-color: rgb(230,181,46); /*also used in one button*/
-    --success-color: rgb(14, 127, 68);
+    --dark-color: var(--p-c-text-main)
     --shadow: 0px 6px 5px -1px rgba(var(--p-color), 0.6);
     --body-padding: 50px;
     --primary-button-offset: 50px;
@@ -54,7 +54,7 @@
     --second-color: rgba(235,176,223,1);
     --third-color: rgb(215, 217, 232);
     
-    --info-color: #005398;
+    
     --info-color-dark: #00355f;
     --info-color-light: rgb(0, 0, 0, 0.15);
 
@@ -548,6 +548,85 @@ body {
     width: calc(100vw - var(--sidebar-width));
 }
 
+.header-msg-area {
+    position: absolute;
+    left: 0;
+    bottom: -100px;
+    width: 100%;
+    min-height: 100px;
+    background-color: transparent;
+}
+
+.notification {
+    position: relative;
+    height: 0;
+    transition: height 0.75s;
+    overflow: hidden;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    padding-left: var(--body-padding);
+    box-shadow: var(--header-shadow);
+    cursor: pointer;
+}
+
+.notification img {
+    height: 50px;
+    width: 50px;
+    filter: invert(1);
+}
+
+.notification div {
+    color: white;
+}
+
+.notification:hover {
+    outline: 1px solid red;
+}
+
+.notification-success {
+    background-color: var(--success-color);
+}
+
+.notification-error {
+    background-color: var(--error-color);
+}
+
+.notification-warning {
+    background-color: var(--warning-color);
+}
+
+.notification-info {
+    background-color: var(--info-color);
+}
+
+/* .notification-visible::after {
+    content: "X";
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 50px;
+    width: 50px;
+    background-color: blue;
+    color: white;
+    cursor: pointer;
+}
+
+.notification-close {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 50px;
+    width: 50px;
+    cursor: pointer;
+    color: white;
+} */
+
+.notification-visible {
+    height: 100px;
+    transition: height 0.75s;
+}
+
 .header-sections {
     display: flex;
     justify-content: space-between;
@@ -907,10 +986,10 @@ body {
     /* justify-content: space-between; */
     align-items: center;
     padding: 15px 25px;
-    height: calc(var(--header-height) / 2);
+    min-height: calc(var(--header-height) / 2);
     background-color: var(--secondary-color);
     gap: 5px;
-    /* border-bottom: 1px solid rgba(var(--p-color), 0.1); */
+    border-bottom: 1px solid rgba(var(--p-color), 0.1);
 }
 
 .collapsable-section > :last-child {
