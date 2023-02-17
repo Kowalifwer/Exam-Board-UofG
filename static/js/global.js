@@ -16,23 +16,43 @@ function wrap(el, wrapper) {
 global_notification_timeout_function = null
 
 function create_notification(heading="Client notification", message="Notification from the client!", type="warning", timeout=5000) {
-    close_notification().then(() => {
-        let notification = document.querySelector(".notification")
-        let extra_header = document.querySelector(".content-extra-header")
-        if (extra_header) {
-            extra_header.style.visibility = "hidden"
-        }
-        notification.querySelector('p').innerHTML = message
-        notification.querySelector('b').innerHTML = heading
-        let img_element = notification.querySelector('img')
-        if (img_element.getAttribute("src") != `${img_element.dataset.path}${type}.svg`)
-            img_element.setAttribute("src", `${img_element.dataset.path}${type}.svg`)
-        notification.classList.add("notification-visible")
-        notification.classList.add("notification-" + type)
-        //make sure we track after how long the notification should close
+    let notification = document.querySelector(".notification")
+    let message_container = notification.querySelector('p')
+    let heading_container = notification.querySelector('b')
+    //if notification is already visible, and the message is the same, we need to reset the timer, and create a shaking effect on the popup
+    if (message_container.innerHTML == message && heading_container.innerHTML == heading && notification.classList.contains("notification-visible")) {
+        clear_global_notification_timeout()
+        //increase timer to the new timeout
         global_notification_timeout_function = setTimeout(close_notification, timeout)
-        notification.onclick = close_notification
-    })
+        //create a shaking effect on the popup - to indicate that the timer was reset
+        if (!notification.classList.contains("notification-shake")) {
+            notification.classList.add("notification-shake")
+            setTimeout(function() {
+                notification.classList.remove("notification-shake")
+            }, 500)
+        }
+    } else { //otherwise, we need to close any existing notification, then create a new one.
+        close_notification().then(() => {
+            message_container.innerHTML = message
+            heading_container.innerHTML = heading
+            
+            let img_element = notification.querySelector('img')
+            if (img_element.getAttribute("src") != `${img_element.dataset.path}${type}.svg`)
+                img_element.setAttribute("src", `${img_element.dataset.path}${type}.svg`)
+            notification.classList.add("notification-visible")
+            notification.classList.add("notification-" + type)
+            //make sure we track after how long the notification should close
+            global_notification_timeout_function = setTimeout(close_notification, timeout)
+            notification.onclick = close_notification
+        })
+    }
+}
+
+function clear_global_notification_timeout() {
+    if (global_notification_timeout_function) {
+        clearTimeout(global_notification_timeout_function)
+        global_notification_timeout_function = null
+    }
 }
 
 function create_server_notification() { // success, info, warning, error, and none
@@ -45,26 +65,20 @@ function create_server_notification() { // success, info, warning, error, and no
 //this method will safely close the notification, and will return a promise, which will resolve when the notification is completely closed
 function close_notification() {
     //if there is a timeout function running, that means notification will close preemptively, so we need to clear the timeout
-    if (global_notification_timeout_function)
-        clearTimeout(global_notification_timeout_function)
+    clear_global_notification_timeout()
 
     return new Promise(function(resolve){
         let notification = document.querySelector(".notification")
         if (notification) {
             if (notification.classList.contains("notification-visible")) {
                 notification.classList.remove("notification-visible")
+                console.log("notification should start closing")
                 //if there is an extra header, we need to wait for the notification to close, and then show the extra header
-                let extra_header = document.querySelector(".content-extra-header")
-                if (extra_header) {
-                    setTimeout(function() {
-                        extra_header.style.visibility = "visible"
-                    }, 500)
-                }
                 //we need to wait for the animation to finish, and then set the class to the default value, and resolve the promise
                 setTimeout(function() {
                     notification.classList = "notification"
                     resolve()
-                }, 750)
+                }, 1500)
             } else {
                 resolve()
             }
