@@ -137,6 +137,16 @@ def home_view(request):
     context = {
         "students": all_students,
         "courses": all_courses,
+        "page_info": json.dumps({
+            "title": "Home",
+            "points_list": [
+                "This is the homepage/dashboard",
+                "You can view all students and courses",
+                "This page contains a table. A table has multiple useful features that may not be obvious at first glance. Please click the tables help button, to get detailed help for any given table!",
+                "This page contains charts. Charts are interactive, and will summairise the data stored in the table."
+                "Note that actions that cause the table state to change - will trigger the charts to update as well."
+            ]
+        })
     }
 
     if is_fetching_table_data(request):  
@@ -162,6 +172,16 @@ def all_students_view(request):
 def all_courses_view(request, year=None):
     context = {}
     update_context_with_extra_header_data(context, 'general:all_courses_exact', "View courses from other years", year=year)
+    context["page_info"] = json.dumps({
+        "title": f"All Courses for {context['selected_year'].year}",
+        "points_list": [
+            "This page allows you to view and access all the offered courses for a given Academic year",
+            "Whilst this page can be useful for comparing the cohort averages, note that much more data is available on the individual course pages.",
+            "<b>How to access a given course page?:</b> Right click on the course, and select 'View Course' from the dropdown menu.",
+            "You have the option to moderate courses directly in this page, <b>however</b> it might be more clear to do so from the individual course page.",
+            "An additional header is provided which allows you to navigate across different years, to view all the courses offered."
+        ]
+    })
 
     all_courses = Course.objects.filter(academic_year=context['selected_year'].year)
     if is_fetching_table_data(request):
@@ -190,6 +210,16 @@ def global_search_view(request):
         context["search_term"] = search_term
         context["students"] = Student.objects.filter(Q(full_name__icontains=search_term) | Q(GUID__icontains=search_term)).exists()
         context["courses"] = Course.objects.filter(Q(code__icontains=search_term) | Q(name__icontains=search_term)).exists()
+    
+    context["page_info"] = json.dumps({
+        "title": f"course/student search",
+        "points_list": [
+            f"This page will return all the students and courses that match the search term: <b>'{context['search_term'] if 'search_term' in context else 'no search term provided'}'</b>",
+            "This page contains only basic information about the students and courses.",
+            "It is recommended to use this page to find the relevant students and courses, and then access their individual pages to view more information about them.",
+            "<b>How to access an individual course/student page?:</b> Right click on the student/course, and select 'View Student/Course' from the dropdown menu.",
+        ]
+    })
     
     if is_fetching_table_data(request):
         search_term = request.GET["search_term"]
@@ -245,6 +275,17 @@ def student_view(request, GUID):
     else:
         print("NOT FETCHING TABLE DATA")
     context = {"student": student.first()}
+    context["page_info"] = json.dumps({
+        "title": f"Individual student",
+        "points_list": [
+            f"This page provides information about the student: <b>'{context['student'].full_name}'</b>",
+            "This page contains all the information about the student, including their results history, across all completed years.",
+            "The chart shows the students Final, Coursework and Exam GPA's across all completed years. Chart elements can be toggled on/off by clicking on the legend.",
+            "A detailed assessement breakdown is available by right-clicking on a course in the table and selecting 'Student grades and preponderance(popup)' from the dropdown menu.",
+            "This popup also provides means to view and update the students preponderance history.",
+            "You may also jump to any Course of interest, by right-clicking on the course row and selecting 'View Course page' from the dropdown menu.",
+        ]
+    })
     return render(request, "general/student.html", context)
 
 def fetch_student_course_table_data_if_relevant(request):
@@ -344,7 +385,17 @@ def course_view(request, code, year):
         "current_course": course.first(),
     }
     update_context_with_extra_header_data(context, 'general:course', "View courses from other years", year=year)
-
+    context["page_info"] = json.dumps({
+        "title": f"Individual course",
+        "points_list": [
+            f"This page provides all the information about the course: <b>'{context['current_course']}'</b> offered in <b>'{year}'</b>.",
+            "Each row details the results obtained by a student, across all the assessed content of the course.",
+            "Each assessed piece of work is grouped by assessment type, which can vary from course to course (eg. some courses will have group projects, some will have individual projects, and most will have exams.).",
+            "A students preponderance history can be viewed and modified by right clicking on the student row and selecting the relevant option from the dropdown menu.",
+            "An additional header is provided which allows you to navigate across other years where this course has been offered."
+            "You may also jump to any Student of interest, by right-clicking on the student row and selecting 'View Student page' from the dropdown menu.",
+        ]
+    })
     return render(request, "general/course.html", context)
 
 def level_progression_view(request, level, year=None):
@@ -354,6 +405,17 @@ def level_progression_view(request, level, year=None):
         'current_level': level,
     }
     update_context_with_extra_header_data(context, 'general:level_progression_exact', "View level progression of other years", year=year, all_years=None, extra_level_iterator=degree_progression_levels)
+    context["page_info"] = json.dumps({
+        "title": f"Level progression",
+        "points_list": [
+            f"This page provides all the information about cohort <b>level {level}</b> in <b>'{context['selected_year'].year}'</b>.",
+            "Each row details the students overall performance, across all the courses in the given level and year.",
+            "The panel on the right offers charts that provide insights into the overall performance of the cohort, as well as the distribution of students who have a guaranteed pass, discretionary pass or fail to proceed into next level.",
+            "The panel on the left provides some aggregate cohort statistics, such as number of students, and the average grade across all courses.",
+            "An additional header is provided which allows you to navigate across different academic years and levels (1,2,3 or 4)"
+            "You may also jump to any Student of interest, by right-clicking on the student row and selecting 'View Student page' from the dropdown menu.",
+        ]
+    })
     context["level_head"] = User.objects.filter(level_head__academic_year=context["selected_year"], level_head__level=level).first()
     get_query_count("before fetching level progression", True)
     if is_fetching_table_data(request):
@@ -402,7 +464,17 @@ def degree_classification_view(request, level, year=None):
         'current_level': level,
     }
     update_context_with_extra_header_data(context, 'general:degree_classification_exact', "View degree classifications of other years", year=year, all_years=None, extra_level_iterator=degree_classification_levels)
-
+    context["page_info"] = json.dumps({
+        "title": f"Degree classification",
+        "points_list": [
+            f"This page provides all the information about students who graduate at <b>level {level}</b> in <b>'{context['selected_year'].year}'</b>.",
+            "Each row details the students overall performance, across all the courses in the given level and year.",
+            "The panel on the right offers charts that provide insights into the overall performance of the graduation cohort, as well as the distribution of students across their recieved final award.",
+            "The panel on the left provides some aggregate cohort statistics, such as number of students, and the average grades across all levels.",
+            "An additional header is provided which allows you to navigate across different academic years and degree classifications (Bsc/Beng or Msc/Meng)"
+            "You may also jump to any Student of interest, by right-clicking on the student row and selecting 'View Student page' from the dropdown menu.",
+        ]
+    })
     get_query_count("before fetching degree classification", False)
     if is_fetching_table_data(request):
         masters = level == 5
@@ -470,6 +542,14 @@ def degree_classification_view(request, level, year=None):
 def degree_classification_grading_rules_view(request, year=None):
     context = {}
     update_context_with_extra_header_data(context, 'general:degree_grading_rules_exact', "View grading rules of other years", year=year)
+    context["page_info"] = json.dumps({
+        "title": f"Degree classification grading rules",
+        "points_list": [
+            f"This page showcases the rules used to calculate the degree classifications, for a given year. Currently: <b>'{context['selected_year'].year}'</b>.",
+            "Clicking the 'Edit degree classification rules' button will allow you view and modify the degree classication rules for the selected year.",
+            "An additional header is provided which allows you to navigate across different academic years"
+        ]
+    })
     return render(request, "general/degree_grading_rules.html", context)
 
 def level_progression_rules_view(request, level, year=None):
@@ -479,7 +559,14 @@ def level_progression_rules_view(request, level, year=None):
         'current_level': level,
     }
     update_context_with_extra_header_data(context, 'general:level_progression_rules_exact', "View level progression rules of other years", year=year, all_years=None, extra_level_iterator=degree_progression_levels)
-    
+    context["page_info"] = json.dumps({
+        "title": f"Level progression determining rules",
+        "points_list": [
+            f"This page showcases the rules used to determine the requirements for progression into the next level, for a given year and level. Currently: <b>'{context['selected_year'].year}'</b> and <b>'Level {level}'</b>.",
+            "Clicking the 'Edit level progression rules' button will allow you view and modify the level progression rules for the selected level and year.",
+            "An additional header is provided which allows you to navigate across different academic years and levels"
+        ]
+    })
     context['table_settings'] = context['selected_year'].level_progression_settings_for_table(str(level))
     return render(request, "general/level_progression_rules.html", context)
 #GUID, FULL_NAME, FINAL BAND, FINAL GPA, L4 BAND, L4 GPA, L3 BAND, L3 GPA, >A, >B, >C, >D, ... Project, Team ...
@@ -566,9 +653,9 @@ def api_view(request):
                                 existing_state = data
                             setattr(year, attribute, existing_state)
                             year.save()
-                            response["status"] = "Degree classification updated succesfully!"
+                            response["status"] = "Rules updated succesfully!"
                         else:
-                            response["status"] = "No changes detected."
+                            response["status"] = "No rule changes detected."
                     else:
                         response["status"] = "Server error. Academic year not found."
             
