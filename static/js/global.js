@@ -15,37 +15,28 @@ function wrap(el, wrapper) {
 
 global_notification_timeout_function = null
 
-function create_notification(heading="Client notification", message="Notification from the client!", type="warning", timeout=5000) {
-    let notification = document.querySelector(".notification")
-    let message_container = notification.querySelector('p')
-    let heading_container = notification.querySelector('b')
-    //if notification is already visible, and the message is the same, we need to reset the timer, and create a shaking effect on the popup
-    if (message_container.innerHTML == message && heading_container.innerHTML == heading && notification.dataset.type == type && notification.classList.contains("notification-visible")) {
-        clear_global_notification_timeout()
-        //increase timer to the new timeout
-        global_notification_timeout_function = setTimeout(close_notification, timeout)
-        //create a shaking effect on the popup - to indicate that the timer was reset
-        if (!notification.classList.contains("notification-shake")) {
-            notification.classList.add("notification-shake")
-            setTimeout(function() {
-                notification.classList.remove("notification-shake")
-            }, 500)
+function bullet_list_to_html_string(bullet_list) {
+    let html_string = '<ul class="help-list">'
+    for (let i = 0; i < bullet_list.length; i++) {
+        html_string += `<li>${bullet_list[i]}</li>`
+    }
+    html_string += "</ul>"
+    return html_string
+}
+
+function create_page_help_notification() {
+    let page_info_container = document.getElementById("page_info")
+    if (page_info_container) {
+        if (page_info_container.dataset.info) {
+            let page_info = JSON.parse(page_info_container.dataset.info)
+            let title = page_info.title
+            help_message = bullet_list_to_html_string(page_info.points_list)
+            create_notification(`You are currently on the ${title} page`, help_message, "info", 20000)
+        } else {
+            create_notification("Page help", "Unfortunately, no help information has been provided for this page.", "info", 5000)
         }
-    } else { //otherwise, we need to close any existing notification, then create a new one.
-        close_notification().then(() => {
-            message_container.innerHTML = message
-            heading_container.innerHTML = heading
-            notification.dataset.type = type
-            
-            let img_element = notification.querySelector('img')
-            if (img_element.getAttribute("src") != `${img_element.dataset.path}${type}.svg`)
-                img_element.setAttribute("src", `${img_element.dataset.path}${type}.svg`)
-            notification.classList.add("notification-visible")
-            notification.classList.add("notification-" + type)
-            //make sure we track after how long the notification should close
-            global_notification_timeout_function = setTimeout(close_notification, timeout)
-            notification.onclick = close_notification
-        })
+    } else {
+        console.error("Page info container not found.")
     }
 }
 
@@ -63,6 +54,40 @@ function create_server_notification() { // success, info, warning, error, and no
         create_notification("Message from the server", server_message.dataset.message, type=server_message.dataset.type, timeout=5000)
 }
 
+function create_notification(heading="Client notification", message="Notification from the client!", type="warning", timeout=5000) {
+    let notification = document.querySelector(".notification")
+    let message_container = notification.querySelector('p')
+    let heading_container = notification.querySelector('b')
+    //if notification is already visible, and the message is the same, we need to reset the timer, and create a shaking effect on the popup
+    //log the message, and the heading, and the type, and the timeout
+    if (message_container.innerHTML == message && heading_container.innerHTML == heading && notification.dataset.type == type && notification.classList.contains("notification-visible")) {
+        clear_global_notification_timeout()
+        //increase timer to the new timeout
+        global_notification_timeout_function = setTimeout(close_notification, timeout)
+        //create a shaking effect on the popup - to indicate that the timer was reset
+        if (!notification.classList.contains("notification-shake")) {
+            notification.classList.add("notification-shake")
+            setTimeout(function() {
+                notification.classList.remove("notification-shake")
+            }, 500)
+        }
+    } else { //otherwise, we need to close any existing notification, then create a new one.
+        close_notification().then(() => {
+            message_container.innerHTML = message
+            heading_container.innerHTML = heading
+            notification.dataset.type = type
+            let img_element = notification.querySelector('img')
+            if (img_element.getAttribute("src") != `${img_element.dataset.path}${type}.svg`)
+                img_element.setAttribute("src", `${img_element.dataset.path}${type}.svg`)
+            notification.classList.add("notification-visible")
+            notification.classList.add("notification-" + type)
+            //make sure we track after how long the notification should close
+            global_notification_timeout_function = setTimeout(close_notification, timeout)
+            notification.onclick = close_notification
+        })
+    }
+}
+
 //this method will safely close the notification, and will return a promise, which will resolve when the notification is completely closed
 function close_notification() {
     //if there is a timeout function running, that means notification will close preemptively, so we need to clear the timeout
@@ -78,7 +103,7 @@ function close_notification() {
                 setTimeout(function() {
                     notification.classList = "notification"
                     resolve()
-                }, 1100)
+                }, 1000)
             } else {
                 resolve()
             }
@@ -126,6 +151,11 @@ window.onload = function() {
             let siderbar_collapsed = sidebar.classList.toggle("sidebar-collapsed")
             toggle_based_on_sidebar_state(sidebar, siderbar_collapsed)
         })
+    }
+
+    let page_help_button = document.getElementById("page_help")
+    if (page_help_button) {
+        page_help_button.addEventListener("click", create_page_help_notification)
     }
 }
 
