@@ -51,6 +51,17 @@ const boundary_map = {
     22: "A1",
 }
 
+const columnHeaderGroupBy = [
+    {
+        label:"Group rows by this column",
+        action:function(e, column){
+            let table = column.getTable()
+            table.setGroupBy(column.getField());
+        },
+    }
+]
+
+
 const moderation_formatter = function (cell) {
     let value = cell.getValue()
     //if value is 0 - return 'Not moderated'
@@ -175,25 +186,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         title = settings.title
 
     let table_constructor = {
-        // layout:"fitColumns",
-        // responsiveLayout:"hide",
-        // responsiveLayout:true,
-        // data: table_data,
-        // columns: columns.map((column) => {
-        //     // if (column.columns) {
-        //     //     column.columns = column.columns.forEach((sub_column) => {
-        //     //         sub_column.minWidth = 100
-        //     //         return sub_column
-        //     //     })
-        //     // }
-        //     // if (!column.minWidth)
-        //     //     // column.minWidth = 100
-        //     // if (column.titleFormatter) {
-        //     //     // column.minWidth = 20
-        //     //     column.width = 20
-        //     // }
-        //     return column
-        // }),
         columns: columns,
         pagination: true,
         paginationMode: "local",
@@ -244,8 +236,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table_constructor.ajaxURL = window.location.href
         table_constructor.ajaxParams = {
             "fetch_table_data": true,
-            // "size": pagination_size,
-            // "page": page_count,
         }
         table_constructor.ajaxConfig = "GET"
         table_constructor.ajaxResponse = function(url, params, response) {
@@ -303,6 +293,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     let table_element = (isElement(table_id)) ? table_id : document.getElementById(table_id)
     table_element.dataset.edit_mode = 0
     let table = new Tabulator(table_element, table_constructor)
+    // console.log(table.options)
     table.extra_cols = []
     table.settings = settings
     // table.get_cols = columns
@@ -452,14 +443,31 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             }   
         })
 
-
-        // let download_excel = string_to_html_element(`<button class="tabulator-download">Download excel</button>`)
-        // let download_pdf = string_to_html_element(`<button class="tabulator-download">Download pdf</button>`)
-        // let download_csv = string_to_html_element(`<button class="tabulator-download">Download csv</button>`)
-        // let download_json = string_to_html_element(`<button class="tabulator-download">Download json</button>`)
         let unhide_rows = string_to_html_element(`<button id="unhide-rows" class="hidden">Unhide rows</button>`)
         let undelete_rows = string_to_html_element(`<button id="undelete-rows" class="hidden">Add back deleted rows</button>`)
         let column_manager = string_to_html_element(`<button class="column-manager">Column manager</button>`)
+        let help_button = string_to_html_element(`<button class="help-button">Help</button>`)
+        let remove_row_groups = string_to_html_element(`<button class="remove-row-groups">Remove row groups</button>`)
+
+        remove_row_groups.addEventListener("click", function(){
+            table.setGroupBy([])
+        })
+
+        help_button.addEventListener("click", function(){
+            let help_points = [
+                "<b>Sort columns:</b> Click on a column header to sort the table by that column. (Ascending or descending order is determined by the arrow next to the column header). Click again to change the order.",
+                "<b>Rearrange column order:</b> Click on a column header and drag it to the left or right to move it. This way you can reorder the columns to your liking.",
+                "<b>Resize columns:</b> Resize a column by dragging left/right edge of the column",
+                "<b>Row actions:</b> Right-click on a row, to get a menu with options relevant to that object.",
+                "<b>Show/hide columns:</b> Click on the 'Column manager' button to manage what columsn will be shown/hidden",
+                "<b>Expore table data:</b> Tables can be exported to Excel, PDF, CSV, and JSON. Click on the 'Export' button to export the table to one of these formats. Note that the export will be formatted according to the state of the table (accounting for hidden columns, grade format and deleted rows).",
+                "<b>Format grades:</b> Tables can be reformatted to show grades as band letters or band integers. Click on the 'Format' button to change the formatting of the table.",
+                "<b>Search for rows:</b> Some column headers have a text input box. Type in the box to search for rows that contain the text you typed.",
+                "<b>Group rows by column:</b> Very few column headers have 3 vertical dots. Clicking the dots will open a menu that allows you to group the rows by that column. Note that most tables come pre-grouped by the most relevant column.",
+                "<b>Remove all row groups:</b> Click on the 'Remove all row groups' button to remove all row groups."
+            ]
+            create_notification("Table help", bullet_list_to_html_string(help_points), "info", 20000)
+        })
 
         column_manager.addEventListener("click", function(){
             var columns = table.getColumns();
@@ -516,7 +524,8 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table_wrapper.querySelector(".tabulator-components").prepend(select_element)
         table_wrapper.querySelector(".tabulator-components").prepend(select_download)
         table_wrapper.querySelector(".tabulator-components").appendChild(column_manager)
-
+        table_wrapper.querySelector(".tabulator-components").appendChild(remove_row_groups)
+        table_wrapper.querySelector(".tabulator-components").appendChild(help_button)
 
         if (settings.course) {
             let moderate_course_button = string_to_html_element(`<button class="tabulator-moderate">Moderate course</button>`)
@@ -630,19 +639,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={'title': 'Students'}){
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
-        {title: "GUID", field: "GUID", headerFilter: "input", "frozen": true, headerPopup: function(e, column){
-            // let current_formatter = column.getDefinition().formatter
-            // console.log(current_formatter)
-            // let menu = `
-            //     <select>
-            //         <option>Letter and number</option>
-            //         <option>Number only</option>
-            //     </select>`
-            // return menu
-            // column.updateDefinition(
-            //     {visible: false}
-            // )
-        }},
         {title: "Name", field: "name", headerFilter: "input"},
         {
             title: "Degree info",
@@ -657,9 +653,9 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
         {
             title: "Year data",
             columns: [
-                {title: "Current level", field: "current_year"},
-                {title: "Start year", field: "start_year"},
-                {title: "End year", field: "end_year"},
+                {title: "Current level", field: "current_year", headerMenu: columnHeaderGroupBy},
+                {title: "Start year", field: "start_year", headerMenu: columnHeaderGroupBy},
+                {title: "End year", field: "end_year", headerMenu: columnHeaderGroupBy},
             ],
             "headerHozAlign": "center",
         },
@@ -676,7 +672,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
 
     let rowContextMenu = [
         {
-            label:"View Student breakdown page",
+            label:"View Student page",
                 action:function(e, row){
                     if (typeof row.getData().page_url !== 'undefined') {
                         window.location.href = row.getData().page_url
@@ -686,7 +682,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
     ]
     if (settings.course) {
         rowContextMenu.push({
-            label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img class='color-img-blue-uofg' src='/static/icons/info.svg'></i><span>Student grades breakdown popup.</span></div>",
+            label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img class='color-img-blue-uofg' src='/static/icons/info.svg'></i><span>Student grades and preponderance(popup)</span></div>",
             action: function(e, row){
                 create_student_course_detailed_table_popup(row.getData(), settings.course.course_id, row.getTable())
             }
@@ -694,10 +690,6 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
     }
 
     let final_extra_constructor_params = { ...extra_constructor_params,
-        // groupBy: function(data){
-        //     return data.start_year + " - " + data.end_year; //groups by data and age
-        // },
-        //context menus
         ajaxParams: ajaxParams,
         rowContextMenu:rowContextMenu,
         groupBy: 'current_year',
@@ -908,7 +900,7 @@ function load_level_progression_table(level){
 
     let table = init_table("level_progression_table", columns, null, {
         rowContextMenu: [{
-            label:"View Student breakdown page",
+            label:"View Student page",
                 action:function(e, row){
                     if (typeof row.getData().page_url !== 'undefined') {
                         window.location.href = row.getData().page_url
@@ -1103,7 +1095,7 @@ function load_degree_classification_table(level) {
 
     let table = init_table("degree_classification_table", columns, null, {
         rowContextMenu: [{
-            label:"View Student breakdown page",
+            label:"View Student page",
                 action:function(e, row){
                     if (typeof row.getData().page_url !== 'undefined') {
                         window.location.href = row.getData().page_url
@@ -1349,7 +1341,7 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
         {title: "Code", field: "code", headerFilter: "input", frozen:true},
         {title: "Name", field: "name", headerFilter: "input"},
-        {title: "Academic year", field: "academic_year"},
+        {title: "Academic year", field: "academic_year", headerMenu: columnHeaderGroupBy},
         {title: "Credits", field: "credits", bottomCalc: "sum"},
         {title: "Taught now?", field: "is_taught_now", formatter: "tickCross"},
         {title: "Moderated?", field: "is_moderated", formatter: "tickCross"},
@@ -1410,8 +1402,9 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
     ]
 
     if (settings.student) {
+        rowContextMenu.pop(1)
         rowContextMenu.push({
-            label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img class='color-img-blue-uofg'src='/static/icons/info.svg'></i><span>Student grades breakdown popup.</span></div>",
+            label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img class='color-img-blue-uofg'src='/static/icons/info.svg'></i><span>Student grades and preponderance(popup)</span></div>",
             action: function(e, row){
                 create_student_course_detailed_table_popup(settings.student, row.getData().course_id, row.getTable())
             }

@@ -28,13 +28,16 @@
   <body>
     <div class="notification-wrapper{%if request.COOKIES.sidebar_collapsed == 'false'%} notification-wrapper-shrunk{%endif%}">
         <div class="notification">
-            <img src="{%static 'icons/success.svg'%}" data-path="{%static 'icons/'%}">
+            <img data-path="{%static 'icons/'%}">
             <div>
                 <h2><b></b></h2>
                 <p></p>
             </div>
         </div>
     </div>
+
+    <input type="hidden" id="page_info" data-info='{{page_info}}'>
+
     {%for message in messages%}
         <input type="hidden" id="server_message" data-message="{{message}}" data-type="{{message.level_tag}}">  
     {%endfor%}
@@ -118,6 +121,9 @@
                 {%else%}
                 <h3>Anonymous user</h3>
                 {%endif%}
+            </div>
+            <div id="page_help">
+                Click for help!
             </div>
             </div>
             
