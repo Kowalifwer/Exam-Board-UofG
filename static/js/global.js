@@ -13,33 +13,60 @@ function wrap(el, wrapper) {
     return wrapper;
 }
 
-function create_notification(message, type="info", timeout=1500) {
+function create_notification(heading="Client notification", message="Notification from the client!", type="warning", timeout=5000) {
     //type can be info, success, warning, error
-    let notification = document.querySelector(".notification")
-    notification.querySelector('div').innerHTML = message
-    let img_element = notification.querySelector('img')
-    img_element.setAttribute("src", `${img_element.dataset.path}${type}.svg`)
-    notification.classList.add("notification-visible")
-    notification.classList.add("notification-" + type)
-    notification.onclick = close_notification
-    setTimeout(close_notification, timeout)
+    close_notification().then(function () {
+        let notification = document.querySelector(".notification")
+        let extra_header = document.querySelector(".content-extra-header")
+        if (extra_header) {
+            extra_header.style.visibility = "hidden"
+        }
+        notification.querySelector('p').innerHTML = message
+        notification.querySelector('b').innerHTML = heading
+        let img_element = notification.querySelector('img')
+        if (img_element.getAttribute("src") != `${img_element.dataset.path}${type}.svg`)
+            img_element.setAttribute("src", `${img_element.dataset.path}${type}.svg`)
+        notification.classList.add("notification-visible")
+        notification.classList.add("notification-" + type)
+        //on click - we call the close_notification function, which is called after the timeout. We need to bind the timeout to the function, so we can clear it
+        notification.onclick = close_notification.bind(setTimeout(close_notification, timeout))
+
+    })
 }
 
 function create_server_notification() { // success, info, warning, error, and none
     //if at least one server message exists - create notifications for all of them
     let server_message = document.getElementById("server_message")
     if (server_message)
-        create_notification(server_message.dataset.message, type=server_message.dataset.type, timeout=5000)
+        create_notification("Message from the server", server_message.dataset.message, type=server_message.dataset.type, timeout=55000)
 }
 
+//this method will safely close the notification, and will return a promise, which will resolve when the notification is completely closed
 function close_notification() {
-    let notification = document.querySelector(".notification")
-    if (notification) {
-        notification.classList.remove("notification-visible")
-        setTimeout(function() {
-            notification.classList = "notification"
-        }, 750)
-    }
+    return new Promise((resolve) => {
+        let notification = document.querySelector(".notification")
+        if (notification) {
+            if (notification.classList.contains("notification-visible")) {
+                clearTimeout(this)
+                notification.classList.remove("notification-visible")
+                //if there is an extra header, we need to wait for the notification to close, and then show the extra header
+                let extra_header = document.querySelector(".content-extra-header")
+                if (extra_header) {
+                    setTimeout(function() {
+                        extra_header.style.visibility = "visible"
+                    }, 500)
+                }
+                //we need to wait for the animation to finish, and then set the class to the default value, and resolve the promise
+                setTimeout(function() {
+                    notification.classList = "notification"
+                    resolve()
+                }, 750)
+            } else {
+                // if the notification is not visible, means it is closed, so we can just resolve the promise
+                resolve()
+            }
+        }
+    })
 }
 
 function toggle_based_on_sidebar_state(sidebar, hardset_state=null) {

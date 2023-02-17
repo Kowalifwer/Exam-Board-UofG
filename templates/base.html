@@ -73,13 +73,13 @@
 
         <div class="sidebar-separator"></div>
 
-        <a href="{%url 'general:degree_grading_rules'%}" title="Degree classification rules" {%if 'degree_classification/grading_rules' in request.path%}class="selected-page"{%endif%}>
-          <span>Grading rules</span>
+        <a href="{%url 'general:degree_grading_rules'%}" title="Degree classification rules" {%if 'setup/degree' in request.path%}class="selected-page"{%endif%}>
+          <span>Degree classification rules</span>
           <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/grade_settings.svg'%}">
         </a>
 
-        <a href="{%url 'general:level_progression_rules' 1%}" title="Level progression rules" {%if 'level_progression/grading_rules' in request.path%}class="selected-page"{%endif%}>
-            <span>Grading rules</span>
+        <a href="{%url 'general:level_progression_rules' 1%}" title="Level progression rules" {%if 'setup/level' in request.path%}class="selected-page"{%endif%}>
+            <span>Level progression rules</span>
             <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/grade_settings.svg'%}">
         </a>
       </nav>
@@ -88,8 +88,11 @@
         <div class="header">
             <div class="header-msg-area">
                 <div class="notification">
-                    <img data-path="{%static 'icons/'%}">
-                    <div></div>
+                    <img src="{%static 'icons/success.svg'%}" data-path="{%static 'icons/'%}">
+                    <div>
+                        <h2><b></b></h2>
+                        <p></p>
+                    </div>
                 </div>
             </div>
             <a href="{%url 'general:home'%}"><h2><b>Welcome to UofG</b> <br>Exam board management system</h2></a>
@@ -121,7 +124,7 @@
         </div>
         <div class="content-wrapper">
           {%if all_years and request.user.is_authenticated%}
-            <div class="content-extra-header visible">
+            <div class="content-extra-header">
               <div class="content-years">
                 <div>
                   {%for year in all_years%}

@@ -655,10 +655,10 @@ def login_view(request, prev_path):
         #this is not a production view, and should not be used in production
         user = User.objects.order_by("?").first()
         login(request, user)
-        messages.success(request, f"Logged in as {user.get_name_verbose}.")
+        messages.info(request, f"Logged in as {user.get_name_verbose}!")
         return redirect(prev_path)
 
 def logout_view(request, prev_path):
     logout(request)
-    messages.success(request, "Logged out succesfully.")
+    messages.info(request, "Logged out succesfully!")
     return redirect(prev_path)

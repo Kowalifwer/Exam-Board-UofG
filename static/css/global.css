@@ -42,7 +42,7 @@
     --info-color: #005398;
     --error-color: rgb(185, 59, 59);
     --warning-color: rgb(233, 176, 18); /*also used in one button*/
-    --success-color: rgb(6, 195, 98);
+    --success-color: var(--uog-green);
 
     --primary-color-dim: rgb(118,16,118,0.5); /*text and gradients, backgrounds*/
     --dark-color: var(--p-c-text-main)
@@ -76,7 +76,6 @@
     --transition: transform 600ms ease, width 600ms ease, opacity 400ms, margin 600ms ease;
 
     --border-radius: 5px;
-
 }
 
 /* lexend-300 - latin */
@@ -541,7 +540,7 @@ body {
     height: var(--header-height);
     background-color: var(--secondary-color);
     box-shadow: var(--header-shadow);
-    z-index: 999;
+    z-index: 1000;
 }
 
 .content-extra-header {
@@ -569,25 +568,47 @@ body {
     transition: height 0.75s;
     overflow: hidden;
     display: flex;
-    gap: 15px;
     align-items: center;
-    padding-left: var(--body-padding);
+    gap: 15px;
+    padding: 0 var(--body-padding);
     box-shadow: var(--header-shadow);
     cursor: pointer;
 }
 
 .notification img {
-    height: 50px;
-    width: 50px;
+    height: 75px;
+    width: 75px;
     filter: invert(1);
 }
 
 .notification div {
     color: white;
+    align-self: flex-start;
+}
+
+.notification h2 {
+    margin: 15px 0 7.5px 0;
+}
+
+.notification p {
+    margin: 0;
 }
 
 .notification:hover {
-    outline: 1px solid red;
+    /* white highlightsubtle shadow */
+    box-shadow: inset 0 0 0 1000px rgba(0, 0, 0, 0.1);
+}
+
+.notification:hover::after {
+    content: "╳";
+    position: absolute;
+    right: var(--body-padding);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 10px;
+    font-size: 40px;
+    font-weight: bold;
+    color: white;
 }
 
 .notification-success {
@@ -605,28 +626,6 @@ body {
 .notification-info {
     background-color: var(--info-color);
 }
-
-/* .notification-visible::after {
-    content: "X";
-    position: absolute;
-    right: 0;
-    top: 0;
-    height: 50px;
-    width: 50px;
-    background-color: blue;
-    color: white;
-    cursor: pointer;
-}
-
-.notification-close {
-    position: absolute;
-    right: 0;
-    top: 0;
-    height: 50px;
-    width: 50px;
-    cursor: pointer;
-    color: white;
-} */
 
 .notification-visible {
     height: 100px;
