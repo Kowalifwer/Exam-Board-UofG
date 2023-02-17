@@ -1321,9 +1321,10 @@ function create_student_course_detailed_table_popup(student_data=null, course_id
                         if (response.data) {
                             parent_table_to_reload.reloadTable()
                             popup.close()
-                            //TODO: add a success message here
+                            console.log(student_data)
+                            create_notification("Preponderance update", `Preponderance updated successfully for ${student_data.name}. Tables and charts are reloading.`, "success")
                         } else {
-                            alert(response.status)
+                            create_notification("Error", response.status, "error")
                         }
                     })
                 }
@@ -1338,7 +1339,7 @@ function create_student_course_detailed_table_popup(student_data=null, course_id
         popup.content.appendChild(edit_button)
     
     } else {
-        alert("Please select a student first!")
+        create_notification("Error", "No student data or course ID provided.")
     }
     
 }
@@ -1603,17 +1604,22 @@ function render_course_moderation_section(course_data, parent_table=null) {
         let moderation_value_elt = document.getElementById("moderation-value")
         let moderation_value = moderation_value_elt.options[moderation_value_elt.selectedIndex].value
         if (moderation_value == 0) {
-            alert("Please select a number of bands to moderate by")
+            create_notification("Moderation warning", "Please select a number of bands to moderate by", "warning")
             return
         }
         api_post("moderation", {"mode": mode, "value": moderation_value, "assessment_ids": table.getSelectedData().map(x => x.id), "course_id": course_id}).then(data => {
             if (data.data) {
                 popup.close()
-                if (parent_table)
+                if (parent_table) {
                     parent_table.reloadTable()
+                    create_notification("Moderation update", "Moderation updated succesfully. Tables and charts are reloading.", "success")
+                }
+                else {
+                    create_notification("Moderation update", "Moderation updated succesfully.", "success")
+                }
             }
              else {
-                alert("Error: " + data.status)
+                create_notification("Moderation update", data.status, "error")
             }
         })
     }
@@ -1683,12 +1689,13 @@ function load_grading_rules_table(data_json, level=null){
         let wrapper = table.getWrapper()
         let footer = wrapper.querySelector('.tabulator-footer-contents')
         let edit_button = document.createElement('button')
+        let msg = (level) ? "Level progression" : "Degree classification" + " rules"
         let table_element = table.getElement()
-        edit_button.innerHTML = "Edit Classification rules"
+        edit_button.innerHTML = "Edit " + msg
         edit_button.addEventListener('click', function(){
             if (table_element.dataset.edit_mode == 1) {
                 table.removeNotification()
-                this.innerHTML = "Edit Classification rules"
+                edit_button.innerHTML = "Edit " + msg
                 table_element.dataset.edit_mode = 0
 
                 table.setColumns(columns.map(col => {
@@ -1702,11 +1709,11 @@ function load_grading_rules_table(data_json, level=null){
                 }
                 //api call here to save the data.
                 api_post("save_grading_rules", table_data).then(response => {
-                    alert(response.status)
-                })
+                    create_notification(msg, response.status, "info")
+                }) 
             } else {
                 table.addNotification()
-                this.innerHTML = "Save changes"
+                edit_button.innerHTML = "Save changes"
                 table_element.dataset.edit_mode = 1
 
                 table.setColumns(columns.map(col => {
@@ -1716,7 +1723,7 @@ function load_grading_rules_table(data_json, level=null){
                     console.log(col.getElement())
                 })
             }
-        }.bind(level))
+        })
         footer.prepend(edit_button)
     })
 }
@@ -1747,31 +1754,6 @@ function load_comments_table(data_json){
         "height": "100%",
         "index": "id",
         "placeholder":"There are no comments right now. Feel free to add the first comment!",
-        rowContextMenu:[
-            {
-                label:"Delete selected comment(s)",
-                    action:function(e, row){
-                        let selected_rows = row.getTable().getSelectedRows()
-                        let confirm_message = "Are you sure you want to delete this comment?"
-                        if (selected_rows.length > 1) {
-                            confirm_message = `Are you sure you want to delete these ${selected_rows.length} comments?`
-                        }
-                        if (confirm(confirm_message)) {
-                            api_post("delete_comments", selected_rows.map(
-                                row => row.getData().id
-                            )).then(response => {
-                                if (response.data) {
-                                    table.setData(response.data).then(function () {
-                                        setTimeout(() => {alert(response.status)}, 10)
-                                    })
-                                } else {
-                                    alert(response.status)
-                                }
-                            })
-                        }
-                    }
-            },
-        ],
     }
     let table = init_table("comments_table", columns, data_json, final_extra_constructor_params, {no_multirow: true})
     table.on("rowSelectionChanged", function(data, rows){
@@ -1794,14 +1776,14 @@ function load_comments_table(data_json){
                     if (response.data) {
                         table.setData(response.data).then(function () {
                             comment_input.value = ""
-                            setTimeout(() => {alert(response.status)}, 10)
+                            setTimeout(() => {create_notification("Comment addition", response.status, "success")}, 10)
                         })
                     } else {
-                        alert(response.status)
+                        create_notification("Comment addition", response.status, "warning")
                     }
                 })
             } else {
-                alert("Please enter a non empty comment.")
+                create_notification("Comment addition", "Please enter a non-empty comment.", "warning")
             }
         })
 
@@ -1817,10 +1799,10 @@ function load_comments_table(data_json){
                 )).then(response => {
                     if (response.data) {
                         table.setData(response.data).then(function () {
-                            setTimeout(() => {alert(response.status)}, 10)
+                            setTimeout(() => {create_notification("Comment deletion", response.status, "info")}, 10)
                         })
                     } else {
-                        alert(response.status)
+                        create_notification("Comment deletion", response.status, "warning")
                     }
                 })
             }

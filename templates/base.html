@@ -26,6 +26,15 @@
   </head>
 
   <body>
+    <div class="notification-wrapper{%if request.COOKIES.sidebar_collapsed == 'false'%} notification-wrapper-shrunk{%endif%}">
+        <div class="notification">
+            <img src="{%static 'icons/success.svg'%}" data-path="{%static 'icons/'%}">
+            <div>
+                <h2><b></b></h2>
+                <p></p>
+            </div>
+        </div>
+    </div>
     {%for message in messages%}
         <input type="hidden" id="server_message" data-message="{{message}}" data-type="{{message.level_tag}}">  
     {%endfor%}
@@ -34,13 +43,16 @@
       <nav class="sidebar {%if request.COOKIES.sidebar_collapsed == 'true'%}sidebar-collapsed{%endif%}">
         <!-- home -->
         <div class="toggle-sidebar-container">
-          <img class="sidebar-icon" src="{% static 'images/UoG_colour.png'%}" style="width: 185px; height: 60px;">
+          <!-- <img class="sidebar-icon sidebar-icon-main" src="{% static 'images/fancy_logo_black.png'%}"> -->
+          <h2><b>Navigation menu</b></h2>
           <div id="toggle-sidebar">
             <span></span>
             <span></span>
             <span></span>
           </div>
         </div>
+
+        <div class="sidebar-separator"></div>
 
         <a href="{%url 'general:home'%}" title="Dashboard" {%if '/' == request.path%}class="selected-page"{%endif%}>
           <span>Dashboard</span>
@@ -82,20 +94,13 @@
             <span>Level progression rules</span>
             <img class="sidebar-icon color-img-blue-uofg" src="{% static 'icons/grade_settings.svg'%}">
         </a>
+
+        <div class="sidebar-separator"></div>
       </nav>
 
-      <div class="main-area{%if request.COOKIES.sidebar_collapsed == 'false'%} main-area-collapsed{%endif%}">
+      <div class="main-area{%if request.COOKIES.sidebar_collapsed == 'false'%} main-area-shrunk{%endif%}">
         <div class="header">
-            <div class="header-msg-area">
-                <div class="notification">
-                    <img src="{%static 'icons/success.svg'%}" data-path="{%static 'icons/'%}">
-                    <div>
-                        <h2><b></b></h2>
-                        <p></p>
-                    </div>
-                </div>
-            </div>
-            <a href="{%url 'general:home'%}"><h2><b>Welcome to UofG</b> <br>Exam board management system</h2></a>
+            <a class="welcome-title" href="{%url 'general:home'%}"><img src="{%static 'images/UoG_colour_crest.png'%}"><h2><b>Welcome to Univeristy of Glasgow</b><br>Exam board management system</h2></a>
             <div class="header-sections">
             </div>
             <form class="header-search" action="{% url 'general:global_search'%}" method="POST">
