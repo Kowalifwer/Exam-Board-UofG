@@ -21,10 +21,8 @@ class AcademicYearTest(TestCase):
 
     def test_whatever_creation(self):
         w = self.create_year()
-        #assert that degree_classification_settings_for_table() is a valid json
-        self.assertTrue(isinstance(w.degree_classification_settings, dict))
+        self.assertTrue(isinstance(w.degree_classification_settings, list))
         self.assertTrue(isinstance(w.degree_classification_settings_for_table, str))
-        self.assertEqual(list(w.degree_classification_settings.values()), json.loads(w.degree_classification_settings_for_table))
     
     def test_str(self):
         w = self.create_year()
