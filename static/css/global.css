@@ -553,10 +553,7 @@ body {
 .content-extra-header {
     padding: 17.5px var(--body-padding);
     height: calc(var(--header-height) / 1.5);
-}
-
-.main-area-shrunk .header, .main-area-shrunk .content-extra-header, .notification-wrapper-shrunk {
-    width: calc(100vw - var(--sidebar-width));
+    margin-top: -3px;
 }
 
 .notification-wrapper {
@@ -582,7 +579,7 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
-    padding: 0 200px 0 var(--body-padding);
+    padding: 0 15% 0 var(--body-padding);
     box-shadow: var(--header-shadow);
     cursor: pointer;
     box-sizing: border-box;
@@ -619,7 +616,7 @@ body {
 
 .notification:hover {
     /* white highlightsubtle shadow */
-    box-shadow: inset 0 0 0 1000px rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 0 0 1000px rgba(0, 0, 0, 0.33);
 }
 
 .notification:hover::after {
@@ -667,6 +664,10 @@ body {
     80% { transform: translate(-1px, -1px) rotate(0.5deg); }
     90% { transform: translate(1px, 2px) rotate(0deg); }
     100% { transform: translate(1px, -2px) rotate(-0.5deg); }
+}
+
+.main-area-shrunk .header, .main-area-shrunk .content-extra-header, .notification-wrapper-shrunk {
+    width: calc(100vw - var(--sidebar-width));
 }
 
 .header-sections {

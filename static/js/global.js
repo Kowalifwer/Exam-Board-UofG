@@ -20,7 +20,7 @@ function create_notification(heading="Client notification", message="Notificatio
     let message_container = notification.querySelector('p')
     let heading_container = notification.querySelector('b')
     //if notification is already visible, and the message is the same, we need to reset the timer, and create a shaking effect on the popup
-    if (message_container.innerHTML == message && heading_container.innerHTML == heading && notification.classList.contains("notification-visible")) {
+    if (message_container.innerHTML == message && heading_container.innerHTML == heading && notification.dataset.type == type && notification.classList.contains("notification-visible")) {
         clear_global_notification_timeout()
         //increase timer to the new timeout
         global_notification_timeout_function = setTimeout(close_notification, timeout)
@@ -35,6 +35,7 @@ function create_notification(heading="Client notification", message="Notificatio
         close_notification().then(() => {
             message_container.innerHTML = message
             heading_container.innerHTML = heading
+            notification.dataset.type = type
             
             let img_element = notification.querySelector('img')
             if (img_element.getAttribute("src") != `${img_element.dataset.path}${type}.svg`)
@@ -59,7 +60,7 @@ function create_server_notification() { // success, info, warning, error, and no
     //if at least one server message exists - create notifications for all of them
     let server_message = document.getElementById("server_message")
     if (server_message)
-        create_notification("Message from the server", server_message.dataset.message, type=server_message.dataset.type, timeout=55000)
+        create_notification("Message from the server", server_message.dataset.message, type=server_message.dataset.type, timeout=5000)
 }
 
 //this method will safely close the notification, and will return a promise, which will resolve when the notification is completely closed
@@ -77,7 +78,7 @@ function close_notification() {
                 setTimeout(function() {
                     notification.classList = "notification"
                     resolve()
-                }, 1500)
+                }, 1100)
             } else {
                 resolve()
             }
