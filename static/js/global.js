@@ -13,9 +13,10 @@ function wrap(el, wrapper) {
     return wrapper;
 }
 
+global_notification_timeout_function = null
+
 function create_notification(heading="Client notification", message="Notification from the client!", type="warning", timeout=5000) {
-    //type can be info, success, warning, error
-    close_notification().then(function () {
+    close_notification().then(() => {
         let notification = document.querySelector(".notification")
         let extra_header = document.querySelector(".content-extra-header")
         if (extra_header) {
@@ -28,9 +29,9 @@ function create_notification(heading="Client notification", message="Notificatio
             img_element.setAttribute("src", `${img_element.dataset.path}${type}.svg`)
         notification.classList.add("notification-visible")
         notification.classList.add("notification-" + type)
-        //on click - we call the close_notification function, which is called after the timeout. We need to bind the timeout to the function, so we can clear it
-        notification.onclick = close_notification.bind(setTimeout(close_notification, timeout))
-
+        //make sure we track after how long the notification should close
+        global_notification_timeout_function = setTimeout(close_notification, timeout)
+        notification.onclick = close_notification
     })
 }
 
@@ -43,11 +44,14 @@ function create_server_notification() { // success, info, warning, error, and no
 
 //this method will safely close the notification, and will return a promise, which will resolve when the notification is completely closed
 function close_notification() {
-    return new Promise((resolve) => {
+    //if there is a timeout function running, that means notification will close preemptively, so we need to clear the timeout
+    if (global_notification_timeout_function)
+        clearTimeout(global_notification_timeout_function)
+
+    return new Promise(function(resolve){
         let notification = document.querySelector(".notification")
         if (notification) {
             if (notification.classList.contains("notification-visible")) {
-                clearTimeout(this)
                 notification.classList.remove("notification-visible")
                 //if there is an extra header, we need to wait for the notification to close, and then show the extra header
                 let extra_header = document.querySelector(".content-extra-header")
@@ -62,7 +66,6 @@ function close_notification() {
                     resolve()
                 }, 750)
             } else {
-                // if the notification is not visible, means it is closed, so we can just resolve the promise
                 resolve()
             }
         }
