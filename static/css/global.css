@@ -30,8 +30,6 @@
     --p-c-text-main: rgba(var(--p-color), 1);
     --primary-color: #f5f5f5; /*gradients, some backgrounds, highlights, animations*/
     --secondary-color: #FFFFFA; /*text and gradients, backgrounds*/
-
-
     /* --p-color: 255,255,255;
 
     --primary-color: var(--uog-light-grey);
@@ -77,34 +75,6 @@
 
     --border-radius: 5px;
 }
-
-/* lexend-300 - latin */
-@font-face {
-    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
-    font-family: 'Lexend';
-    font-style: normal;
-    font-weight: 300;
-    src: url('../fonts/lexend-v17-latin-300.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+ */
-         url('../fonts/lexend-v17-latin-300.woff') format('woff'); /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-  }
-  /* lexend-regular - latin */
-  @font-face {
-    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
-    font-family: 'Lexend';
-    font-style: normal;
-    font-weight: 400;
-    src: url('../fonts/lexend-v17-latin-regular.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+ */
-         url('../fonts/lexend-v17-latin-regular.woff') format('woff'); /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-  }
-  /* lexend-700 - latin */
-  @font-face {
-    font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
-    font-family: 'Lexend';
-    font-style: normal;
-    font-weight: 700;
-    src: url('../fonts/lexend-v17-latin-700.woff2') format('woff2'), /* Chrome 36+, Opera 23+, Firefox 39+ */
-         url('../fonts/lexend-v17-latin-700.woff') format('woff'); /* Chrome 5+, Firefox 3.6+, IE 9+, Safari 5.1+ */
-  }
 
   /* inter-300 - latin */
 @font-face {
@@ -821,6 +791,7 @@ body {
     justify-content: center;
     align-items: center;
     overflow: auto;
+    margin-top: var(--header-height);
     backdrop-filter: blur(2px);
 }
 
