@@ -72,7 +72,6 @@ function close_notification() {
         if (notification) {
             if (notification.classList.contains("notification-visible")) {
                 notification.classList.remove("notification-visible")
-                console.log("notification should start closing")
                 //if there is an extra header, we need to wait for the notification to close, and then show the extra header
                 //we need to wait for the animation to finish, and then set the class to the default value, and resolve the promise
                 setTimeout(function() {
@@ -105,11 +104,14 @@ function toggle_based_on_sidebar_state(sidebar, hardset_state=null) {
     }
 
     let main_area = document.querySelector(".main-area")
+    let notification_wrapper = document.querySelector(".notification-wrapper")
     if (!sidebar_is_collapsed) {
-        main_area.classList.add("main-area-collapsed")
+        main_area.classList.add("main-area-shrunk")
+        notification_wrapper.classList.add("notification-wrapper-shrunk")
         sidebar.classList.remove("sidebar-collapsed")
     } else {
-        main_area.classList.remove("main-area-collapsed")
+        main_area.classList.remove("main-area-shrunk")
+        notification_wrapper.classList.remove("notification-wrapper-shrunk")
         sidebar.classList.add("sidebar-collapsed")
     }
 }
@@ -278,7 +280,6 @@ const Charts = {
             chart = (isElement(chart)) ? chart : document.getElementById(chart)
         }
         
-        console.log("initializing chart")
         this.chart = new Chart(chart, {
             type: (type) ? type : 'bar',
             data: (data) ? data : {
@@ -299,20 +300,14 @@ const Charts = {
             }
           });
         
-        console.log("chart initialized")
         return this
     },
     chart: null,
     load_with_table_data: function(table, population_function) {
-        console.log("loading chart with table data")
-        console.log(table)
         let data = population_function(table)
-        console.log(data)
-        console.log(this.chart)
         //population_function is a function that takes a table data object, and returns chart data object.
         this.chart.data = population_function(table)
         this.chart.update('active')
-        console.log("done!")
     },
     destroy: function() {
         this.chart.destroy()

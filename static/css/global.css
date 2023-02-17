@@ -73,7 +73,7 @@
     --sidebar-width-collapsed: 75px;
     --sidebar-icon-width: 40px;
 
-    --transition: transform 600ms ease, width 600ms ease, opacity 400ms, margin 600ms ease;
+    --transition: transform 600ms ease, width 600ms ease, opacity 400ms, margin 600ms ease, left 600ms;
 
     --border-radius: 5px;
 }
@@ -437,7 +437,7 @@ body {
     /* flex-grow: 1; */
 }
 
-.main-area.main-area-collapsed {
+.main-area.main-area-shrunk {
     margin-left: var(--sidebar-width);
     width: calc(100vw - var(--sidebar-width));
 }
@@ -555,17 +555,27 @@ body {
     height: calc(var(--header-height) / 1.5);
 }
 
-.main-area-collapsed .header, .main-area-collapsed .content-extra-header{
+.main-area-shrunk .header, .main-area-shrunk .content-extra-header, .notification-wrapper-shrunk {
     width: calc(100vw - var(--sidebar-width));
 }
 
-.notification {
+.notification-wrapper {
     position: fixed;
-    /* left: var(--sidebar-width-collapsed); */
+    left: var(--sidebar-width-collapsed);
     top: var(--header-height);
-    width: 100%;
+    width: calc(100vw - var(--sidebar-width-collapsed));
     background-color: transparent;
-    z-index: 10000;
+    z-index: 1100;
+    transition: var(--transition);
+}
+
+.notification-wrapper-shrunk {
+    left: var(--sidebar-width);
+    transition: var(--transition);
+}
+
+.notification {
+    position: relative;
     max-height: 0;
     transition: max-height 1.5s cubic-bezier(0.075, 0.82, 0.165, 1);
     overflow: hidden;
@@ -580,7 +590,8 @@ body {
 
 .notification-visible {
     max-height: 400px;
-    transition: max-height 3s;
+    /* make the cuic bezier to animate a slow opening of the notification */
+    transition: max-height 1.75s ease-in;
 }
 
 .notification img {
