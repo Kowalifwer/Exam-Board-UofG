@@ -398,6 +398,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         let select_element = string_to_html_element(
             `
                 <select>
+                    <option selected="selected" disabled="disabled">grade format</option>
                     <option value="I">band integer</option>
                     <option value="B">band letter</option>
                 </select>
@@ -408,7 +409,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         let select_download = string_to_html_element(
             `
                 <select>
-                    <option value=0>-export table-</option>
+                    <option value=0 selected="selected" disabled="disabled">export table</option>
                     <option value="xlsx">Excel</option>
                     <option value="pdf">PDF</option>
                     <option value="csv">CSV</option>

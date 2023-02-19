@@ -164,12 +164,23 @@ def home_view(request):
 
 def all_students_view(request):
     all_students = Student.objects.all()
+    context = {
+        "page_info" :json.dumps({
+            "title": f"All students",
+            "points_list": [
+                "This page allows you to view and access all the Students across all academic years.",
+                "Whilst this page can be useful for comparing the cohort averages, note that much more data is available on the individual course pages.",
+                "<b>How to access a given course page?:</b> Right click on the course, and select 'View Course' from the dropdown menu.",
+                "You have the option to moderate courses directly in this page, <b>however</b> it might be more clear to do so from the individual course page.",
+                "An additional header is provided which allows you to navigate across different years, to view all the courses offered."
+            ]
+        })}
     if is_fetching_table_data(request):   
         all_students_json = [student.get_data_for_table() for student in all_students]
         # return JsonResponse({'data': all_students_json, 'last_page': paginator.num_pages})
         return JsonResponse(all_students_json, safe=False)
 
-    return render(request, "general/all_students.html")
+    return render(request, "general/all_students.html", context)
 
 def all_courses_view(request, year=None):
     context = {}
