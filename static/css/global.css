@@ -274,7 +274,7 @@ button:not(.button_default), :where(input[type="text"], input[type="search"]):no
     transition: all 250ms;
 }
 
-button:not(.button_default), :where(input[type="text"]) {
+button:not(.button_default) {
     cursor: pointer;
 }
   
@@ -358,9 +358,9 @@ body {
     position: relative;
     display: flex;
     flex-direction: column;
-    width: 100%;
+    /* min-width: calc(100vw - var(--sidebar)); */
+    width: calc(100vw - var(--sidebar-width) - 3px);
 }
-
 
 .sidebar > * {
     display: flex;
@@ -535,7 +535,7 @@ body {
 }
 
 .notification-visible {
-    max-height: 400px;
+    max-height: 425px;
     /* make the cuic bezier to animate a slow opening of the notification */
     transition: max-height 1.75s ease-in;
 }
@@ -1013,22 +1013,13 @@ body {
 
 .student-page-top-section {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr auto;
     grid-auto-rows: 1fr;
     grid-column-gap: 20px;
-    /* margin-top: 25px; */
-    /* width: 100%; */
-}
-
-.student-page-top-section > :first-child {
-    flex-grow: 1;
-    flex-shrink: 1;
-    align-self: stretch;
 }
 
 .student-page-top-section > :last-child {
-    /* flex: 1; */
-    min-width: 750px;
+    min-width: 40vw;
 }
 
 #comments_table {
@@ -1101,7 +1092,8 @@ body {
 /* END OF COURSE PAGE */
 .tabulator {
     max-height: 600px;
-    /* max-width: 100% !important; */
+    max-width: fit-content;
+    overflow-x: auto;
     /* box-shadow: var(--shadow); */
     /* border: 1px solid rgba(var(--p-color), 0.55); */
     /* background-color: rgba(var(--p-color), 0.1); */
