@@ -79,7 +79,7 @@
 
     --extra-header-height: calc(var(--header-height) / 1.5);
 
-    --transition: transform 600ms ease, width 600ms ease, opacity 400ms, margin 600ms ease, left 600ms;
+    --transition: transform 600ms ease, width 600ms ease, opacity 400ms, margin 600ms ease, left 600ms, min-width 600ms;
 
     --border-radius: 5px;
 }
@@ -325,45 +325,42 @@ button:not(.button_default):hover:disabled {
 /* CSS */
 body {
     margin: 0;
-    height: 100%;
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 400px;
-    overflow: hidden;
+    width: 100vw;
+    overflow-y: hidden;
     background-color: var(--primary-color);
 }
 
 .body-inner-wrapper {
     display: flex;
+    flex-direction: row;
     width: 100%;
-    height: 100%;
+    height: 100vh;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 .sidebar {
     transition: var(--transition);
-    position: fixed;
-    width: var(--sidebar-width);
+    /* width: var(--sidebar-width); */
     min-height: 100%;
     background-color: var(--secondary-color);
     box-shadow: inset -2px 0 0 0 rgba(var(--p-color), 0.25), 2px 0 6px rgba(var(--p-color), 0.25);
     border-left: 3px solid rgba(var(--p-color), 0.35);
     z-index: 999;
-    overflow: visible;
+    min-width: var(--sidebar-width);
+    max-width: var(--sidebar-width);
+    margin-left: 0;
 }
 
 .main-area {
     transition: var(--transition);
-    margin-left: var(--sidebar-width-collapsed);
+    flex-grow: 1;
     position: relative;
-    width: calc(100vw - var(--sidebar-width-collapsed));
-    /* width: 100%; */
-    /* flex-grow: 1; */
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
-.main-area.main-area-shrunk {
-    margin-left: var(--sidebar-width);
-    width: calc(100vw - var(--sidebar-width));
-}
 
 .sidebar > * {
     display: flex;
@@ -392,10 +389,7 @@ body {
 .toggle-sidebar-container {
     height: var(--header-height);
     margin: 0;
-    
-    /* box shadow on the right */
-    /* box-shadow: rgba(var(--p-color), 0.20) 0 0 0 2px; */
-    border: 2px solid rgba(var(--p-color), 0.20);
+    border: 3px solid rgba(var(--p-color), 0.20);
     border-top: 1px solid rgba(var(--p-color), 0.20);
     border-left: none;
     cursor: pointer;
@@ -420,7 +414,7 @@ body {
 }
 
 .sidebar.sidebar-collapsed {
-    width: var(--sidebar-width-collapsed);
+    margin-left: calc(-1 * (var(--sidebar-width) - var(--sidebar-width-collapsed)));
 }
 
 .sidebar-separator {
@@ -428,46 +422,25 @@ body {
     height: 3px;
     width: 90%;
     background-color: rgba(var(--p-color), 0.25);
-    /* background-color: rgb(255, 204, 0); */
-    /* margin: 10px 0; */
-}
-
-.sidebar.sidebar-collapsed > * {
-    display: flex;
-    justify-content: flex-end;
-    transition: var(--transition);
-}
-
-.sidebar.sidebar-collapsed > * > :first-child {
-    display: none;
-    transition: var(--transition);
-}
-
-.content-wrapper {
-    padding-top: calc(var(--header-height) + 5px);
-    height: 100%;
-    width: 100%;
-    box-sizing: border-box;
 }
 
 .content-body {
-    padding: 25px var(--body-padding);
-    height: 100%;
+    padding: 35px var(--body-padding);
+    position:  relative;
     width: 100%;
     box-sizing: border-box;
-    min-height: 2000px;
-    overflow: scroll;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
-.extra-padding-top {
-    padding-top: calc(var(--extra-header-height) * 1.30);   
+.header {
+    width: 100%;
 }
 
-.header, .content-extra-header {
+.header-main, .header-extra {
     transition: var(--transition);
-    width: calc(100vw - var(--sidebar-width-collapsed) - 12px);
     padding: 0 var(--body-padding);
-    position: fixed;
+    position: relative;
     box-sizing: border-box;
     display: flex;
     justify-content: space-between;
@@ -476,22 +449,21 @@ body {
     background-color: var(--secondary-color);
     box-shadow: var(--header-shadow);
     border-top: 1px solid rgba(var(--p-color), 0.25);
-    border-right: 2px solid rgba(var(--p-color), 0.25);
+    border-right: 8px solid rgba(var(--p-color), 0.25);
     z-index: 1000;
-    margin-left: 3px;
 }
 
-.content-extra-header {
+.header-extra {
     /* border-left: 2px solid rgba(var(--p-color), 0.20); */
     padding: 0 var(--body-padding);
     height: var(--extra-header-height);
-    margin-top: -6px;
 
     /* give an inset shadow that makes it look like its inside the page */
     /* box-shadow: inset 2px 1px 3px rgba(var(--p-color), 0.45), var(--header-shadow); */
     box-shadow: var(--header-shadow);
     display: flex;
     justify-content: space-between;
+    margin-top: -1px;
     /* border-bottom: 1px solid rgba(var(--p-color), 0.20); */
 }
 
@@ -641,10 +613,6 @@ body {
     80% { transform: translate(-1px, -1px) rotate(0.5deg); }
     90% { transform: translate(1px, 2px) rotate(0deg); }
     100% { transform: translate(1px, -2px) rotate(-0.5deg); }
-}
-
-.main-area-shrunk .header, .main-area-shrunk .content-extra-header, .notification-wrapper-shrunk {
-    width: calc(100vw - var(--sidebar-width));
 }
 
 .header-sections {
@@ -1041,24 +1009,21 @@ body {
     min-height: 380px;
 }
 
-
-
 /* STUDENT PAGE */
 
 .student-page-top-section {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr 1fr;
     grid-auto-rows: 1fr;
     grid-column-gap: 20px;
-    margin-top: 25px;
-    width: 100%;
-    
+    /* margin-top: 25px; */
+    /* width: 100%; */
 }
 
 .student-page-top-section > :first-child {
-    /* flex-grow: 1;
-    flex-shrink: 1; */
-    /* align-self: stretch; */
+    flex-grow: 1;
+    flex-shrink: 1;
+    align-self: stretch;
 }
 
 .student-page-top-section > :last-child {

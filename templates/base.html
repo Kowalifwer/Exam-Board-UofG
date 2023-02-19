@@ -103,58 +103,59 @@
 
       <div class="main-area{%if request.COOKIES.sidebar_collapsed == 'false'%} main-area-shrunk{%endif%}">
         <div class="header">
-            <a class="welcome-title" href="{%url 'general:home'%}"><img src="{%static 'images/UoG_colour_crest.png'%}"><h2><b>Welcome to Univeristy of Glasgow</b><br>Exam board management system</h2></a>
-            <div class="header-sections">
-            </div>
-            <form class="header-search" action="{% url 'general:global_search'%}" method="POST">
-            {%csrf_token%}
-            <input type="text" name="global_search" placeholder="search student/course">
-            <button type="submit">
-                <img class="color-img-blue-uofg" src="{% static 'icons/search.png' %}" alt="submit" />
-            </button>
-            </form>
-            <div class="header-user-profile">
-            <img class="color-img-blue-uofg" src="{% static 'icons/profile.svg' %}">
-            <div>
+            <div class="header-main">
+                <a class="welcome-title" href="{%url 'general:home'%}"><img src="{%static 'images/UoG_colour_crest.png'%}"><h2><b>Welcome to Univeristy of Glasgow</b><br>Exam board management system</h2></a>
+                <div class="header-sections">
+                </div>
+                <form class="header-search" action="{% url 'general:global_search'%}" method="POST">
+                {%csrf_token%}
+                <input type="text" name="global_search" placeholder="search student/course">
+                <button type="submit">
+                    <img class="color-img-blue-uofg" src="{% static 'icons/search.png' %}" alt="submit" />
+                </button>
+                </form>
+                <div class="header-user-profile">
+                <img class="color-img-blue-uofg" src="{% static 'icons/profile.svg' %}">
+                <div>
+                    {%if request.user.is_authenticated%}
+                    <h3>{{request.user.get_name_verbose}}</h3>
+                    {%else%}
+                    <h3>Anonymous user</h3>
+                    {%endif%}
+                </div>
+                <div id="page_help">
+                    Click for help!
+                </div>
+                </div>
+                
                 {%if request.user.is_authenticated%}
-                <h3>{{request.user.get_name_verbose}}</h3>
+                    <a href="{%url 'general:logout' request.path%}"><button class="button-30">Logout</button></a>
                 {%else%}
-                <h3>Anonymous user</h3>
+                    <a href="{%url 'general:login' request.path%}"><button class="button-30">Login</button></a>
                 {%endif%}
             </div>
-            <div id="page_help">
-                Click for help!
-            </div>
-            </div>
-            
-            {%if request.user.is_authenticated%}
-                <a href="{%url 'general:logout' request.path%}"><button class="button-30">Logout</button></a>
-            {%else%}
-                <a href="{%url 'general:login' request.path%}"><button class="button-30">Login</button></a>
+            {%if all_years and request.user.is_authenticated%}
+                <div class="header-extra">
+                    <div class="content-years">
+                        {%for year in all_years%}
+                                <a title="View year {{year.obj.year}}" class="a-fancy{%if year.obj.is_current%} active-year{%else%} old-year{%endif%}{%if year.obj == selected_year%} selected-year{%endif%}" href="{{year.url}}">
+                                    <span>{{year.obj}}</span>
+                                </a>
+                        {%endfor%}
+                    </div>
+                    {%if all_levels%}
+                        <div class="content-years">
+                            {%for level in all_levels%}
+                                <a title="View {{level.title}}" class="a-fancy{%if level.level == selected_level%} selected-year{%endif%}" href="{{level.url}}">
+                                    <span>{{level.title}}</span>
+                                </a>
+                            {%endfor%}
+                        </div>
+                    {%endif%}
+                </div>
             {%endif%}
         </div>
-        <div class="content-wrapper">
-          {%if all_years and request.user.is_authenticated%}
-            <div class="content-extra-header">
-              <div class="content-years">
-                  {%for year in all_years%}
-                        <a title="View year {{year.obj.year}}" class="a-fancy{%if year.obj.is_current%} active-year{%else%} old-year{%endif%}{%if year.obj == selected_year%} selected-year{%endif%}" href="{{year.url}}">
-                            <span>{{year.obj}}</span>
-                        </a>
-                  {%endfor%}
-              </div>
-              {%if all_levels%}
-                <div class="content-years">
-                    {%for level in all_levels%}
-                        <a title="View {{level.title}}" class="a-fancy{%if level.level == selected_level%} selected-year{%endif%}" href="{{level.url}}">
-                            <span>{{level.title}}</span>
-                        </a>
-                    {%endfor%}
-                </div>
-              {%endif%}
-            </div>
-          {%endif%}
-          <div class="content-body{%if all_years and request.user.is_authenticated%} extra-padding-top{%endif%}">
+          <div class="content-body">
             {%if request.user.is_authenticated%}
               {%block body%}
               {%endblock%}
@@ -168,7 +169,6 @@
               </div>
             {%endif%}
           </div>
-        </div>
       </div>
     </div>
   </body>
