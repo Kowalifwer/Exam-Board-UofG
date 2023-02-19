@@ -103,7 +103,7 @@ function close_notification() {
                 setTimeout(function() {
                     notification.classList = "notification"
                     resolve()
-                }, 1000)
+                }, 1200)
             } else {
                 resolve()
             }

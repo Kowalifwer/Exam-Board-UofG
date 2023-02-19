@@ -137,25 +137,19 @@
           {%if all_years and request.user.is_authenticated%}
             <div class="content-extra-header">
               <div class="content-years">
-                <div>
                   {%for year in all_years%}
-                      <a title="View the year of {{year.obj.year}}" class="a-fancy{%if year.obj.is_current%} active-year{%else%} old-year{%endif%}{%if year.obj == selected_year%} selected-year{%endif%}" href="{{year.url}}">{{year.obj}}</a>
-                    {%if not forloop.last%}
-                      <span>></span>
-                    {%endif%}
+                        <a title="View year {{year.obj.year}}" class="a-fancy{%if year.obj.is_current%} active-year{%else%} old-year{%endif%}{%if year.obj == selected_year%} selected-year{%endif%}" href="{{year.url}}">
+                            <span>{{year.obj}}</span>
+                        </a>
                   {%endfor%}
-                </div>
               </div>
               {%if all_levels%}
                 <div class="content-years">
-                  <div>
                     {%for level in all_levels%}
-                      <a class="a-fancy{%if level.level == selected_level%} selected-year{%endif%}" href="{{level.url}}">{{level.title}}</a>
-                      {%if not forloop.last%}
-                        <span>></span>
-                      {%endif%}
+                        <a title="View {{level.title}}" class="a-fancy{%if level.level == selected_level%} selected-year{%endif%}" href="{{level.url}}">
+                            <span>{{level.title}}</span>
+                        </a>
                     {%endfor%}
-                  </div>
                 </div>
               {%endif%}
             </div>

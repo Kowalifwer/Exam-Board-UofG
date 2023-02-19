@@ -158,6 +158,8 @@ def home_view(request):
             
         return JsonResponse(all_data_json, safe=False)
 
+    AssessmentResult.objects.all()
+
     return render(request, "general/home.html", context)
 
 def all_students_view(request):

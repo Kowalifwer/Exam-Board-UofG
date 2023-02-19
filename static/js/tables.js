@@ -460,7 +460,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                 "<b>Resize columns:</b> Resize a column by dragging left/right edge of the column",
                 "<b>Row actions:</b> Right-click on a row, to get a menu with options relevant to that object.",
                 "<b>Show/hide columns:</b> Click on the 'Column manager' button to manage what columsn will be shown/hidden",
-                "<b>Expore table data:</b> Tables can be exported to Excel, PDF, CSV, and JSON. Click on the 'Export' button to export the table to one of these formats. Note that the export will be formatted according to the state of the table (accounting for hidden columns, grade format and deleted rows).",
+                "<b>Download table data:</b> Tables can be exported to Excel, PDF, CSV, and JSON. Click on the 'Export' button to export the table to one of these formats. Note that the export will be formatted according to the state of the table (accounting for hidden columns, grade format and deleted rows).",
                 "<b>Format grades:</b> Tables can be reformatted to show grades as band letters or band integers. Click on the 'Format' button to change the formatting of the table.",
                 "<b>Search for rows:</b> Some column headers have a text input box. Type in the box to search for rows that contain the text you typed.",
                 "<b>Group rows by column:</b> Very few column headers have 3 vertical dots. Clicking the dots will open a menu that allows you to group the rows by that column. Note that most tables come pre-grouped by the most relevant column.",
