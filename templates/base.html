@@ -108,26 +108,25 @@
                 <div class="header-sections">
                 </div>
                 <form class="header-search" action="{% url 'general:global_search'%}" method="POST">
-                {%csrf_token%}
-                <input type="text" name="global_search" placeholder="search student/course">
-                <button type="submit">
-                    <img class="color-img-blue-uofg" src="{% static 'icons/search.png' %}" alt="submit" />
-                </button>
+                    {%csrf_token%}
+                    <input type="text" name="global_search" placeholder="search student/course">
+                    <button type="submit">
+                        <img class="color-img-blue-uofg" src="{% static 'icons/search.png' %}" alt="submit" />
+                    </button>
                 </form>
                 <div class="header-user-profile">
-                <img class="color-img-blue-uofg" src="{% static 'icons/profile.svg' %}">
-                <div>
-                    {%if request.user.is_authenticated%}
-                    <h3>{{request.user.get_name_verbose}}</h3>
-                    {%else%}
-                    <h3>Anonymous user</h3>
-                    {%endif%}
+                    <img class="color-img-blue-uofg" src="{% static 'icons/profile.svg' %}">
+                    <div>
+                        {%if request.user.is_authenticated%}
+                        <h3>{{request.user.get_name_verbose}}</h3>
+                        {%else%}
+                        <h3>Anonymous user</h3>
+                        {%endif%}
+                    </div>
+                    <button id="page_help">
+                        page help
+                    </button>
                 </div>
-                <div id="page_help">
-                    Click for help!
-                </div>
-                </div>
-                
                 {%if request.user.is_authenticated%}
                     <a href="{%url 'general:logout' request.path%}"><button class="button-30">Logout</button></a>
                 {%else%}

@@ -384,14 +384,15 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     let wrapper = wrap(table_element, document.createElement('div'))
     wrapper.classList.add('tabulator-wrapper')
     table.getWrapper = () => wrapper
-    let table_components = document.createElement('div')
-    table_components.classList.add('tabulator-components')
-    wrapper.prepend(table_components)
 
     table.on("dataLoadedInitial", function(){
         for (let i = 0; i < table.extra_cols.length; i++){
             table.addColumn(table.extra_cols[i])
         }
+
+        let table_components = document.createElement('div')
+        table_components.classList.add('tabulator-components')
+        wrapper.prepend(table_components)
         
         table.reformatTable(default_formatter, "format_grade", custom_average_calculator)
         //handle formatting stuff
@@ -1747,6 +1748,7 @@ function load_comments_table(data_json){
         "autoResize": true,
         "height": "100%",
         "index": "id",
+        "renderVertical": "basic", //render 20 rows in buffer
         "placeholder":"There are no comments right now. Feel free to add the first comment!",
     }
     let table = init_table("comments_table", columns, data_json, final_extra_constructor_params, {no_multirow: true})
@@ -1757,6 +1759,8 @@ function load_comments_table(data_json){
             document.getElementById('delete_comments_button').classList.add("hidden")
         }
     })
+
+    console.log(table.options)
 
     table.on("tableBuilt", function(){
         let footer = table.getWrapper().querySelector('.tabulator-footer-contents')

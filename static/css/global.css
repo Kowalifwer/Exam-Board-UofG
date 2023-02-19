@@ -48,7 +48,7 @@
     --primary-color-dim: rgb(118,16,118,0.5); /*text and gradients, backgrounds*/
     --dark-color: var(--p-c-text-main)
     --shadow: 0px 6px 5px -1px rgba(var(--p-color), 0.6);
-    --body-padding: 50px;
+    --body-padding: 40px;
     --primary-button-offset: 50px;
     
     --first-color: rgba(146,225,234,1);
@@ -68,16 +68,17 @@
     --bad-red: #F15156;
 
     --hover-color: var(--third-color);
-    --select-color: var(--first-color);
+    --select-color: rgba(var(--p-color), 0.20);  
 
     --header-height: 85px;
     --header-shadow: 0 4px 3px -2px rgba(var(--p-color), 0.25), inset 0 -2px 0 0 rgba(var(--p-color), 0.25);
+
+    --extra-header-height: calc(var(--header-height) / 1.75);
 
     --sidebar-width: 325px;
     --sidebar-width-collapsed: 75px;
     --sidebar-icon-width: 40px;
 
-    --extra-header-height: calc(var(--header-height) / 1.5);
 
     --transition: transform 600ms ease, width 600ms ease, opacity 400ms, margin 600ms ease, left 600ms, min-width 600ms;
 
@@ -326,7 +327,7 @@ button:not(.button_default):hover:disabled {
 body {
     margin: 0;
     width: 100vw;
-    overflow-y: hidden;
+    overflow: hidden;
     background-color: var(--primary-color);
 }
 
@@ -365,8 +366,9 @@ body {
 .sidebar > * {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 10px;
-    padding: 11px 0;
+    height: calc(var(--sidebar-icon-width) * 1.4);
     padding-right: calc((var(--sidebar-width-collapsed) - var(--sidebar-icon-width)) / 2);
     box-sizing: border-box;
     white-space: nowrap;
@@ -418,14 +420,14 @@ body {
 }
 
 .sidebar-separator {
-    padding: 0;
-    height: 3px;
-    width: 90%;
+    padding: 10px 0;
+    height: 0px;
+    width: 0;
     background-color: rgba(var(--p-color), 0.25);
 }
 
 .content-body {
-    padding: 35px var(--body-padding);
+    padding: var(--body-padding);
     position:  relative;
     width: 100%;
     box-sizing: border-box;
@@ -518,6 +520,7 @@ body {
 .notification-wrapper-shrunk {
     left: var(--sidebar-width);
     transition: var(--transition);
+    width: calc(100vw - var(--sidebar-width));
 }
 
 .notification {
@@ -725,8 +728,33 @@ body {
 
 .tabulator-components {
     display: flex;
-    margin: 5px 0;
+    padding: 10px 5px;
+    margin-left: -2px;
     gap: 5px;
+    position: relative;
+    border : 3px solid rgba(var(--p-color), 0.45);
+    border-bottom: none;
+    border-radius: var(--border-radius);
+    border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+    width: fit-content;
+    max-width: 100%;
+    background-color: var(--secondary-color);
+    z-index: 2;
+}
+
+.tabulator-components::after {
+    content: "Table actions";
+    position: absolute;
+    top: -12px;
+    left: 5;
+    font-size: 15px;
+    background: linear-gradient(to bottom, transparent 50%, var(--secondary-color) 50%);
+    padding: 0 3px;
+    z-index: 200;
+    color: var(--info-color);
+    white-space: nowrap;
+    font-weight: 600;
 }
 
 .popup-wrapper {
@@ -975,7 +1003,7 @@ body {
 
 .collapsable-section > :first-child {
     margin: 0;
-    margin-bottom: 3px;
+    /* margin-bottom: 3px; */
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -983,7 +1011,7 @@ body {
     min-height: var(--extra-header-height);
     background-color: var(--secondary-color);
     gap: 5px;
-    border-bottom: 1px solid rgba(var(--p-color), 0.1);
+    box-shadow: inset 0 -1px 2px 1px rgba(var(--p-color), 0.1);
 }
 
 .collapsable-section > :last-child {
@@ -997,6 +1025,9 @@ body {
     /* box-shadow: inset rgba(var(--p-color), 0.05) 0 5px 3px 0; */
     /* border: 1px solid rgba(var(--p-color), 0.3); */
     /* box-shadow: inset rgba(var(--p-color), 0.05) 0 5px 3px 0; */
+    /* box shadow to appear on top and give 3d look */
+    /* box-shadow: 0 2px 4px 3px rgba(var(--p-color), 0.45); */
+    box-shadow: inset 0 1px 3px 1px rgba(var(--p-color), 0.1);
 }
 
 .collapsable-section .chart-block {
@@ -1019,13 +1050,15 @@ body {
 }
 
 .student-page-top-section > :last-child {
-    min-width: 40vw;
+    width: 40vw;
 }
 
 #comments_table {
     border: none;
     height: 100%;
     margin: 2px;
+    min-width: 100%;
+    box-shadow: none;
 }
 
 #comments_table .tabulator-col {
@@ -1224,7 +1257,7 @@ body {
 } */
 
 .tabulator-row.tabulator-row-even {
-    background-color: transparent;
+    background-color: rgb(251, 251, 255);
 }
 
 /* .tabulator-row.tabulator-selected {
