@@ -1,22 +1,10 @@
 //helper functions
 const chart_colors = ["#115f9a", "#1984c5", "#22a7f0", "#48b5c4", "#76c68f", "#a6d75b", "#c9e52f", "#d0ee11", "#d0f400"]
 const good_to_bad = ["#99FF99", "#CCFF99", "#FFFF99", "#FFFFCC", "#FFCC99", "#FF9999", "#FF6666", "#CC0000"]
-const c_good = chart_colors[8]
+const c_good = chart_colors[5]
 const c_mid = good_to_bad[4]
 const c_poor = good_to_bad[7]
 
-const chart_color_map = {
-    "MV": chart_colors[1],
-    "CW": chart_colors[2],
-    "CR": chart_colors[3],
-
-    "final": chart_colors[3],
-    "lvl3": chart_colors[4],
-    "lvl4": chart_colors[5],
-    "lvl5": chart_colors[6],
-    "team": chart_colors[7],
-    "individual": chart_colors[2],
-}
 const loading_spinner = `<div class="lds-ring"><div></div><div></div><div></div><div></div></div>`
 
 const preponderance_list = ["NA", "MV", "CW", "CR"]
@@ -88,18 +76,23 @@ const preponderance_formatter = function (cell) {
     if (element) {
         if (value == "N/A"){
             element.style.backgroundColor = good_to_bad[5]
+            element.classList.add("preponderance")
             element.title = "Not applicable"
         } else if (value == "NA") {
             element.style.backgroundColor = good_to_bad[0]
+            element.classList.add("preponderance")
             element.title = "No preponderance"
         } else if (value == "MV"){
             element.style.backgroundColor = chart_colors[1]
+            element.classList.add("preponderance")
             element.title = "Medical void"
         } else if (value == "CW"){
             element.style.backgroundColor = good_to_bad[4]
+            element.classList.add("preponderance")
             element.title = "Credit witheld"
         } else if (value == "CR"){
             element.style.backgroundColor = good_to_bad[6]
+            element.classList.add("preponderance")
             element.title = "Credit refused"
         }
     }
@@ -456,9 +449,9 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
         let unhide_rows = string_to_html_element(`<button id="unhide-rows" class="hidden">Unhide rows</button>`)
         let undelete_rows = string_to_html_element(`<button id="undelete-rows" class="hidden">Add back deleted rows</button>`)
-        let column_manager = string_to_html_element(`<button class="column-manager">Column manager</button>`)
-        let help_button = string_to_html_element(`<button class="help-button">Help</button>`)
-        let remove_row_groups = string_to_html_element(`<button class="remove-row-groups">Remove row groups</button>`)
+        let column_manager = string_to_html_element(`<button class="column-manager">column manager</button>`)
+        let help_button = string_to_html_element(`<button class="help-button">help</button>`)
+        let remove_row_groups = string_to_html_element(`<button class="remove-row-groups">remove row groups</button>`)
 
         remove_row_groups.addEventListener("click", function(){
             table.setGroupBy([])
@@ -539,7 +532,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table_wrapper.querySelector(".tabulator-components").appendChild(help_button)
 
         if (settings.course) {
-            let moderate_course_button = string_to_html_element(`<button class="tabulator-moderate">Moderate course</button>`)
+            let moderate_course_button = string_to_html_element(`<button class="tabulator-moderate">moderate course</button>`)
             moderate_course_button.addEventListener("click", function(e){
                 render_course_moderation_section(settings.course, table)
             })
@@ -782,7 +775,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
                 })
 
                 //make abc grades pleasant green color, d grade yellow, and e f g h red
-                let colors = [c_good,c_good,c_good,c_mid,c_poor,c_poor,c_poor,c_poor, chart_color_map["MV"]]
+                let colors = [c_good,c_good,c_good,c_mid,c_poor,c_poor,c_poor,c_poor, chart_colors[1]]
 
                 return {
                     data: {
@@ -928,11 +921,11 @@ function load_level_progression_table(level){
             // console.log(data)
             let message = ""
             if (value == "discretionary") {
-                message = `Students who might progress at schools discretion (${count})`
+                message = `Students who <span class="warning-text">might progress</span> at schools discretion (${count})`
             } else if (value == "no") {
-                message = `Students who will not progress (${count})`
+                message = `Students who <span class="error-text">will not</span> progress (${count})`
             } else if (value == "yes") {
-                message = `Students who are <span class="">guaranteed</span> to progress (${count})`
+                message = `Students who are <span class="success-text">guaranteed</span> to progress (${count})`
             }
             return message
         },

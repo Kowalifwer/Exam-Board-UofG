@@ -41,7 +41,7 @@
                 </div>
             </div>
             <div class="collapsable-section">
-                <h3><b>Performance statistics across all completed years</b> <img class='color-img-blue-uofg' title="You may hover over the chart elements to see more details. Additionally, you may toggle which data the chart shows, by left-clicking the legend elements." class="icon" src="{% static 'icons/info.svg'%}"></h3>
+                <h3><b>Performance statistics across all completed years</b> <img class='color-img-dark-blue-uofg icon' title="You may hover over the chart elements to see more details. Additionally, you may toggle which data the chart shows, by left-clicking the legend elements." class="icon" src="{% static 'icons/info.svg'%}"></h3>
                 <div class="chart-block">
                     <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
                     <canvas id="student_level_chart"></canvas>
@@ -49,10 +49,8 @@
             </div>
         </div>
     </div>
-
-    <p>If graduated: Do something about it!!!</p>
-
-    <p>Course grades for student:</p>
+    
+    <h1><b>Course grades for student:</b></h1>
     <div class="tabulator_table" id="courses_table" style="width: 100%;"></div>
     <script>
         load_courses_table({}, true, settings={student: JSON.parse(`{{student.get_data_for_table_json|safe}}`)})

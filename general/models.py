@@ -45,7 +45,7 @@ class AcademicYear(UUIDModel):
         return json.dumps(self.level_progression_settings[level])
 
     def __str__(self):
-        return f"{self.year}{'(Active)' if self.is_current else '(Inactive)'}"
+        return str(self.year)
 
 class LevelHead(UUIDModel):
     user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='level_head')
@@ -133,12 +133,12 @@ class Student(UUIDModel, CommentsForTableMixin):
         grad_diff = current_academic_year - self.end_academic_year
         link_to_relevant = reverse('general:degree_classification_exact', args=[5 if self.is_masters else 4, self.end_academic_year])
         if grad_diff > 0:
-            return mark_safe(f"Graduated {grad_diff} years ago. <a class='fancy_a' href='{link_to_relevant}'>View degree classification page</a>")
+            return mark_safe(f"Graduated {grad_diff} years ago. <br><a href='{link_to_relevant}'>View graduation cohort</a>")
         elif grad_diff == 0:
-            return mark_safe(f"Due to graduate this academic year. <a class='fancy_a' href='{link_to_relevant}'>View degree classification page</a>")
+            return mark_safe(f"Due to graduate this academic year. <br><a href='{link_to_relevant}'>View graduation cohort</a>")
         else:
             link_to_relevant = reverse('general:level_progression_exact', args=[self.current_level, self.end_academic_year])
-            return mark_safe(f"Due to graduate in {abs(grad_diff)} years. <a class='fancy_a' href='{link_to_relevant}'>View current level progression page</a>")
+            return mark_safe(f"Due to graduate in {abs(grad_diff)} years. <br><a href='{link_to_relevant}'>View graduation cohort</a>")
     
     def get_data_for_table(self, extra_data=None):
         table_data = {

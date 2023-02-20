@@ -13,9 +13,9 @@
             <div class="collapsable-section student-information-panel">
                 <h3>
                     {%if current_level == 4%}
-                        <b>BSc/BEng (Level 4) Honours Graduate data - {{selected_year.year}}</b>
+                        <b>BSc/BEng (Level 4) Honours Graduates in {{selected_year.year}}</b>
                     {%elif current_level == 5%}
-                        <b>MSc/MEng - Level 5 (M) Honours Graduates</b>
+                        <b>MSc/MEng - Level 5 (M) Honours Graduates in {{selected_year.year}}</b>
                     {%endif%}
                 </h3>
                 <div>
@@ -27,7 +27,7 @@
         </div>
         <div>
             <div class="collapsable-section">
-                <h3><b>Overall cohort distribution stats</b>  <img class="icon color-img-blue-uofg" title="You may hover over the chart elements to see more details. Additionally, you may toggle which data the chart shows, by left-clicking the legend elements." src="{% static 'icons/info.svg'%}"></h3>
+                <h3><b>Overall cohort performance distribution</b>  <img class="icon color-img-dark-blue-uofg" title="You may hover over the chart elements to see more details. Additionally, you may toggle which data the chart shows, by left-clicking the legend elements." src="{% static 'icons/info.svg'%}"></h3>
                 <div>
                     <div class="chart-block">
                         <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
@@ -45,6 +45,7 @@
         </div>
     </div>
 
+    <h1><b>Full cohort data</b></h1>
     <div class="tabulator_table" id="degree_classification_table" style="max-width: 1200px;"></div>
     <script>
         load_degree_classification_table(level=`{{current_level}}`)

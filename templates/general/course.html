@@ -49,8 +49,8 @@
         </div>
     </div>
 
-    <p>Students enrolled onto course</p>
-    <div class="tabulator_table" id="students_table" style="width: 100%;"></div>
+    <h1><b>Students enrolled onto course</b></h1>
+    <div class="tabulator_table" id="students_table"></div>
     <script>
         load_students_table({}, true, settings={course: JSON.parse(`{{current_course.get_data_for_table_json|safe}}`)})
     </script>

@@ -46,7 +46,6 @@
       <nav class="sidebar {%if request.COOKIES.sidebar_collapsed == 'true'%}sidebar-collapsed{%endif%}">
         <!-- home -->
         <div class="toggle-sidebar-container">
-          <!-- <img class="sidebar-icon sidebar-icon-main" src="{% static 'images/fancy_logo_black.png'%}"> -->
           <h2><b>Navigation menu</b></h2>
           <div id="toggle-sidebar">
             <span></span>
@@ -54,8 +53,6 @@
             <span></span>
           </div>
         </div>
-
-        <!-- <div class="sidebar-separator"></div> -->
 
         <a href="{%url 'general:home'%}" title="Dashboard" {%if '/' == request.path%}class="selected-page"{%endif%}>
           <span>Dashboard</span>

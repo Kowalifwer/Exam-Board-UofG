@@ -43,7 +43,7 @@
 
     --info-color: #005398;
     --error-color: rgb(185, 59, 59);
-    --warning-color: rgb(233, 176, 18); /*also used in one button*/
+    --warning-color: #f88e14; /*also used in one button*/
     --success-color: rgb(19, 137, 19);
 
     --primary-color-dim: rgb(118,16,118,0.5); /*text and gradients, backgrounds*/
@@ -166,6 +166,16 @@ p, h1, h2, h3, h4, h5, h6, a, li {
 
 .success-text {
     color: var(--success-color) !important;
+    margin: 0 !important;
+}
+
+.warning-text {
+    color: var(--warning-color) !important;
+    margin: 0 !important;
+}
+
+.error-text {
+    color: var(--error-color) !important;
     margin: 0 !important;
 }
 
@@ -340,7 +350,6 @@ input[type=checkbox]::after {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(var(--p-color), 0.10);
     border-radius: 3px;
     text-align: center;
     line-height: 1;
@@ -538,6 +547,10 @@ body {
 
 .active-year {
     color: var(--success-color) !important;
+}
+
+.old-year {
+    color: var(--warning-color) !important;
 }
 
 .notification-wrapper {
@@ -785,8 +798,7 @@ body {
 .tabulator-components::after {
     content: "Table actions";
     position: absolute;
-    top: -12px;
-    left: 5;
+    top: -11px;
     font-size: 15px;
     background: linear-gradient(to bottom, transparent 50%, var(--secondary-color) 50%);
     padding: 0 3px;
@@ -794,6 +806,15 @@ body {
     color: var(--info-color);
     white-space: nowrap;
     font-weight: 600;
+}
+
+.preponderance {
+    letter-spacing: 1px;
+    text-align: center;
+    box-shadow: 0 0 5px 1px rgba(var(--p-color), 0.10);
+    opacity: 90%;
+    font-weight: bold;
+    line-height: 1.5;
 }
 
 .popup-wrapper {
@@ -878,6 +899,10 @@ body {
     display: flex;
     align-items: center;
     gap: 5px;
+}
+
+.tabulator .tabulator-tableholder .tabulator-placeholder {
+    background-color: var(--secondary-color);
 }
 
 @keyframes tilt-shaking {
@@ -1065,6 +1090,12 @@ body {
     color: var(--p-c-text-main);
 }
 
+.collapsable-section b {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--p-c-text-main);
+}
+
 .collapsable-section > :last-child {
     display: flex;
     flex-direction: column;
@@ -1091,6 +1122,17 @@ body {
     min-height: 380px;
 }
 
+.collapsable-section a {
+    cursor: pointer;
+    color: var(--p-c-text-main);
+    font-weight: bold;
+}
+
+.collapsable-section a:hover {
+    color: var(--p-c-text-main);
+    text-decoration: underline;
+}
+
 /* STUDENT PAGE */
 
 .student-page-top-section {
@@ -1106,10 +1148,13 @@ body {
 
 #comments_table {
     border: none;
-    height: 100%;
     margin: 2px;
     min-width: 100%;
     box-shadow: none;
+}
+
+#comments_table .tabulator-table {
+    display: block;
 }
 
 #comments_table .tabulator-col {
@@ -1161,7 +1206,11 @@ body {
 }
 
 .student-information-panel p {
-    margin: 20px 0;
+    margin: 15px 0;
+}
+
+.student-information-panel .tabulator-linked-section p {
+    margin-bottom: 30px;
 }
 
 /* END OF STUDENT PAGE */
@@ -1206,7 +1255,7 @@ body {
 }
 
 .tabulator-header * {
-    color: var(--p-c-text-main) !important;
+    color: black !important;
 }
 
 .tabulator .tabulator-header, .tabulator .tabulator-header .tabulator-col {
@@ -1264,7 +1313,7 @@ body {
 .tabulator-placeholder-contents {
     color: rgba(var(--p-color), 0.9) !important;
     font-weight: normal !important;
-    margin-bottom: 17px;
+    margin: 15px
 }
 
 .tabulator-format-select {
@@ -1278,6 +1327,12 @@ body {
 .tabulator-row.tabulator-selected {
     background-color: var(--table-select-color) !important;
     color: white;
+}
+
+.tabulator-row.tabulator-selected .preponderance {
+    background-color: var(--table-select-color) !important;
+    color: white;
+    text-align: left;
 }
 
 .tabulator .tabulator-header .tabulator-col.tabulator-sortable.tabulator-col-sorter-element:hover {
