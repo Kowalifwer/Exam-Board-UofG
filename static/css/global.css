@@ -159,7 +159,12 @@ p, h1, h2, h3, h4, h5, h6, a, li {
 
 .info-text {
     color: var(--info-color) !important;
-    margin-left: 0 !important;
+    margin: 0 !important;
+}
+
+.success-text {
+    color: var(--success-color) !important;
+    margin: 0 !important;
 }
 
 .primary-text {
@@ -395,8 +400,12 @@ body {
     border-top: 1px solid rgba(var(--p-color), 0.20);
     border-left: none;
     cursor: pointer;
-    margin-bottom: 125px;
+    margin-bottom: calc(var(--extra-header-height) - 3px);
     background-color: var(--primary-color);
+}
+
+.toggle-sidebar-container * {
+    color:var(--p-c-text-main);
 }
 
 .sidebar > * > :first-child {
@@ -727,13 +736,15 @@ body {
 }
 
 .tabulator-components {
+    --border-color: rgba(var(
+    --p-color), 0.45);
     display: flex;
     padding: 10px 5px;
     margin-left: -2px;
     gap: 5px;
-    position: relative;
-    border : 3px solid rgba(var(--p-color), 0.45);
-    border-bottom: none;
+    border: px solid var(--border-color);
+    border: 3px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
     border-radius: var(--border-radius);
     border-bottom-right-radius: 0;
     border-bottom-left-radius: 0;
@@ -741,6 +752,10 @@ body {
     max-width: 100%;
     background-color: var(--secondary-color);
     z-index: 2;
+}
+
+.tabulator-components * {
+    font-weight: bold;
 }
 
 .tabulator-components::after {
@@ -774,35 +789,40 @@ body {
 
 .popup-inner {
     background-color: white;
-    border: 1px solid black;
     border-radius: var(--border-radius);
     position: relative;
     padding: 10px;
     max-height: 80%;
     max-width: 80%;
     overflow: auto;
-    box-shadow: 0 0 10px 0 rgba(var(--p-color), 0.55);
+    /* box-shadow: 0 0 10px 0 rgba(var(--p-color), 0.55); */
     z-index: 1000;
     display: flex;
     justify-content: center;
     align-items: center;
     overflow: auto;
+    border: 3px solid rgba(var(--p-color), 0.45);
+    box-shadow: 0 0 10px 0 rgba(var(--p-color), 0.55);
 }
 
 .popup-close-button {
     position: absolute;
     top: 0;
     right: 0;
-    padding: 5px 10px;
-    border: 1px solid black;
-    background-color: white;
+    padding: 10px 15px;
+    background: var(--secondary-color);
     z-index: 1001;
     cursor: pointer;
+    border: none;
+    outline: 3px solid rgba(var(--p-color), 0.45);
+    border-bottom-left-radius: var(--border-radius);
+    color: var(--error-color);
+    font-weight: bold;
 }
 
 .popup-close-button:hover {
     background-color: var(--error-color);
-    color: white;
+    color: var(--secondary-color);
 }
 
 .moderation-popup {
@@ -810,7 +830,7 @@ body {
 }
 
 .moderation-input-area {
-    margin: 20px 0;
+    margin: 40px 0 15px 0;
 }
 
 .hidden, .hidden-row {
@@ -895,6 +915,12 @@ body {
 
 .tabulator-menu-item {
     min-height: 30px;
+}
+
+.tabulator-alert-msg .tabulator-alert-state-msg {
+    border-color: rgba(var(--p-color), 0.45);
+    background-color: rgba(var(--p-color), 0.15);
+    color: rgba(var(--p-color), 1);
 }
 
 /* Close button toggle */
@@ -1131,7 +1157,7 @@ body {
     /* border: 1px solid rgba(var(--p-color), 0.55); */
     /* background-color: rgba(var(--p-color), 0.1); */
     background-color: white;
-    box-shadow: 0 0 0 2px rgba(var(--p-color), 0.15), 0px 2px 20px 1px rgba(var(--p-color), 0.30);
+    box-shadow: 0 0 0 2px rgba(var(--p-color), 0.45), 0px 2px 20px 1px rgba(var(--p-color), 0.30);
 }
 
 .tabulator-tableholder {
@@ -1178,6 +1204,7 @@ body {
 .tabulator-heading {
     margin: 10px 0 20px 0;
 }
+
 
 .tabulator-linked-section {
     /* padding: 10px;
