@@ -1,8 +1,10 @@
 //helper functions
-const c_good = "#7DDE92"
-const c_mid = "#FF9B71"
-const c_poor = "#F15156"
 const chart_colors = ["#115f9a", "#1984c5", "#22a7f0", "#48b5c4", "#76c68f", "#a6d75b", "#c9e52f", "#d0ee11", "#d0f400"]
+const good_to_bad = ["#99FF99", "#CCFF99", "#FFFF99", "#FFFFCC", "#FFCC99", "#FF9999", "#FF6666", "#CC0000"]
+const c_good = chart_colors[8]
+const c_mid = good_to_bad[4]
+const c_poor = good_to_bad[7]
+
 const chart_color_map = {
     "MV": chart_colors[1],
     "CW": chart_colors[2],
@@ -85,17 +87,20 @@ const preponderance_formatter = function (cell) {
     let element = cell.getElement()
     if (element) {
         if (value == "N/A"){
-            element.style.backgroundColor = "#E06666"
+            element.style.backgroundColor = good_to_bad[5]
+            element.title = "Not applicable"
         } else if (value == "NA") {
-            element.style.backgroundColor = "#BBDBB4"
+            element.style.backgroundColor = good_to_bad[0]
+            element.title = "No preponderance"
         } else if (value == "MV"){
-            element.style.backgroundColor = "#648DE5"
+            element.style.backgroundColor = chart_colors[1]
+            element.title = "Medical void"
         } else if (value == "CW"){
-            //set cell colour to dark gray
-            element.style.backgroundColor = "#EFF2F1"
+            element.style.backgroundColor = good_to_bad[4]
+            element.title = "Credit witheld"
         } else if (value == "CR"){
-            //set cell colour to dark red
-            element.style.backgroundColor = "#A64253"
+            element.style.backgroundColor = good_to_bad[6]
+            element.title = "Credit refused"
         }
     }
     return value
@@ -469,7 +474,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                 "<b>Download table data:</b> Tables can be exported to Excel, PDF, CSV, and JSON. Click on the 'Export' button to export the table to one of these formats. Note that the export will be formatted according to the state of the table (accounting for hidden columns, grade format and deleted rows).",
                 "<b>Format grades:</b> Tables can be reformatted to show grades as band letters or band integers. Click on the 'Format' button to change the formatting of the table.",
                 "<b>Search for rows:</b> Some column headers have a text input box. Type in the box to search for rows that contain the text you typed.",
-                "<b>Group rows by column:</b> Very few column headers have 3 vertical dots. Clicking the dots will open a menu that allows you to group the rows by that column. Note that most tables come pre-grouped by the most relevant column.",
+                "<b>Group rows by column:</b> Some column headers have 3 vertical dots. Clicking the dots will open a menu that allows you to group the table rows by that column. Note that most tables load pre-grouped, but you are free to regroup however you wish.",
                 "<b>Remove all row groups:</b> Click on the 'Remove all row groups' button to remove all row groups."
             ]
             create_notification("Table help", bullet_list_to_html_string(help_points), "info", 20000)
@@ -644,7 +649,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
 function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={'title': 'Students'}){
     let columns = [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
+        {title:"All", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
         {title: "GUID", field: "GUID", headerFilter: "input", frozen:true},
         {title: "Name", field: "name", headerFilter: "input"},
         {
@@ -709,9 +714,6 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
 
     table.on("tableBuilt", function() {
         table.setGroupHeader(function(value, count, data, group){
-            console.log(table.groupBy)
-            console.log(group)
-            console.log(data)
             return `Number of <span class='info-text'>${value}</span> students: <span class='success-text'>${count}</span>`; //return the header contents
         });
     })
@@ -930,7 +932,7 @@ function load_level_progression_table(level){
             } else if (value == "no") {
                 message = `Students who will not progress (${count})`
             } else if (value == "yes") {
-                message = `Students who are guaranteed to progress (${count})`
+                message = `Students who are <span class="">guaranteed</span> to progress (${count})`
             }
             return message
         },
@@ -1767,8 +1769,6 @@ function load_comments_table(data_json){
             document.getElementById('delete_comments_button').classList.add("hidden")
         }
     })
-
-    console.log(table.options)
 
     table.on("tableBuilt", function(){
         let footer = table.getWrapper().querySelector('.tabulator-footer-contents')
