@@ -57,6 +57,10 @@ const columnHeaderGroupBy = [
         action:function(e, column){
             let table = column.getTable()
             table.setGroupBy(column.getField());
+            table.setGroupHeader(function(value, count, data, group) {
+                return `<div class="tabulator-group-toggle">Grouped by '<span class="info-text">${column.getDefinition().title}</span>' column. Showing rows with value: '<span class="info-text">${value}</span>'   (<span class="success-text">${count} items</span>)</div>`
+            }
+        );
         },
     }
 ]
@@ -641,14 +645,15 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={'title': 'Students'}){
     let columns = [
         {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
+        {title: "GUID", field: "GUID", headerFilter: "input", frozen:true},
         {title: "Name", field: "name", headerFilter: "input"},
         {
             title: "Degree info",
             columns: [
-                {title: "Title", field: "degree_title"},
+                {title: "Title", field: "degree_title", headerMenu: columnHeaderGroupBy},
                 {title: "Name", field: "degree_name"},
-                {title: "Masters?", field: "is_masters", formatter: "tickCross"},
-                {title: "Faster route?", field: "is_faster_route", formatter: "tickCross"},
+                {title: "Masters?", field: "is_masters", formatter: "tickCross", headerMenu: columnHeaderGroupBy},
+                {title: "Faster route?", field: "is_faster_route", formatter: "tickCross", headerMenu: columnHeaderGroupBy},
             ],
             "headerHozAlign": "center",
         },
@@ -704,7 +709,10 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
 
     table.on("tableBuilt", function() {
         table.setGroupHeader(function(value, count, data, group){
-            return `Number of ${value} students:<span class='info-text'>${count}</span>`; //return the header contents
+            console.log(table.groupBy)
+            console.log(group)
+            console.log(data)
+            return `Number of <span class='info-text'>${value}</span> students: <span class='success-text'>${count}</span>`; //return the header contents
         });
     })
 
@@ -861,17 +869,17 @@ function load_level_progression_table(level){
             columns: [
                 {title: "Title", field: "degree_title"},
                 {title: "Name", field: "degree_name"},
-                {title: "Masters?", field: "is_masters", formatter: "tickCross"},
-                {title: "Faster route?", field: "is_faster_route", formatter: "tickCross"},
+                {title: "Masters?", field: "is_masters", formatter: "tickCross", headerMenu: columnHeaderGroupBy},
+                {title: "Faster route?", field: "is_faster_route", formatter: "tickCross", headerMenu: columnHeaderGroupBy},
             ],
             headerHozAlign: "center",
         },
         {
             title: "Year data",
             columns: [
-                {title: "Current level", field: "current_year"},
-                {title: "Start year", field: "start_year"},
-                {title: "End year", field: "end_year"},
+                {title: "Current level", field: "current_year", headerMenu: columnHeaderGroupBy},
+                {title: "Start year", field: "start_year", headerMenu: columnHeaderGroupBy},
+                {title: "End year", field: "end_year", headerMenu: columnHeaderGroupBy},
             ],
             headerHozAlign: "center",
         },
@@ -886,7 +894,7 @@ function load_level_progression_table(level){
         {
             title: `Cumulative number of level ${level} credits graded at band`,
             columns: [
-                {title: "Total", field: "n_credits"},
+                {title: "Total", field: "n_credits", headerMenu: columnHeaderGroupBy},
                 {title: "> A", field: "greater_than_a"},
                 {title: "> B", field: "greater_than_b"},
                 {title: "> C", field: "greater_than_c"},
@@ -1040,23 +1048,23 @@ function load_degree_classification_table(level) {
         {
             title: "Degree info",
             columns: [
-                {title: "Title", field: "degree_title"},
+                {title: "Title", field: "degree_title", headerMenu: columnHeaderGroupBy},
                 {title: "Name", field: "degree_name"},
-                {title: "Masters?", field: "is_masters", formatter: "tickCross"},
-                {title: "Faster route?", field: "is_faster_route", formatter: "tickCross"},
+                {title: "Masters?", field: "is_masters", formatter: "tickCross", headerMenu: columnHeaderGroupBy},
+                {title: "Faster route?", field: "is_faster_route", formatter: "tickCross", headerMenu: columnHeaderGroupBy},
             ],
             "headerHozAlign": "center",
         },
         {
             title: "Year data",
             columns: [
-                {title: "Current level", field: "current_year"},
-                {title: "Start year", field: "start_year"},
-                {title: "End year", field: "end_year"},
+                {title: "Current level", field: "current_year", headerMenu: columnHeaderGroupBy},
+                {title: "Start year", field: "start_year", headerMenu: columnHeaderGroupBy},
+                {title: "End year", field: "end_year", headerMenu: columnHeaderGroupBy},
             ],
             "headerHozAlign": "center",
         },
-        {title: "Degree classification", field: "class"},
+        {title: "Degree classification", field: "class", headerMenu: columnHeaderGroupBy},
         {title: "Final band", field: "final_band"},
         {title: "Final GPA", field: "final_gpa", bottomCalc: custom_average_calculator},
         {title: "L5 band", field: "l5_band"},
@@ -1344,9 +1352,9 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
         {title: "Code", field: "code", headerFilter: "input", frozen:true},
         {title: "Name", field: "name", headerFilter: "input"},
         {title: "Academic year", field: "academic_year", headerMenu: columnHeaderGroupBy},
-        {title: "Credits", field: "credits", bottomCalc: "sum"},
-        {title: "Taught now?", field: "is_taught_now", formatter: "tickCross"},
-        {title: "Moderated?", field: "is_moderated", formatter: "tickCross"},
+        {title: "Credits", field: "credits", bottomCalc: "sum", headerMenu: columnHeaderGroupBy},
+        {title: "Taught now?", field: "is_taught_now", formatter: "tickCross", headerMenu: columnHeaderGroupBy},
+        {title: "Moderated?", field: "is_moderated", formatter: "tickCross", headerMenu: columnHeaderGroupBy},
     ]
 
     let groupBy = ['academic_year']

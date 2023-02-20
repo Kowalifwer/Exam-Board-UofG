@@ -404,6 +404,7 @@ def course_view(request, code, year):
             f"This page provides all the information about the course: <b>'{context['current_course']}'</b> offered in <b>'{year}'</b>.",
             "Each row details the results obtained by a student, across all the assessed content of the course.",
             "Each assessed piece of work is grouped by assessment type, which can vary from course to course (eg. some courses will have group projects, some will have individual projects, and most will have exams.).",
+            "Assessment order is random, so it might be useful to rearrange the columns, before exporting/printing the table."
             "A students preponderance history can be viewed and modified by right clicking on the student row and selecting the relevant option from the dropdown menu.",
             "An additional header is provided which allows you to navigate across other years where this course has been offered."
             "You may also jump to any Student of interest, by right-clicking on the student row and selecting 'View Student page' from the dropdown menu.",
