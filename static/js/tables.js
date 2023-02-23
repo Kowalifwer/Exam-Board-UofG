@@ -129,13 +129,6 @@ const formatter_to_band_integer = function(cell, formatterParams, onRendered){
     return parseFloat(cell.getValue()).toFixed(2)
 }
 
-// const formatter_to_percentage = function(cell, formatterParams, onRendered){
-//     if (is_preponderance(cell)) {
-//         return preponderance_formatter(cell)
-//     }
-//     return cell.getValue() + "%"
-// }
-
 const custom_average_calculator = function(values, data, calcParams){
     let total = 0;
     let count = 0;
@@ -182,6 +175,14 @@ const custom_average_calculator = function(values, data, calcParams){
 
 const default_formatter = formatter_to_band_integer
 
+//this function can be used to create instantiate a Tabulator table, with various settings and parameters
+// table_id - can be an ID of a table element, or a DOM element directly
+// columns - an array of column definitions, for the table. See https://tabulator.info/docs/5.4/columns
+// prefil_data - OPTIONAL PARAMETER: you can provide the data to be loaded into the table. 
+// Alternatively, leaving this blank will cause the table to fetch data from the server.
+// note that by default, perfil_data fetches data from the url of page current page that you are on.
+// extra_constructor_params - OPTIONAL PARAMETER: you can provide extra parameters to pass to the Tabulator constructor. These parameters will be merged with the default parameters.
+// settings - OPTIONAL PARAMETER: these settings are used to configure the table, and are not passed to the Tabulator constructor. Generally used to store things like the title of the table, some metadata, as well as header configurations.
 function init_table(table_id, columns, prefil_data = null, extra_constructor_params = {}, settings={}) {
     let title = ""
     if (settings.title)
@@ -190,80 +191,70 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     let table_constructor = {
         columns: columns,
         pagination: true,
-        paginationMode: "local",
-        columnHeaderVertAlign:"middle",
+        paginationMode: "local", //all data will be loaded at once, and then paginated locally
+        columnHeaderVertAlign:"middle", //center column headers vertically
 
-        selectable:true,
+        selectable:true, //make table ROWS selectable
         rowHeight: 30,
-        groupToggleElement: "header",
+        groupToggleElement: "header", //toggle ROW groups by clicking header
 
-        autoResize: false,
+        autoResize: false, 
 
-        // height: 700,
-        // maxHeight: "800px",
-        placeholder: "Table is empty",
+        placeholder: "Table is empty", //placeholder when no data in the table
 
-        paginationSize: 100,
-        paginationSizeSelector:[25, 50, 100, 1000],
+        paginationSize: 100, //number of rows to display per page by default
+        paginationSizeSelector:[25, 50, 100, 1000], //allow user to select number of rows to be shown per page
 
-        layout: "fitDataFill", //"fitColumns", //fitDataStretch
+        layout: "fitDataStretch", //"fitColumns", //fitDataStretch //fitDataFill
 
-        movableColumns: true,
+        movableColumns: true, //allow user to move columns around
 
-        dataLoaderLoading:`<span>Loading ${title} table data</span>`,
-        // layoutColumnsOnNewData:true
+        dataLoaderLoading:`<span>Loading ${title} table data</span>`, //message that is displayed when data loading into table (usually from ajax request)
+
+        //config for table download
         downloadConfig:{
             columnHeaders:true, //do not include column headers in downloaded table
             columnGroups:true, //do not include column groups in column headers for downloaded table
             rowGroups:false, //do not include row groups in downloaded table
             columnCalcs:false, //do not include column calcs in downloaded table
         },
-        rowContextMenu: [],
-
-        rowFormatter:function(row){
-            //row - row component
-            
-            var data = row.getData();
-            
-            if(data.col == "blue"){
-                row.getElement().style.backgroundColor = "#1e3b20";
-            }
-        },
-        //downloadRowRange:"selected", //download selected rows
+        rowContextMenu: [], //intialize right-click row actions to be empty
     }
 
-    if (prefil_data){
+    if (prefil_data){ //if we are pre-filling the table with data, then we don't need to fetch data from the server
         table_constructor.data = prefil_data
-    } else {
+    } else { //otherwise, we need to fetch data from the server
         table_constructor.ajaxURL = window.location.href
+        if (settings.api_table_fetch) { //if api_table_fetch is passed in settings, then we fetch data from the api_table endpoint (not current url)
+            table_constructor.ajaxURL += `api_table/${settings.api_table_fetch}`  
+        }
         table_constructor.ajaxParams = {
-            "fetch_table_data": true,
+            "fetch_table_data": true, //this is a flag that the server uses to determine if it should return table data
         }
         table_constructor.ajaxConfig = "GET"
         table_constructor.ajaxResponse = function(url, params, response) {
-            if (typeof response.extra_cols !== 'undefined') {
+            if (typeof response.extra_cols !== 'undefined') { //if the server returns extra columns (not defined locally in the columns parameter), then we add them to the table
                 table.extra_cols = response.extra_cols
-                table.dispatchEvent("dataLoadedInitial")
+                table.dispatchEvent("dataFetchedFromServer")
                 return response.data
-            } else {
-                table.dispatchEvent("dataLoadedInitial")
+            } else { //otherwise, we just return the data
+                table.dispatchEvent("dataFetchedFromServer")
                 return response
             }
         }
     }
 
-    for (let key in extra_constructor_params){
-        table_constructor[key] = extra_constructor_params[key]
-    }
-    if (!settings.no_multirow) {
+    table_constructor = {...table_constructor, ...extra_constructor_params} //merge the settings with the table constructor
+
+    if (!settings.no_multirow) { //determine if we add multi-row actions to the table (such as hiding or deleting rows)
         table_constructor.rowContextMenu.push({
-            separator: true
+            separator: true //add a separator before we add the multi-row actions
         })
         table_constructor.rowContextMenu.push({
-            label:"<div class='inline-icon' title='The following actions will affect all the selected rows. Note that all the actions in this category are reversible - so do not worry if you accidentally click something.'><img class='color-img-blue-uofg' src='/static/icons/info.svg'></i><span>Multi-row actions</span></div>",
+            label:"<div class='inline-icon' title='The following actions will affect all the selected rows. Note that all the actions in this category are reversible - so do not worry if you accidentally click something.'><img class='color-icon-theme' src='/static/icons/info.svg'></i><span>Multi-row actions</span></div>",
             menu:[
-                {
-                    label:"<div class='inline-icon' title='Note that this is simply hiding the rows, meaning no table data gets manipulated.'><img class='color-img-blue-uofg' src='/static/icons/info.svg'></i><span>Hide row(s)</span></div>",
+                { //hide rows action
+                    label:"<div class='inline-icon' title='Note that this is simply hiding the rows, meaning no table data gets manipulated.'><img class='color-icon-theme' src='/static/icons/info.svg'></i><span>Hide row(s)</span></div>",
                     action:function(e, row){
                         let selected_rows = table.getSelectedRows()
                         selected_rows.forEach(function(inner_row){
@@ -275,12 +266,12 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                         }
                     }
                 },
-                {
-                    label:"<div class='inline-icon' title='Note that this action properly removes data from the table (locally, and not from the database), - this can be useful for preparing the table for data extraction, such as generating an excel file, for example.'><img class='color-img-blue-uofg' src='/static/icons/info.svg'></i><span>Delete row(s)</span></div>",
+                { //delete rows action
+                    label:"<div class='inline-icon' title='Note that this action properly removes data from the table (locally, and not from the database), - this can be useful for preparing the table for data extraction, such as generating an excel file, for example.'><img class='color-icon-theme' src='/static/icons/info.svg'></i><span>Delete row(s)</span></div>",
                     action:function(e, row){
                         let selected_rows = table.getSelectedRows()
                         selected_rows.forEach(function(inner_row){
-                            table.deleted_rows.push(inner_row.getData())
+                            table.deleted_rows.push(inner_row.getData()) //keep track of the deleted rows
                             inner_row.delete()
                         })
                         if (table.deleted_rows) {
@@ -295,14 +286,14 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     let table_element = (isElement(table_id)) ? table_id : document.getElementById(table_id)
     table_element.dataset.edit_mode = 0
     let table = new Tabulator(table_element, table_constructor)
-    // console.log(table.options)
-    table.extra_cols = []
+    
+    //attaching some extra properties and methods to the table object
     table.settings = settings
-    // table.get_cols = columns
-
+    table.extra_cols = []
     table.hidden_rows = []
     table.deleted_rows = []
 
+    //this creates a table notification, which is more noticeable than a table heading. It is displayed at the top of the table
     table.addNotification = function(message="Table in edit mode! Click on any of the <span class='tabulator-notification-hint'>outlined cells</span>, to edit the data inside.") {
         let notification = document.createElement('div')
         notification.classList.add('tabulator-notification')
@@ -317,78 +308,72 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         }
     }
 
+    //this creates a table heading, which is a message that is displayed at the top of the table
     table.addHeading = function(message) {
         let heading = document.createElement('div')
         heading.classList.add('tabulator-heading')
         heading.innerHTML = message
         table.getWrapper().prepend(heading)
     }
-    table.dataLoadedInitial = false
 
-    table.getElement = () => table_element
+    table.dataFullyLoaded = false
+
+    table.getElement = () => table_element //returns table DOM element
+
+    //reformats the table, and applies a formatter to all the cells in the table that have a provided cssClass.
     table.reformatTable = function(formatter=null, cssClass=null, new_bottom_calc_function=null) {
-        let existing_cols = {}
-        table.getColumns().forEach(function(col){
-            var parent_col = col.getParentColumn()
+        let existing_cols = new Set()
+        for (let col of table.getColumns()) {
+            let parent_col = col.getParentColumn()
             if (parent_col) {
-                var parent_defition = parent_col.getDefinition()
-                existing_cols[parent_defition.title] = parent_defition
+                existing_cols.add(parent_col.getDefinition())
             } else {
-                var col_definition = col.getDefinition()
-                existing_cols[col_definition.title] = col_definition
+                existing_cols.add(col.getDefinition())
             }
-        });
-
-        const downloadAccessor = function(value, data, type, params, column){
-            //mimic the behavior of the object (cell) that gets passed to the formatter. Doing so, will allow downloads to be formatted the same way as the table
+        }
+        const downloadFormatter = function(value, data, type, params, column){ //this function ensures that the downloaded table data is also formatted the same way as the table.
+            //formatters take cells with various expected methods and attributes. We have to convert our value into a cell object, so that the formatter can work with it.
             return formatter({
                 getValue: () => value,
                 getElement: () => null,
             })
         }
 
-        var extract_cols = Object.values(existing_cols)
-        extract_cols.forEach(function(col){
-            if (col.columns) {
-                col.columns.forEach(function(col_inner) {
-                    if (col_inner.cssClass && col_inner.cssClass.includes(cssClass)) {
-                        if (formatter) {
-                            col_inner.formatter = formatter
-                            col_inner.accessorDownload = downloadAccessor
-                            if (new_bottom_calc_function) {
-                                col_inner.bottomCalc = new_bottom_calc_function
-                                col_inner.bottomCalcFormatter = formatter
-                            }
-                        }
-                        else
-                            delete col_inner.formatter
+        const handle_column_formatting = (col) => {
+            if (col.cssClass && col.cssClass.includes(cssClass)) {
+                if (formatter) { //if we have a formatter, we add it to the column
+                    col.formatter = formatter
+                    col.accessorDownload = downloadFormatter
+                    if (new_bottom_calc_function) { //if we have a bottom calc function, we add it and apply the formatter to it as well
+                        col.bottomCalc = new_bottom_calc_function
+                        col.bottomCalcFormatter = formatter
                     }
-                })
-            } else {
-                if (col.cssClass && col.cssClass.includes(cssClass)) {
-                    if (formatter) {
-                        col.formatter = formatter
-                        col.accessorDownload = downloadAccessor
-                        if (new_bottom_calc_function) {
-                            col.bottomCalc = new_bottom_calc_function
-                            col.bottomCalcFormatter = formatter
-                        }
-                    }
-                    else
-                        delete col.formatter
                 }
+                else
+                    delete col.formatter
             }
-        })
-        table.setColumns(extract_cols)
-        table.dataLoadedInitial = true
+        }
+
+        for (let col of existing_cols) { //handles all columns - including nested columns
+            if (col.columns) {
+                for (let j = 0; j < col.columns.length; j++) {
+                    let col_inner = col.columns[j]
+                    handle_column_formatting(col_inner)
+                }
+            } else {
+                handle_column_formatting(col)
+            }
+        }
+        table.setColumns(existing_cols)
+        table.dataFullyLoaded = true
     }
 
     let wrapper = wrap(table_element, document.createElement('div'))
     wrapper.classList.add('tabulator-wrapper')
     table.getWrapper = () => wrapper
 
-    table.on("dataLoadedInitial", function(){
-        for (let i = 0; i < table.extra_cols.length; i++){
+    table.on("dataFetchedFromServer", function(){
+        for (let i = 0; i < table.extra_cols.length; i++){ //add extra columns, if any were added from the server.
             table.addColumn(table.extra_cols[i])
         }
 
@@ -396,8 +381,8 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table_components.classList.add('tabulator-components')
         wrapper.prepend(table_components)
         
-        table.reformatTable(default_formatter, "format_grade", custom_average_calculator)
-        //handle formatting stuff
+        table.reformatTable(default_formatter, "format_grade", custom_average_calculator) //format the table gradesr
+
         let select_element = string_to_html_element(
             `
                 <select>
@@ -477,13 +462,29 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             var columns = table.getColumns();
             var menu_container = document.createElement("div");
             menu_container.classList = "tabulator-columns-menu";
-            menu_container.width = "200px";
-            menu_container.height = "500px";
 
-            for(let column of columns){
+            //add title to menu
+            var title = document.createElement("h3");
+            title.textContent = "Column manager";
+            menu_container.appendChild(title);
+
+            let current_parent = null
+            for (let column of columns){
                 if (!column.getDefinition().title || column.getDefinition().title == "hidden")
                     continue
-                //create checkbox element using font awesome icons
+
+                let parent_column = column.getParentColumn()
+                let parent_title = document.createElement("p")
+                parent_title.textContent = ""
+                if (parent_column && parent_column != current_parent) {
+                    parent_title.textContent = parent_column.getDefinition().title
+                    menu_container.appendChild(parent_title)
+                    current_parent = parent_column
+                } else if (!parent_column && current_parent) {
+                    menu_container.appendChild(parent_title)
+                    current_parent = null
+                }
+
                 let checkbox = document.createElement("input");
                 checkbox.type = "checkbox";
                 checkbox.checked = column.isVisible();
@@ -543,7 +544,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     })
 
     table.on("dataProcessed", function(){
-        if (table.dataLoadedInitial) {
+        if (table.dataFullyLoaded) {
             table.reloadCharts()
             table.reloadContent()
             document.querySelectorAll(".lds-ring").forEach(function(select){
@@ -642,9 +643,9 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
 function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={'title': 'Students'}){
     let columns = [
-        {title:"All", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
+        {title:"Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
         {title: "GUID", field: "GUID", headerFilter: "input", frozen:true},
-        {title: "Name", field: "name", headerFilter: "input"},
+        {title: "Full name", field: "name", headerFilter: "input"},
         {
             title: "Degree info",
             columns: [
@@ -687,7 +688,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
     ]
     if (settings.course) {
         rowContextMenu.push({
-            label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img class='color-img-blue-uofg' src='/static/icons/info.svg'></i><span>Student grades and preponderance(popup)</span></div>",
+            label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img class='color-icon-theme' src='/static/icons/info.svg'></i><span>Student grades and preponderance(popup)</span></div>",
             action: function(e, row){
                 create_student_course_detailed_table_popup(row.getData(), settings.course.course_id, row.getTable())
             }
@@ -856,9 +857,9 @@ function load_level_progression_table(level){
     }
 
     let columns = [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
+        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
         {title: "GUID", field: "GUID", headerFilter: "input", frozen: true},
-        {title: "Name", field: "name", headerFilter: "input"},
+        {title: "Full name", field: "name", headerFilter: "input"},
         {
             title: "Degree info",
             columns: [
@@ -933,7 +934,7 @@ function load_level_progression_table(level){
 
     //on data loeaded, sort by final_gpa
     table.on("dataProcessed", function(){
-        if (table.dataLoadedInitial)
+        if (table.dataFullyLoaded)
             table.setSort('final_gpa', 'dsc')
     })
 
@@ -1037,9 +1038,9 @@ function load_degree_classification_table(level) {
     }
 
     let columns = [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
+        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
         {title: "GUID", field: "GUID", headerFilter: "input", "frozen": true},
-        {title: "Name", field: "name", headerFilter: "input"},
+        {title: "Full name", field: "name", headerFilter: "input"},
         {
             title: "Degree info",
             columns: [
@@ -1114,7 +1115,7 @@ function load_degree_classification_table(level) {
 
     //on data loeaded, sort by final_gpa
     table.on("dataProcessed", function(){
-        if (table.dataLoadedInitial)
+        if (table.dataFullyLoaded)
             table.setSort([
                 {column: "final_gpa", dir: "dsc"},
                 {column: "class", dir: "asc"},
@@ -1343,7 +1344,7 @@ function create_student_course_detailed_table_popup(student_data=null, course_id
 
 function load_courses_table(extra_constructor_params = {}, extra_cols=true, settings={}){
     let columns = [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
+        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
         {title: "Code", field: "code", headerFilter: "input", frozen:true},
         {title: "Name", field: "name", headerFilter: "input"},
         {title: "Academic year", field: "academic_year", headerMenu: columnHeaderGroupBy},
@@ -1409,7 +1410,7 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
     if (settings.student) {
         rowContextMenu.pop(1)
         rowContextMenu.push({
-            label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img class='color-img-blue-uofg'src='/static/icons/info.svg'></i><span>Student grades and preponderance(popup)</span></div>",
+            label:"<div class='inline-icon' title='This action will create a popup where you can see the student grades for all the assessed content for this course. Additionally, you may view and edit the preponderances here.'><img class='color-icon-theme'src='/static/icons/info.svg'></i><span>Student grades and preponderance(popup)</span></div>",
             action: function(e, row){
                 create_student_course_detailed_table_popup(settings.student, row.getData().course_id, row.getTable())
             }
@@ -1585,7 +1586,7 @@ function render_course_moderation_section(course_data, parent_table=null) {
     document.body.appendChild(wrapper)
     
     let columns = [
-        {formatter:"rowSelection", titleFormatter:"rowSelection", headerSort:false, frozen:true},
+        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerSort:false, frozen:true},
         {title: "Assessment type", field: "type"},
         {title: "Assessment name", field: "name"},
         {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},
@@ -1593,10 +1594,9 @@ function render_course_moderation_section(course_data, parent_table=null) {
         {title: "Moderation User", field: "moderation_user", headerHozAlign: "center"},
         {title: "Moderation Date", field: "moderation_date", headerHozAlign: "center"},
     ]
-    let table = init_table("assessments_table", columns, null, final_extra_constructor_params)
+    let table = init_table("assessments_table", columns, null, final_extra_constructor_params, {'api_table_fetch': 'assessment_moderation'})
 
     let popup = Popup.init(wrapper)
-    console.log(popup)
 
     const handle_moderation = (mode) => {
         let moderation_value_elt = document.getElementById("moderation-value")
@@ -1634,12 +1634,6 @@ function render_course_moderation_section(course_data, parent_table=null) {
             input_area.classList.add("disabled")
         }
     })
-    // let table = init_table(table_placeholder, xd, null, final_extra_constructor_params)
-    //Please select the assessments that you would like to moderate. You can select one, or  multiple.
-    //selected.getRows()...
-    //Step 1: select the assessments from the table that you would like to moderate. click next.
-    //Step 2: select the moderation rules you would like to apply. click next.
-    //Step 3: review page: shows the moderated grades. Are you sure you want to apply these grades? click next.
 }
 
 function load_grading_rules_table(data_json, level=null){

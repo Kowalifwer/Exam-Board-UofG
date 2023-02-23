@@ -7,7 +7,7 @@ function isElement(element) {
     return element instanceof Element || element instanceof HTMLDocument;  
 }
 
-function wrap(el, wrapper) {
+function wrap(el, wrapper) { //puts an element inside a wrapper element
     el.parentNode.insertBefore(wrapper, el);
     wrapper.appendChild(el);
     return wrapper;
@@ -237,39 +237,29 @@ function api_factory(method) {
 const api_post = api_factory("POST")
 const api_get = api_factory("GET")
 
-//theme mode switch
-// document.querySelector(".btn_toggle").addEventListener("click", function () {
-//     if (localStorage.dark_mode) {
-//         localStorage.removeItem("dark_mode");
-//         document.documentElement.classList.remove("dark-mode-root");
-//     } else {
-//         localStorage.dark_mode = true;
-//         document.documentElement.classList.add("dark-mode-root");
-//     }
-// });
-
 const Popup = {
     content: null,
     init: function(content) {
-        let z_index = 900
+        let z_index = 2000
         document.querySelectorAll(".popup-wrapper").forEach(element => {
             z_index += 1
         })
+        let popup_parent = document.querySelector(".content-body")
 
         let popup_wrapper = document.createElement("div")
         popup_wrapper.classList.add("popup-wrapper")
         popup_wrapper.style.zIndex = z_index
+        popup_wrapper.style.top = popup_parent.scrollTop + "px"
         
         let popup_inner = document.createElement("div")
         popup_inner.classList.add("popup-inner")
         
         popup_wrapper.appendChild(popup_inner)
-        let main_body = document.querySelector(".body-inner-wrapper")
-        main_body.classList.add("disabled-body")
-        
+        popup_parent.classList.add("disabled-container")
+
         let close_button = document.createElement("button")
         close_button.classList = "popup-close-button button_default"
-        close_button.innerHTML = "Close"
+        close_button.innerHTML = "Close popup"
         close_button.onclick = () => {this.close()} //use arrow function to bind this to the popup object
         popup_inner.appendChild(close_button)
         
@@ -282,7 +272,7 @@ const Popup = {
         }
 
         popup_inner.appendChild(content)
-        document.body.prepend(popup_wrapper)
+        popup_parent.prepend(popup_wrapper)
         this.content = content
         return this
     },
@@ -291,7 +281,7 @@ const Popup = {
         if (wrapper) wrapper.remove()
         
         if (!document.querySelector(".popup-wrapper"))
-            document.querySelector(".body-inner-wrapper").classList.remove("disabled-body")
+            document.querySelector(".content-body").classList.remove("disabled-container")
         
         delete this
     },

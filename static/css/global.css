@@ -11,6 +11,7 @@
     --uog-light: #005398;
 
     /* #f7f7f7 */
+
     --uog-light-grey: rgb(247,247,247);
 
     /* #006630 */
@@ -27,19 +28,23 @@
     --p-color: 0,56,101;
       
     --p-c-main-01: rgba(var(--p-color), 0.8);
-    --p-c-text-main: rgba(var(--p-color), 1);
-    --p-c-text-main: var(--info-color-dark);
-    /* --primary-color: white;
+    --p-c-text-main: black;
+
+/* --primary-color: white;
     --secondary-color: #f5f5f5; */
 
     --primary-color: #f5f5f5;
     --secondary-color: white;
-    /* --p-color: 255,255,255;
+
+    --text-main: var(--p-c-text-main);
+    --text-themed: rgba(var(--p-color), 1);
+
+/* --p-color: 255,255,255;
 
     --primary-color: var(--uog-light-grey);
     --secondary-color: var(--uog-normal);
     --p-c-main-01: rgba(var(--p-color), 0.8);
-    --p-c-text-main: rgba(var(--p-color), 1); */
+    /* --p-c-text-main: rgba(var(--p-color), 1); */
 
     --info-color: #005398;
     --error-color: rgb(185, 59, 59);
@@ -47,7 +52,6 @@
     --success-color: rgb(19, 137, 19);
 
     --primary-color-dim: rgb(118,16,118,0.5); /*text and gradients, backgrounds*/
-    --dark-color: var(--p-c-text-main)
     --shadow: 0px 6px 5px -1px rgba(var(--p-color), 0.6);
     --body-padding: 40px;
     --primary-button-offset: 50px;
@@ -61,6 +65,8 @@
     --info-color-light: rgb(0, 0, 0, 0.15);
 
     --edit-color: var(--info-color-light);
+
+    --icon-color-filter: invert(21%) sepia(23%) saturate(6907%) hue-rotate(191deg) brightness(98%) contrast(101%);
 
     --neutral-color: lightgray
 
@@ -118,7 +124,14 @@
 * {
     /* font-family: 'Verdana'; */
     font-family: 'Inter';
-    color: var(--dark-color);
+}
+
+body {
+    margin: 0;
+    width: 100vw;
+    overflow: hidden;
+    background-color: var(--primary-color);
+    /* color: var(--text-main); */
 }
 
 *::-webkit-scrollbar {
@@ -210,8 +223,8 @@ p, h1, h2, h3, h4, h5, h6, a, li {
     font-size: 1.5em;
 }
 
-.color-img-blue-uofg {
-    filter: invert(21%) sepia(23%) saturate(6907%) hue-rotate(191deg) brightness(98%) contrast(101%);
+.color-icon-theme {
+    filter: var(--icon-color-filter);
 }
 
 .color-img-dark-blue-uofg {
@@ -228,6 +241,7 @@ p, h1, h2, h3, h4, h5, h6, a, li {
 
 a {
     text-decoration: none;
+    color: var(--text-themed);
 }
 
 .error-color {
@@ -278,12 +292,12 @@ input, textarea {
 }
 
 button:not(.button_default), :where(input[type="text"], input[type="search"]):not(.input_default), textarea:not(.input_default), select {
-    background-color: #FFFFFF;
+    background-color: var(--secondary-color);
     border: 1px solid rgba(var(--p-color), 0.1);
     border-radius: var(--border-radius);
     box-shadow: rgba(var(--p-color), 0.02) 0 1px 3px 0;
     box-sizing: border-box;
-    color: rgba(var(--p-color), 0.85);
+    color: var(--text-themed);
     font-size: 16px;
     margin: 0;
     min-height: 2rem;
@@ -358,19 +372,13 @@ input[type=checkbox]::after {
 input[type=checkbox]:checked::after {
     content: "✔";
     background-color: white;
-    color: var(--p-c-text-main);
+    color: var(--text-themed);
     font-size: 0.9em;
     font-weight: bold;
 }
 /* GENERAL */
 
 /* CSS */
-body {
-    margin: 0;
-    width: 100vw;
-    overflow: hidden;
-    background-color: var(--primary-color);
-}
 
 .body-inner-wrapper {
     display: flex;
@@ -379,6 +387,7 @@ body {
     height: 100vh;
     box-sizing: border-box;
     overflow: hidden;
+    position: relative;
 }
 
 .sidebar {
@@ -432,16 +441,16 @@ body {
 .toggle-sidebar-container {
     height: var(--header-height);
     margin: 0;
-    border: 3px solid rgba(var(--p-color), 0.20);
+    border: 2px solid rgba(var(--p-color), 0.20);
     border-top: 1px solid rgba(var(--p-color), 0.20);
     border-left: none;
     cursor: pointer;
     margin-bottom: calc(var(--extra-header-height) - 3px);
-    background-color: var(--primary-color);
+    background-color: var(--secondary-color);
 }
 
 .toggle-sidebar-container * {
-    color:var(--p-c-text-main);
+    color:var(--text-themed);
 }
 
 .sidebar > * > :first-child {
@@ -525,7 +534,7 @@ body {
     align-items: center;
     justify-content: center;
     padding: 10px;
-    color: var(--p-c-text-main);
+    /* color: var(--text-themed); */
     /* height: 100%; */
 }
 
@@ -581,6 +590,10 @@ body {
     box-shadow: var(--header-shadow);
     cursor: pointer;
     box-sizing: border-box;
+}
+
+.notification * {
+    color: white;
 }
 
 .notification-visible {
@@ -677,10 +690,6 @@ body {
     gap: 15px;
 }
 
-.welcome-title b {
-    color: var(--info-color-dark)
-}
-
 .welcome-title img {
     --height: calc(var(--header-height) - 30px);
     height: var(--height);
@@ -768,7 +777,11 @@ body {
     pointer-events: none;
 }
 
-.disabled-body {
+.disabled-container {
+    overflow-y: hidden;
+}
+
+.disabled-container > *:not(.popup-wrapper) {
     pointer-events: none;
 }
 
@@ -818,8 +831,8 @@ body {
 }
 
 .popup-wrapper {
-    position: fixed;
-    top: 0;
+    position: absolute;
+    /* top: 0; */
     left: 0;
     width: 100%;
     height: 100%;
@@ -828,19 +841,33 @@ body {
     justify-content: center;
     align-items: center;
     overflow: auto;
-    margin-top: calc(var(--header-height) / 2);
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(1px);
+}
+
+.popup-wrapper::after {
+    content: "Click anywhere to close...";
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 15px;
+    color: rgba(var(--p-color), 0.85);
+    /* make text pop out */
+    text-shadow: 0 0 3px rgba(var(--p-color), 0.65);
+    padding: 0 3px;
+    z-index: 200;
+    white-space: nowrap;
+    font-weight: 600;
 }
 
 .popup-inner {
+    /* position: relative; */
+    /* top: 20px; */
     background-color: white;
     border-radius: var(--border-radius);
-    position: relative;
     padding: 10px;
     max-height: 80%;
     max-width: 80%;
-    overflow: auto;
-    /* box-shadow: 0 0 10px 0 rgba(var(--p-color), 0.55); */
     z-index: 1000;
     display: flex;
     justify-content: center;
@@ -859,10 +886,12 @@ body {
     z-index: 1001;
     cursor: pointer;
     border: none;
-    outline: 3px solid rgba(var(--p-color), 0.45);
+    border-right: 8px solid rgba(var(--p-color), 0.25);
     border-bottom-left-radius: var(--border-radius);
-    color: var(--error-color);
+    box-shadow: 0 0 4px 2px rgba(var(--p-color), 0.55);
+    color: rgba(var(--p-color), 0.75);
     font-weight: bold;
+    font-size: 25px;
 }
 
 .popup-close-button:hover {
@@ -883,22 +912,30 @@ body {
 }
 
 .tabulator-columns-menu {
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
     max-height: 400px;
-    max-width: 400px;
-    width: 100%;
-    /* justify-content: center; */
-    gap: 5px;
-    margin: 5px 0;
-    padding: 20px 10px 10px 10px;
+    margin: 10px 0;
+    padding: 0 10px 10px 10px;
+    counter-reset: col-counter;
+    overflow-y: auto;
 }
 
 .tabulator-columns-menu > * {
     display: flex;
     align-items: center;
     gap: 5px;
+    color: var(--text-main);
+}
+
+.tabulator-columns-menu > p {
+    margin: 10px 0;
+    color: var(--text-themed);
+    font-size: 18px;
+}
+
+.tabulator-columns-menu label::before {
+    content: counter(col-counter) ". ";
+    counter-increment: col-counter;
+    color: var(--text-themed);
 }
 
 .tabulator .tabulator-tableholder .tabulator-placeholder {
@@ -1087,13 +1124,13 @@ body {
     background-color: var(--secondary-color);
     gap: 5px;
     box-shadow: inset 0 -1px 2px 1px rgba(var(--p-color), 0.1);
-    color: var(--p-c-text-main);
+    color: var(--text-themed);
 }
 
 .collapsable-section b {
     font-size: 1.1em;
     font-weight: 600;
-    color: var(--p-c-text-main);
+    color: var(--text-themed);
 }
 
 .collapsable-section > :last-child {
@@ -1124,12 +1161,12 @@ body {
 
 .collapsable-section a {
     cursor: pointer;
-    color: var(--p-c-text-main);
+    color: var(--text-themed);
     font-weight: bold;
 }
 
 .collapsable-section a:hover {
-    color: var(--p-c-text-main);
+    color: var(--text-themed);
     text-decoration: underline;
 }
 
@@ -1327,6 +1364,10 @@ body {
 .tabulator-row.tabulator-selected {
     background-color: var(--table-select-color) !important;
     color: white;
+}
+
+.tabulator-row.tabulator-selected svg path {
+    fill: white;
 }
 
 .tabulator-row.tabulator-selected .preponderance {
