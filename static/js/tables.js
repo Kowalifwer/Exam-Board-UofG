@@ -226,8 +226,10 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     } else { //otherwise, we need to fetch data from the server
         table_constructor.ajaxURL = window.location.href
         if (settings.api_table_fetch) { //if api_table_fetch is passed in settings, then we fetch data from the api_table endpoint (not current url)
-            table_constructor.ajaxURL += `api_table/${settings.api_table_fetch}`  
+            table_constructor.ajaxURL = `http://localhost:8000/api/table/${settings.api_table_fetch}/`  
         }
+        console.log("fetching data from " + table_constructor.ajaxURL)
+
         table_constructor.ajaxParams = {
             "fetch_table_data": true, //this is a flag that the server uses to determine if it should return table data
         }
@@ -245,6 +247,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     }
 
     table_constructor = {...table_constructor, ...extra_constructor_params} //merge the settings with the table constructor
+    console.log(table_constructor.ajaxURL)
 
     if (!settings.no_multirow) { //determine if we add multi-row actions to the table (such as hiding or deleting rows)
         table_constructor.rowContextMenu.push({
@@ -1292,9 +1295,7 @@ function create_student_course_detailed_table_popup(student_data=null, course_id
         document.body.appendChild(elt)
         let table = init_table(elt, columns.map((col) => {
             return {...col, editor: false, cssClass: (col.cssClass=="format_grade" ? "format_grade" : "")}
-        }), null, final_extra_constructor_params, settings = {'title': `Student course data`})
-        table.getElement().style.marginTop = "10px"
-        table.getElement().style.marginBottom = "10px"
+        }), null, final_extra_constructor_params, settings = {'title': "Student course data", 'api_table_fetch': 'course_assessments'})
 
         table.addHeading(`Viewing assessment breakdown for <b>${student_data.name}</b>`)
         

@@ -3,8 +3,6 @@ from django.shortcuts import render
 from general.models import Student, Course, Assessment, AssessmentResult, User, AcademicYear, StudentComment, CourseComment
 from django.db import connection, reset_queries
 import time
-from django.db.models import Prefetch
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
 import json
 from exam_board.tools import server_print, get_query_count, degree_progression_levels, degree_classification_levels
@@ -17,53 +15,39 @@ from django.shortcuts import redirect
 from django.http import Http404
 from django.contrib import messages
 
-
+##View helper functions
 def is_fetching_table_data(request):
+    """Used in views to be able to differentiate between a request for the table data, and a request for the page itself.
+    :return: boolean: Returns true if the request is a GET request and contains a parameter 'fetch_table_data' with value 'true'.
+    """
     return request.method == 'GET' and request.GET.get('fetch_table_data')
 
-# Create your views here.
-
-def test_queries_view(request):
-    context = {}
-    all_students = Student.objects.all().prefetch_related("courses", "results")
+def update_context_with_extra_header_data(context, reverse_name, year=None, extra_level_iterator=None):
+    """Updates existing context of any view, with data necessary to populate the extra header. Also determines current year if none is provided.
+    The header currently includes 2 sections: 
+    -1: All the different years you can access, which appears top left of the extra header
+    -2: All the different levels you can access, which appears top right of the extra header
+    :param context: takes the state of the current view context. SOME views expect some parameters to be present in the context, such as current_course and current_level. These are used to determine the url to link to.
+    :param reverse_name: the url name (as defined in urls.py) of the view you want to link to
+    :param year: the current year passed from view. If none is, the year is determined by this function.
+    :param extra_level_iterator: the map of form {level: title} which is used to populate extra header section 2. If none is provided, section 2 is not populated.
+    :return: None: the context is updated in place
+    """
+    all_years = AcademicYear.objects.all()
     
-    context["students"] = all_students
-    # result = HttpResponse("Hello!")
-    result = render(request, "general/test_queries.html", context)
-    return result
-
-def test_queries_2_view(request):
-    context = {}
-    # all_courses = Course.objects.all().prefetch_related(
-    #     Prefetch(
-    #         "results",
-    #         queryset=AssessmentResult.objects.filter().select_related("student", "assessment")
-    #     ),
-    #     Prefetch("assessments"),
-    # )
-    all_courses = Course.objects.filter(academic_year=2020).prefetch_related("results", "results__student", "results__assessment", "assessments")
-
-    context["courses"] = all_courses
-    # result = HttpResponse("Hello!")
-    result = render(request, "general/test_queries_2.html", context)
-    return result
-
-def update_context_with_extra_header_data(context, reverse_name, title="View other years!", year=None, all_years=None, extra_level_iterator=None):
-    if not all_years:
-        all_years = AcademicYear.objects.all()
-    
+    ##optional parameters that may be present in the context, to be used to reverse more complex URLs
     url_course = context.get("current_course")
     url_level = context.get("current_level")
 
     context['all_years'] = context.get('all_years', [])
     for academic_year in all_years:
-        if year and year == academic_year.year:
+        if year and year == academic_year.year: ##if year is provided, and matches the current year, set it as selected
             context['selected_year'] = academic_year
-        elif academic_year.is_current and 'selected_year' not in context:
+        elif academic_year.is_current and 'selected_year' not in context: ##FALLBACK: if year is not provided, and the current year is the current year, set it as selected
             context['selected_year'] = academic_year
         
         args = [academic_year.year]
-        if url_course:
+        if url_course: 
             args.insert(0, url_course.code)
         if url_level:
             args.insert(0, url_level)
@@ -75,61 +59,9 @@ def update_context_with_extra_header_data(context, reverse_name, title="View oth
             if level == url_level:
                 context['selected_level'] = level
             args = [level, context['selected_year'].year]
-            context['all_levels'].append({'title': extra_level_iterator[level], 'level':level, 'url':reverse(reverse_name, args=args)})     
-    
-def test_queries_3_view(request):  # This view fetches all Assessment Results, and creates a python dictionary, of all students, and their results, for each course.
-    context = {}
-    # all_assessment_results = AssessmentResult.objects.all().filter().select_related("student", "course", "assessment")
-    all_assessment_results = AssessmentResult.objects.filter(course__academic_year=2020)[:2000]
-    big_dict = {}
+            context['all_levels'].append({'title': extra_level_iterator[level], 'level':level, 'url':reverse(reverse_name, args=args)})   
 
-    start_time = time.process_time()
-    for result in all_assessment_results:
-        student = result.student
-        student_id = str(student.id)
-        course = result.course
-        course_id = str(course.id)
-        assessment = result.assessment
-        assessment_id = str(assessment.id)
-        
-        if student_id not in big_dict:
-            big_dict[student_id] = {"student":{"GUID": student.GUID, "full_name": student.full_name, "degree_title": student.degree_title}, "courses": {}}
-
-        if course_id not in big_dict[student_id]["courses"]:
-            big_dict[student_id]["courses"][course_id] = {"course": {"code": course.code, "name":course.name, "academic_year": course.academic_year}, "assessments": {}}
-        
-        if assessment_id not in big_dict[student_id]["courses"][course_id]["assessments"]:
-            big_dict[student_id]["courses"][course_id]["assessments"][assessment_id] = {"assessment": {"name": assessment.name, "weight": assessment.weighting}, "result": {"grade": result.grade, "preponderance": result.preponderance}}
-    
-    # context["student_data"] = big_dict
-    # context["student_data_json"] = json.dumps(big_dict)
-    print(f"Time taken to create full student data: {time.process_time() - start_time}")
-    print("n queries executed", len(connection.queries))
-    return HttpResponse('Greetings')
-    result = render(request, "general/test_queries_3.html", context)
-    return result
-
-def test_queries_4_view(request):
-    context = {}
-    reset_queries()
-    start = time.process_time()
-    all_assessment_results = AssessmentResult.objects.filter().select_related("student", "course", "assessment")
-        
-    context["assessment_results"] = all_assessment_results
-    result = render(request, "general/test_queries_4.html", context)
-    print("n queries executed", len(connection.queries))
-    print("Time taken to query and render template: ", time.process_time() - start)
-    return result
-
-
-def login_view(request):
-    context = {}
-    return render(request, "general/login.html", context)
-
-def logout_view(request):
-    context = {}
-    return render(request, "general/logout.html", context)
-
+# Views start here
 def home_view(request):
     all_students = Student.objects.all()
     all_courses = Course.objects.all()
@@ -137,7 +69,7 @@ def home_view(request):
     context = {
         "students": all_students,
         "courses": all_courses,
-        "page_info": json.dumps({
+        "page_info": json.dumps({ #Page specific help information
             "title": "Home",
             "points_list": [
                 "This is the homepage/dashboard",
@@ -165,7 +97,7 @@ def home_view(request):
 def all_students_view(request):
     all_students = Student.objects.all()
     context = {
-        "page_info" :json.dumps({
+        "page_info" :json.dumps({ #Page specific help information
             "title": f"All students",
             "points_list": [
                 "This page allows you to view and access all the Students across all academic years.",
@@ -177,15 +109,14 @@ def all_students_view(request):
         })}
     if is_fetching_table_data(request):   
         all_students_json = [student.get_data_for_table() for student in all_students]
-        # return JsonResponse({'data': all_students_json, 'last_page': paginator.num_pages})
         return JsonResponse(all_students_json, safe=False)
 
     return render(request, "general/all_students.html", context)
 
 def all_courses_view(request, year=None):
     context = {}
-    update_context_with_extra_header_data(context, 'general:all_courses_exact', "View courses from other years", year=year)
-    context["page_info"] = json.dumps({
+    update_context_with_extra_header_data(context, 'general:all_courses_exact', year=year)
+    context["page_info"] = json.dumps({ #Page specific help information
         "title": f"All Courses for {context['selected_year'].year}",
         "points_list": [
             "This page allows you to view and access all the offered courses for a given Academic year",
@@ -198,14 +129,9 @@ def all_courses_view(request, year=None):
 
     all_courses = Course.objects.filter(academic_year=context['selected_year'].year)
     if is_fetching_table_data(request):
-        assessment_data = fetch_assessment_data_if_relevant(request)
-        if assessment_data:
-            return assessment_data
-
         get_query_count("all_courses_view", True)
         all_courses_json = [course.get_data_for_table({
-            "method": "get_extra_data_general",
-            "args": []
+            "get_extra_data_general": [],
         }) for course in all_courses.prefetch_related("assessments", "results", "results__assessment")]
         get_query_count("Time to search finish")
         # return JsonResponse({'data': all_students_json, 'last_page': paginator.num_pages})
@@ -239,17 +165,8 @@ def global_search_view(request):
         if "students" in request.GET:
             data = [student.get_data_for_table() for student in Student.objects.filter(Q(full_name__icontains=search_term) | Q(GUID__icontains=search_term))]
         elif "courses" in request.GET:
-            # data = [
-            #     course.get_data_for_table({
-            #         "method": "get_extra_data_general",
-            #         "args": []
-            #     }) for course in Course.objects.filter(
-            #         Q(code__icontains=search_term) | Q(name__icontains=search_term)
-            #     )
-            #     # .prefetch_related("assessments", "results")
-            # ]
-            #context[extra'cols ...]
-            data = [course.get_data_for_table(extra_data=None, fast_mod=True) for course in Course.objects.filter(
+            #fast_m
+            data = [course.get_data_for_table(extra_data=None, assessments_prefetched=True) for course in Course.objects.filter(
                 Q(code__icontains=search_term) | Q(name__icontains=search_term)
             ).prefetch_related("assessments")]
         get_query_count("Time to search finish")
@@ -262,13 +179,6 @@ def student_view(request, GUID):
     get_query_count("before student query")
     student = Student.objects.filter(GUID=GUID)
     if is_fetching_table_data(request):
-        student_table = fetch_student_course_table_data_if_relevant(request)
-        if student_table:
-            return student_table
-        assessment_data = fetch_assessment_data_if_relevant(request)
-        if assessment_data:
-            return assessment_data
-
         student = student.prefetch_related("results__assessment", "results__course").first()
         courses = student.courses.all()
         results = student.results.all()
@@ -279,8 +189,7 @@ def student_view(request, GUID):
 
         all_courses_json = [
             course.get_data_for_table({
-                "method": "get_extra_data_student",
-                "args": [filter_results(course)]
+                "get_extra_data_student": [filter_results(course)]
             }) for course in courses
         ]
         get_query_count("after student query")
@@ -301,60 +210,10 @@ def student_view(request, GUID):
     })
     return render(request, "general/student.html", context)
 
-def fetch_student_course_table_data_if_relevant(request):
-    student_GUID = request.GET.get("student_GUID", "")
-    course_id = request.GET.get("course_id", "")
-    if student_GUID != "" and course_id != "":
-        data_for_student_course_table = []
-        all_course_assessments = Assessment.objects.filter(courses__id=course_id).order_by("weighting")
-        for assessment in all_course_assessments:
-            result = AssessmentResult.objects.filter(student__GUID=student_GUID, course__id=course_id, assessment=assessment).first()
-            data_for_student_course_table.append({
-                'type': assessment.get_type_display(),
-                'name': assessment.name,
-                'weighting': assessment.weighting,
-                'moderation': assessment.moderation,
-                'grade': min(result.grade + assessment.moderation, 22) if result else "Not completed",
-                'preponderance': result.preponderance if result else "Not completed",
-                'result_id': result.id if result else "Not completed",
-            })
-    else:
-        return None
-    
-    return JsonResponse(data_for_student_course_table, safe=False)
-
-def fetch_assessment_data_if_relevant(request):
-    is_assessments = request.GET.get("assessments", None)
-    course_id = request.GET.get("course_id", None)
-    if course_id and is_assessments:
-        course = Course.objects.filter(id=course_id).first()
-        if course:
-            data = [{
-                "type": assessment.get_type_display(),
-                "name": assessment.name,
-                "weighting": assessment.weighting,
-                "moderation": assessment.moderation,
-                "moderation_user": assessment.moderated_by.get_name_verbose if assessment.moderated_by else "Not moderated",
-                "moderation_date": assessment.moderation_datetime.strftime("%d/%m/%Y %H:%M") if assessment.moderation_datetime else "Not moderated",
-                "id": str(assessment.id)
-            }
-                for assessment in course.assessments.all().order_by("weighting").select_related("moderated_by")
-            ]
-            return JsonResponse(data, safe=False)
-    return None
-
 def course_view(request, code, year):
     get_query_count("before fetching course", False)
     course = Course.objects.filter(code=code, academic_year=year)
     if is_fetching_table_data(request):
-        ##extra tables fetching
-        student_course_table = fetch_student_course_table_data_if_relevant(request)
-        if student_course_table:
-            return student_course_table
-        course_assessmets_table = fetch_assessment_data_if_relevant(request)
-        if course_assessmets_table:
-            return course_assessmets_table
-        ##end of extra tables fetching
 
         course = course.prefetch_related("assessments").first()
         students = course.students.all().prefetch_related("results__course", "results__assessment", "courses")
@@ -363,8 +222,7 @@ def course_view(request, code, year):
         all_students_json = [
             student.get_data_for_table(
                 {
-                    "method": "get_extra_data_course",
-                    "args": [course_assessments, course]
+                    "get_extra_data_course": [course_assessments, course]
                 }
             ) for student in students
         ]
@@ -397,7 +255,7 @@ def course_view(request, code, year):
     context = {
         "current_course": course.first(),
     }
-    update_context_with_extra_header_data(context, 'general:course', "View courses from other years", year=year)
+    update_context_with_extra_header_data(context, 'general:course', year=year)
     context["page_info"] = json.dumps({
         "title": f"Individual course",
         "points_list": [
@@ -418,7 +276,7 @@ def level_progression_view(request, level, year=None):
     context = {
         'current_level': level,
     }
-    update_context_with_extra_header_data(context, 'general:level_progression_exact', "View level progression of other years", year=year, all_years=None, extra_level_iterator=degree_progression_levels)
+    update_context_with_extra_header_data(context, 'general:level_progression_exact', year=year, extra_level_iterator=degree_progression_levels)
     context["page_info"] = json.dumps({
         "title": f"Level progression",
         "points_list": [
@@ -461,8 +319,7 @@ def level_progression_view(request, level, year=None):
         all_students_json = [
             student.get_data_for_table(
                 {
-                    "method": "get_extra_data_level_progression",
-                    "args": [context["selected_year"].level_progression_settings[str(context["current_level"])] ,course_map]
+                    "get_extra_data_level_progression" : [context["selected_year"].level_progression_settings[str(context["current_level"])] ,course_map]
                 }
             ) for student, course_map in student_course_map.items()
         ]
@@ -477,7 +334,7 @@ def degree_classification_view(request, level, year=None):
     context = {
         'current_level': level,
     }
-    update_context_with_extra_header_data(context, 'general:degree_classification_exact', "View degree classifications of other years", year=year, all_years=None, extra_level_iterator=degree_classification_levels)
+    update_context_with_extra_header_data(context, 'general:degree_classification_exact', year=year, extra_level_iterator=degree_classification_levels)
     context["page_info"] = json.dumps({
         "title": f"Degree classification",
         "points_list": [
@@ -491,7 +348,7 @@ def degree_classification_view(request, level, year=None):
     })
     get_query_count("before fetching degree classification", False)
     if is_fetching_table_data(request):
-        masters = level == 5
+        masters = (level == 5)
         students = set(Student.objects.filter(end_academic_year=context['selected_year'].year, current_academic_year=context['selected_year'].year, is_masters=False if not masters else True).prefetch_related("results__course", "results__assessment", "courses", "courses__assessments"))
         student_course_map_lvl5 = {}
         student_results_map_lvl5 = {}
@@ -540,8 +397,7 @@ def degree_classification_view(request, level, year=None):
         all_students_json = [
             student.get_data_for_table(
                 {
-                    "method": "get_extra_data_degree_classification",
-                    "args": [context["selected_year"].degree_classification_settings, masters, student_course_map_lvl3[student], student_results_map_lvl3[student], student_course_map_lvl4[student], student_results_map_lvl4[student], student_course_map_lvl5[student] if masters else {}, student_results_map_lvl5[student] if masters else {}]
+                    "get_extra_data_degree_classification" : [context["selected_year"].degree_classification_settings, masters, student_course_map_lvl3[student], student_results_map_lvl3[student], student_course_map_lvl4[student], student_results_map_lvl4[student], student_course_map_lvl5[student] if masters else {}, student_results_map_lvl5[student] if masters else {}]
                 }
             ) for student in final_students
         ]
@@ -555,7 +411,7 @@ def degree_classification_view(request, level, year=None):
 
 def degree_classification_grading_rules_view(request, year=None):
     context = {}
-    update_context_with_extra_header_data(context, 'general:degree_grading_rules_exact', "View grading rules of other years", year=year)
+    update_context_with_extra_header_data(context, 'general:degree_grading_rules_exact', year=year)
     context["page_info"] = json.dumps({
         "title": f"Degree classification grading rules",
         "points_list": [
@@ -572,7 +428,7 @@ def level_progression_rules_view(request, level, year=None):
     context = {
         'current_level': level,
     }
-    update_context_with_extra_header_data(context, 'general:level_progression_rules_exact', "View level progression rules of other years", year=year, all_years=None, extra_level_iterator=degree_progression_levels)
+    update_context_with_extra_header_data(context, 'general:level_progression_rules_exact', year=year, extra_level_iterator=degree_progression_levels)
     context["page_info"] = json.dumps({
         "title": f"Level progression determining rules",
         "points_list": [
@@ -583,19 +439,76 @@ def level_progression_rules_view(request, level, year=None):
     })
     context['table_settings'] = context['selected_year'].level_progression_settings_for_table(str(level))
     return render(request, "general/level_progression_rules.html", context)
-#GUID, FULL_NAME, FINAL BAND, FINAL GPA, L4 BAND, L4 GPA, L3 BAND, L3 GPA, >A, >B, >C, >D, ... Project, Team ...
 
-def api_view(request):
+#FUNCTIONS FOR TABLE FETCHING API
+def fetch_student_course_table_data(request):
+    student_GUID = request.GET.get("student_GUID", "")
+    course_id = request.GET.get("course_id", "")
+    if student_GUID != "" and course_id != "":
+        data_for_student_course_table = []
+        all_course_assessments = Assessment.objects.filter(courses__id=course_id).order_by("weighting")
+        for assessment in all_course_assessments:
+            result = AssessmentResult.objects.filter(student__GUID=student_GUID, course__id=course_id, assessment=assessment).first()
+            data_for_student_course_table.append({
+                'type': assessment.get_type_display(),
+                'name': assessment.name,
+                'weighting': assessment.weighting,
+                'moderation': assessment.moderation,
+                'grade': min(result.grade + assessment.moderation, 22) if result else "Not completed",
+                'preponderance': result.preponderance if result else "Not completed",
+                'result_id': result.id if result else "Not completed",
+            })
+    else:
+        return None
+    
+    return JsonResponse(data_for_student_course_table, safe=False)
+
+def fetch_assessment_moderation_table_data(request):
+    is_assessments = request.GET.get("assessments", None)
+    course_id = request.GET.get("course_id", None)
+    if course_id and is_assessments:
+        course = Course.objects.filter(id=course_id).first()
+        if course:
+            data = [{
+                "type": assessment.get_type_display(),
+                "name": assessment.name,
+                "weighting": assessment.weighting,
+                "moderation": assessment.moderation,
+                "moderation_user": assessment.moderated_by.get_name_verbose if assessment.moderated_by else "Not moderated",
+                "moderation_date": assessment.moderation_datetime.strftime("%d/%m/%Y %H:%M") if assessment.moderation_datetime else "Not moderated",
+                "id": str(assessment.id)
+            }
+                for assessment in course.assessments.all().order_by("weighting").select_related("moderated_by")
+            ]
+            return JsonResponse(data, safe=False)
+    return None
+
+
+###API SECTION###
+#API's to get table data
+def api_table_view(request, table_name):
+    if request.method == "GET":
+        print("table_name", table_name)
+        if table_name == "assessment_moderation":
+            return fetch_assessment_moderation_table_data(request)
+
+        if table_name == "course_assessments":
+            return fetch_student_course_table_data(request)
+    else:
+        return JsonResponse({"status": "Invalid request method."}, safe=False)
+
+    return JsonResponse({"status": "Invalid request."}, safe=False)
+
+#Any general api request can be made here.
+def api_view(request, action):
     response = {"status": "Uknown error occurred.", "data": None}
     student_id = request.POST.get("student_id", None)
     course_id = request.POST.get("course_id", None)
 
     if request.method == "POST":
-        action = request.POST.get("action", None)
         if action:
             data = json.loads(request.POST.get("data", "{}"))
-
-            #MODERATION
+            #HANDLE MODERATION
             if action == "moderation":
                 mode = data.get("mode", None)
                 value = data.get("value", 0)
@@ -651,7 +564,7 @@ def api_view(request):
                 
                 return JsonResponse({"status": "Moderation successful.", "data": True}, safe=False)
 
-            #GRADING RULES
+            #HANDLE GRADING RULES
             if action == "save_grading_rules":
                 year_id = request.POST.get("year_id", None)
                 level = request.POST.get("level", None)
@@ -673,7 +586,7 @@ def api_view(request):
                     else:
                         response["status"] = "Server error. Academic year not found."
             
-            #PREPONDERANCE
+            #HANDLE PREPONDERANCE
             if action == "update_preponderance":
                 results_to_save = [] ##make sure we save at the very end, to make sure all data is valid
                 for row in data:
@@ -698,7 +611,7 @@ def api_view(request):
                 else:
                     response["status"] = "No changes detected."
 
-            #STUDENT COMMENTS
+            #HANDLE STUDENT/COURSE COMMENTS
             if action in ["add_comment", "delete_comments"]:
                 obj_for_comments = None
                 if student_id:
@@ -741,12 +654,17 @@ def api_view(request):
                             response["status"] = "No comment id's provided, for deletion."
                 else:
                     response["status"] = "Server error. Student or course not found."
-        else:
-            response["status"] = "No action provided."
+    
+    elif request.method == "GET":
+        #GET REQUEST CAN BE DEFINED HERE
+        pass
+
+    else:
+        response["status"] = "Invalid request method."
     
     return JsonResponse(response)
 
-##Incomplete functionality views - DO NOT USE IN PRODUCTION
+##Views with test functionality - DO NOT USE IN PRODUCTION
 def login_view(request, prev_path):
     if request.user.is_authenticated:
         return redirect("general:home")

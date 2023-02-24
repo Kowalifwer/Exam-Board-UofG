@@ -1,5 +1,5 @@
 from django.urls import path
-from general.views import home_view, test_queries_view, test_queries_2_view, test_queries_3_view, test_queries_4_view, login_view, logout_view, global_search_view, student_view, course_view, all_students_view, all_courses_view, degree_classification_view, degree_classification_grading_rules_view, level_progression_rules_view, api_view, level_progression_view
+from general.views import home_view, login_view, logout_view, global_search_view, student_view, course_view, all_students_view, all_courses_view, degree_classification_view, degree_classification_grading_rules_view, level_progression_rules_view, api_view, api_table_view, level_progression_view
 
 courses_verbose = 'all_courses'
 degree_classification_verbose = 'degree_classification'
@@ -10,10 +10,10 @@ app_name = "general"
 urlpatterns = [
     # general urls
     path('', home_view, name='home'),
-    path('test_queries/', test_queries_view, name='test_queries'),
-    path('test_queries_2/', test_queries_2_view, name='test_queries_2'),
-    path('test_queries_3/', test_queries_3_view, name='test_queries_3'),
-    path('test_queries_4/', test_queries_4_view, name='test_queries_4'),
+    # path('test_queries/', test_queries_view, name='test_queries'),
+    # path('test_queries_2/', test_queries_2_view, name='test_queries_2'),
+    # path('test_queries_3/', test_queries_3_view, name='test_queries_3'),
+    # path('test_queries_4/', test_queries_4_view, name='test_queries_4'),
 
     path('login/<path:prev_path>/', login_view, name='login'),
     path('logout/<path:prev_path>/', logout_view, name='logout'),
@@ -41,8 +41,9 @@ urlpatterns = [
     path('setup/degree/', degree_classification_grading_rules_view, name=grading_rules_verbose),
     path('setup/degree/<int:year>/', degree_classification_grading_rules_view, name=grading_rules_verbose+"_exact"),
 
-    path('api/', api_view, name='api'),
+    path('api/general/<str:action>/', api_view, name='api'),
 
+    path('api/table/<str:table_name>/', api_table_view, name='api_table'),
 
     #urls for incomplete views
     path('login/', login_view, name='login'),

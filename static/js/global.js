@@ -188,8 +188,8 @@ function setCookie(cname, cvalue, exdays=1) {
 function api_factory(method) {
     function api(action, data) {
         return new Promise((resolve, reject) => {
+            //regardless of the method, we support the ability to prefill the form data with the values of DOM elements with the class "api_prefill"
             var form_data = new FormData();
-            form_data.append("action", action)
             document.querySelectorAll(".api_prefill").forEach(element => {
                 form_data.append(element.name, element.value)
             })
@@ -202,7 +202,7 @@ function api_factory(method) {
             
             if (method == "GET") {
                 const queryString = new URLSearchParams(form_data).toString()
-                fetch("/api/?" + queryString, {
+                fetch(`/api/general/${action}/?` + queryString, {
                     method: method,
                 }).then(response => {
                     if (response.status == 200) {
