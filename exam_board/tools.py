@@ -156,7 +156,6 @@ degree_progression_levels = {
     2: "Level 2",
     3: "Level 3 (Hons)",
     4: "Level 4 (Hons)",
-    # 5: "Level 5 (Masters)",
 }
 
 degree_classification_levels = {

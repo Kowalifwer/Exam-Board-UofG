@@ -9,7 +9,9 @@ from exam_board.tools import band_integer_to_band_letter_map, gpa_to_class_conve
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils.safestring import mark_safe
 
+#Mixins
 class CommentsForTableMixin():
+    """Mixin for models that have Comment objects associated with them. Adds means to get comments for table and add comments to the model."""
     @property
     def comments_for_table(self):
         return json.dumps([{
@@ -22,32 +24,61 @@ class CommentsForTableMixin():
     def add_comment(self, comment, added_by):
         self.comments.create(comment=comment, added_by=added_by)
 
-# Create your models here.
-class UUIDModel(models.Model):
+def CommentMixin(related_name_user):
+    """Returns a mixin that can be used to add comments to a model. The mixin will have a ForeignKey to the User model.
+    :param related_name_user: The related name for the ForeignKey to the User model. (e.g. 'comments')
+    """
+    class Comment_Mixin(UUIDModelMixin):
+        added_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name=related_name_user)
+
+        comment = models.TextField(blank=False, null=False)
+        timestamp = models.DateTimeField(auto_now=True)
+
+        class Meta:
+            indexes = [
+                models.Index(fields=['timestamp']),
+            ]
+            ordering = ['-timestamp']
+            abstract = True
+        
+        def __str__(self):
+            return f"{self.added_by} - {self.timestamp} - {self.comment}"
+    
+    return Comment_Mixin
+
+class UUIDModelMixin(models.Model):
+    """Abstract model that sets the table's id field to a UUID. This is to be used for all models that need an id/primary key."""
     id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
 
     class Meta:
         abstract = True
 
-class AcademicYear(UUIDModel):
+class AcademicYear(UUIDModelMixin):
+    """Model for an academic year. This is used to store the settings for the year, such as the degree classification settings and level progression settings.
+    Currently, the default degree classification and level progression settings are stored in general/tools.py
+    """
     year = models.IntegerField(unique=True)
-    is_current = models.BooleanField(default=True)  # TODO: Ensure that only 1 year is current at a time
+    is_current = models.BooleanField(default=True)
     degree_classification_settings = models.JSONField(null=False, blank=False, default=default_degree_classification_settings)
     level_progression_settings = models.JSONField(null=False, blank=False, default=default_level_progression_settings)
+    
+    def save(self, *args, **kwargs): #on-save constraint that ensures that there can only be one is_current=true year at a time
+        if self.is_current and AcademicYear.objects.filter(is_current=True).exists():
+            raise Exception("There can only be one is_current=True academic year at a time.")
+        super().save(*args, **kwargs)
 
     @property
     def degree_classification_settings_for_table(self):
         return json.dumps(self.degree_classification_settings)
 
     def level_progression_settings_for_table(self, level):
-        print(self.level_progression_settings)
-        print(self.level_progression_settings[level])
         return json.dumps(self.level_progression_settings[level])
 
     def __str__(self):
         return str(self.year)
 
-class LevelHead(UUIDModel):
+class LevelHead(UUIDModelMixin):
+    """Model for keeping track of level heads. A given academic year can be allocated up to 1 level head for each level."""
     user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='level_head')
     academic_year = models.ForeignKey('AcademicYear', on_delete=models.CASCADE, related_name='level_heads')
 
@@ -63,11 +94,19 @@ class LevelHead(UUIDModel):
     def __str__(self):
         return f"{self.user.get_name_verbose} - {self.academic_year.year}"
 
-class User(AbstractUser, UUIDModel):
+    def save(self, *args, **kwargs):
+        if self.filter(level=self.level, academic_year=self.academic_year).exists():
+            raise Exception("There can only be one level head for every level in a given academic year.")
+        super().save(*args, **kwargs)
+
+class User(AbstractUser, UUIDModelMixin):
+    """Model for users. It extends the default user model to add a title field. More fields and functionality can be added here.
+    """
     title = models.CharField(max_length=20, blank=True, null=True)
     
     @property
     def get_name_verbose(self):
+        """Returns the full name of the user, with the title if it exists."""
         full_name_string = self.get_full_name()
         if self.title:
             full_name_string = f"{self.title}. {full_name_string}"
@@ -83,8 +122,9 @@ class User(AbstractUser, UUIDModel):
     def __str__(self):
         return self.get_full_name()
 
+class Student(UUIDModelMixin, CommentsForTableMixin):
+    """Model for University of Glasgow students. It stores all the information about a student, such as their GUID, full_name, degree inforation, and more..."""
 
-class Student(UUIDModel, CommentsForTableMixin):
     GUID = models.CharField(max_length=8, unique=True)
     full_name = models.CharField(max_length=225)
     degree_name = models.CharField(max_length=225)
@@ -112,13 +152,11 @@ class Student(UUIDModel, CommentsForTableMixin):
         return self.current_academic_year - self.start_academic_year + (1 if not self.is_faster_route else 2)
 
     @property
-    def current_level_verbose(self):  # TODO Fix this, by taking current month into consideration (2022-2023 might still be first_year but calculation will return second_year). Also consider is_faster year.
-        if self.current_level >= 6:
-            return "PhD"
+    def current_level_verbose(self):
         return self.level_choices.get(self.current_level, "N/A")
 
     @property
-    def matriculation_number(self):
+    def matriculation_number(self): #returns the number only part of the GUID
         return int(self.GUID[:-1]) if self.GUID[-1].isalpha() else int(self.GUID)
 
     def __str__(self):
@@ -126,21 +164,30 @@ class Student(UUIDModel, CommentsForTableMixin):
     
     @property
     def page_url(self):
+        """Returns the url for the individual student view."""
         return reverse('general:student', args=[self.GUID])
     
     def graduation_info(self):
+        """Returns a string with information about the student's graduation status and a link to the cohort in which they have graduated."""
         current_academic_year = AcademicYear.objects.filter(is_current=True).first().year
-        grad_diff = current_academic_year - self.end_academic_year
+        graduation_difference_from_now = current_academic_year - self.end_academic_year
         link_to_relevant = reverse('general:degree_classification_exact', args=[5 if self.is_masters else 4, self.end_academic_year])
-        if grad_diff > 0:
-            return mark_safe(f"Graduated {grad_diff} years ago. <br><a href='{link_to_relevant}'>View graduation cohort</a>")
-        elif grad_diff == 0:
+        if graduation_difference_from_now > 0:
+            return mark_safe(f"Graduated {graduation_difference_from_now} years ago. <br><a href='{link_to_relevant}'>View graduation cohort</a>")
+        elif graduation_difference_from_now == 0:
             return mark_safe(f"Due to graduate this academic year. <br><a href='{link_to_relevant}'>View graduation cohort</a>")
         else:
             link_to_relevant = reverse('general:level_progression_exact', args=[self.current_level, self.end_academic_year])
-            return mark_safe(f"Due to graduate in {abs(grad_diff)} years. <br><a href='{link_to_relevant}'>View graduation cohort</a>")
+            return mark_safe(f"Due to graduate in {abs(graduation_difference_from_now)} years. <br><a href='{link_to_relevant}'>View graduation cohort</a>")
     
-    def get_data_for_table(self, extra_data=None):
+    def get_data_for_table(self, extra_data: dict=None):
+        """Returns relevant data about the student object. Mostly used for tables.
+        :param extra_data: An optional dictionary that can be used to fetch additional information about the model object, where necessary.
+        :example use: obj.get_data_for_table(extra_data={"get_extra_data_FOO": [1, 2, 3]})
+        :This will call the "get_extra_data_FOO" method with the arguments [1, 2, 3]
+        :note that for this to work, the method MUST be defined within this model class.
+        :return dict: A dictionary of data that can be used to populate a table.
+        """
         table_data = {
             "GUID": self.GUID,
             "name": self.full_name,
@@ -157,16 +204,27 @@ class Student(UUIDModel, CommentsForTableMixin):
             "page_url": self.page_url,
             "count": 1
         }
+
         if extra_data:
-            extra_data = getattr(self, extra_data["method"])(*extra_data["args"])
-            table_data.update(extra_data)
+            for method, args in extra_data.items():
+                ##This will call the method with the given arguments, and update the table_data dictionary with the new data.
+                table_data.update(getattr(self, method)(*args))
         
         return table_data
     
     def get_data_for_table_json(self, extra_data=None):
+        """Returns the data for the table in JSON format."""
         return json.dumps(self.get_data_for_table(extra_data))
     
+    ###METHODS FOR EXTRA TABLE DATA FETCHING###
     def get_extra_data_level_progression(self, level_progression_rules, course_map):
+        """Returns extra data for the level progression table.
+        :param level_progression_rules: A dictionary of level progression rules. Structure can be found in the AcademicYear model, level_progression_settings field.
+        :param course_map: A dictionary of courses and their assessment results. Has the following structure: {
+            course: [(assessment, assessment_result), (assessment, assessment_result)...]
+        }
+        :return dict: A dictionary of extra data."""
+        
         extra_data = {
             "progress_to_next_level": "no", #yes, discretionary, no
             "final_band": 0,
@@ -212,6 +270,17 @@ class Student(UUIDModel, CommentsForTableMixin):
         return extra_data
     
     def get_extra_data_degree_classification(self, degree_classification_settings, masters, lvl3_courses, lvl3_results, lvl4_courses, lvl4_results, lvl5_courses={}, lvl5_results={}):
+        """Returns extra data for the degree classification table.
+        :param degree_classification_settings: A dictionary of degree classification settings. Structure can be found in the AcademicYear model, degree_classification_settings field.
+        :param masters: A boolean indicating whether this is a masters degree classification.
+        :param lvl3_courses: A list of all level 3 courses, for the given student and academic year.
+        :param lvl3_results: A list of all level 3 results, for the given student and academic year.
+        :param lvl4_courses: A list of all level 4 courses, for the given student and academic year.
+        :param lvl4_results: A list of all level 4 results, for the given student and academic year.
+        :param lvl5_courses: A list of all level 5 courses, for the given student and academic year.
+        :param lvl5_results: A list of all level 5 results, for the given student and academic year.
+        :return dict: A dictionary of extra data."""
+
         extra_data = {
             "class": "N/A",
             "final_band": 0,
@@ -232,7 +301,7 @@ class Student(UUIDModel, CommentsForTableMixin):
             "team": 0,
             "n_credits": 0,
         }
-        classification_data = extra_data.copy()
+        classification_data = extra_data.copy() #used to calculate the class. key difference is it stores data across all levels, rather than just the final level.
 
         if masters:
             extra_data.update({
@@ -240,13 +309,19 @@ class Student(UUIDModel, CommentsForTableMixin):
                 "l5_gpa": 0,
                 "project_masters": 0,
             })
-        
 
         final_l5_grade_adder_tuples = [0,0]
         final_l4_grade_adder_tuples = [0,0]
         final_l3_grade_adder_tuples = [0,0]
         
         def calculate_level_data(courses, results, grade_adder_tuples, update_greater_than=False, upgrade_to_masters=False):
+            """Calculates the subset of data for a given level within the degree classification table and updates the state of extra_data dict, as well as the grade adder tuples.
+            :param courses: A list of courses.
+            :param results: A list of results.
+            :param grade_adder_tuples: A tuple that keeps track of the total grade and total number of credits (float: total_grade, int: total_credits).
+            :param update_greater_than: A boolean indicating whether to update the greater_than fields.
+            :param upgrade_to_masters: A boolean indicating whether to upgrade the degree classification to masters."""
+
             for course in courses:
                 credits = course.credits
                 classification_data["n_credits"] += credits
@@ -271,8 +346,8 @@ class Student(UUIDModel, CommentsForTableMixin):
                 grade_adder_tuples[0] += round(course_grade * credits, 0) #course grades are rounded to 0 decimal places.
                 grade_adder_tuples[1] += credits
                 
-                update_cumulative_band_credit_totals(classification_data, credits, course_grade)
-                if update_greater_than and not masters or upgrade_to_masters:
+                update_cumulative_band_credit_totals(classification_data, credits, course_grade) ##classification data needs to account for all the honors levels
+                if update_greater_than and not masters or upgrade_to_masters: ##table data only shows the greater_than fields for the final year of study
                     update_cumulative_band_credit_totals(extra_data, credits, course_grade)
                     extra_data["n_credits"] += credits
       
@@ -284,7 +359,7 @@ class Student(UUIDModel, CommentsForTableMixin):
         final_gpa = 0
 
         if masters:
-            if final_l5_grade_adder_tuples[1] == 0: ##no courses taken at level 4
+            if final_l5_grade_adder_tuples[1] == 0: ##no courses taken at level 5
                 extra_data["l5_gpa"] = "N/A"
                 extra_data["l5_band"] = "N/A"
             else:
@@ -341,11 +416,17 @@ class Student(UUIDModel, CommentsForTableMixin):
         return extra_data
 
     def get_extra_data_course(self, assessments, course):
+        """Provides additional data of the student, with regards to a given course, including the student's grade across all assessed work, preponderance, and credits.
+        :param assessments: The assessments the student is taking
+        :param course: The course the student is taking
+        :return dict: The extra data
+        """
         extra_data = {}
         results = AssessmentResult.objects.filter(assessment__in=assessments, course=course, student=self).select_related("assessment")
         totals = {
             "final": [0, 0]
         }
+        ##the idea is that we store the total grade and the total weighting for each type/group of assessment
         for result in results:
             result_assessment = result.assessment
             type = result_assessment.type
@@ -384,7 +465,8 @@ class Student(UUIDModel, CommentsForTableMixin):
         ordering = ['current_academic_year']
 
 
-class Course(UUIDModel, CommentsForTableMixin):
+class Course(UUIDModelMixin, CommentsForTableMixin):
+    """This is the model that represents a course table, and is used to store information about the course, such as the code, name, academic year, lecturer, credits, and any assessed content."""
     code = models.CharField(max_length=11)
     name = models.CharField(max_length=255, null=True)
     academic_year = models.PositiveIntegerField()
@@ -420,6 +502,14 @@ class Course(UUIDModel, CommentsForTableMixin):
         return int(self.code[-4])
     
     def get_data_for_table(self, extra_data={}, **kwargs):
+        """Returns some information about the course object. Mostly used for tables.
+        :param extra_data: An optional dictionary that can be used to fetch additional information about the model object, where necessary.
+        :param kwargs: Any additional arguments that cause small changes to the data.
+        :example use: obj.get_data_for_table(extra_data={"get_extra_data_FOO": [1, 2, 3]})
+        :This will call the "get_extra_data_FOO" method with the arguments [1, 2, 3]
+        :note that for this to work, the method MUST be defined within this model class.
+        :return: A dictionary of data that can be used to populate a table.
+        """
         table_data = {
             'code': self.code,
             'name': self.name,
@@ -433,12 +523,13 @@ class Course(UUIDModel, CommentsForTableMixin):
             'page_url': self.page_url,
         }
 
-        if "fast_mod" in kwargs:
+        if "assessments_prefetched" in kwargs: #if we prefetched the assessments for the whole queryset - we can figure out if the course is moderated without making a query for this obejct.
             table_data["is_moderated"] = self.is_moderated_optimized
 
-        if extra_data:
-            extra_data = getattr(self, extra_data["method"])(*extra_data["args"])
-            table_data.update(extra_data)
+        if extra_data: 
+            for method, args in extra_data.items():
+                ##This will call the method with the given arguments, and update the table_data dictionary with the new data.
+                table_data.update(getattr(self, method)(*args))
         
         return table_data
 
@@ -447,10 +538,12 @@ class Course(UUIDModel, CommentsForTableMixin):
     
     @property
     def page_url(self):
+        """Returns the url for the individual course view."""
         return reverse('general:course', args=[self.code, self.academic_year])
     
-    @property #use this function IF we prefetched the assessments for the whole queryset.
+    @property
     def is_moderated_optimized(self):
+        """A faster way to check if a course is moderated. Requires that all the assessments for the course are prefetched"""
         for assessment in self.assessments.all():
             if assessment.moderation != 0:
                 return True
@@ -460,13 +553,19 @@ class Course(UUIDModel, CommentsForTableMixin):
     def is_moderated(self):
         return self.assessments.exclude(moderation=0).exists()
 
-    def get_extra_data_student(self, results): #this will return the students personal averages for the course
-        ##MV if all stuff are MV
-        extra_data = {
+    ###Extra data methods###
+    def get_extra_data_student(self, results):
+        """Provides additional data for a given students performance, such as the student's grade across all assessed work, or any perponderances.
+        :param assessments: The assessments the student is taking
+        :param course: The course the student is taking
+        :return dict: The extra data
+        """
+
+        extra_data = { #the value list tracks [total_grade, total_weighting, all_grades_are_preponderanced]
             'coursework_avg': [0, 0, True],
             'exam_avg': [0, 0, True],
             'final_grade': [0, 0, True],
-            'is_moderated': False,
+            'is_moderated': False, #this is used to determine if the course is moderated, and if so, to display the moderation column.
         }
 
         for result in results: ##tally up the averages and the final grade here
@@ -512,7 +611,8 @@ class Course(UUIDModel, CommentsForTableMixin):
             extra_data['final_grade'] = round(extra_data['final_grade'][0] / extra_data['final_grade'][1], 2) if extra_data["final_grade"][1] > 0 else "N/A"
         return extra_data
 
-    def get_extra_data_general(self): ##this will return the cohort averages for the course
+    def get_extra_data_general(self):
+        """Returns the average cohort perforamnce (grades), and tracks whether the course is moderated or not."""
         extra_data = {
             'coursework_avg': [0, 0],
             'exam_avg': [0, 0],
@@ -552,7 +652,9 @@ class Course(UUIDModel, CommentsForTableMixin):
         extra_data['final_grade'] = round(extra_data['final_grade'][0] / extra_data['final_grade'][1], 2) if extra_data["final_grade"][1] > 0 else "N/A"
         return extra_data
     
-class Assessment(UUIDModel):
+class Assessment(UUIDModelMixin):
+    """An Assessment is a single piece of coursework or exam. Assessments can be linked to the Course table, and have a weighting/100. 
+    \nAssessments can also be moderated (between -6 and +6 bands)."""
     name = models.CharField(max_length=255, null=True, blank=True)
     weighting = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
 
@@ -564,7 +666,7 @@ class Assessment(UUIDModel):
     ]
     type = models.CharField(choices=type_choices, max_length=1, default='C')
 
-    moderation = models.IntegerField(default=0)
+    moderation = models.IntegerField(default=0, validators=[MinValueValidator(-6), MaxValueValidator(6)])
     moderated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     moderation_datetime = models.DateTimeField(null=True, blank=True)
 
@@ -593,12 +695,13 @@ class Assessment(UUIDModel):
 #    "CSC101": {
 # }
 
-class AssessmentResult(UUIDModel):
+class AssessmentResult(UUIDModelMixin):
+    """An AssessmentResult is a single result for a student on a given assessment."""
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="results")
     assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE, related_name="results")
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="results")
 
-    grade = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(22)]) # 0 - 22
+    grade = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(22)]) #0 - 22 scale
 
     preponderance_choices = [
         ('NA', 'None'),
@@ -612,25 +715,6 @@ class AssessmentResult(UUIDModel):
 
     def __str__(self):
         return f'{self.student.full_name} - {self.assessment.name} - {self.grade}/22'
-
-def CommentMixin(related_name_user):
-    class Comment_Mixin(UUIDModel):
-        added_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name=related_name_user)
-
-        comment = models.TextField(blank=False, null=False)
-        timestamp = models.DateTimeField(auto_now=True)
-
-        class Meta:
-            indexes = [
-                models.Index(fields=['timestamp']),
-            ]
-            ordering = ['-timestamp']
-            abstract = True
-        
-        def __str__(self):
-            return f"{self.added_by} - {self.timestamp} - {self.comment}"
-    
-    return Comment_Mixin
 
 class StudentComment(CommentMixin(related_name_user="student_comments")):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="comments")
