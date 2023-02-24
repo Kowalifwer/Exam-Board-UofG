@@ -1,95 +1,69 @@
-# all_assessments = self.assessments.all()
-# all_results = self.results.all()
-# all_students = self.students.all()
-# student_grades = []
-# for student in all_students:
-#     student_totals_tracker = {
-#         'coursework': [0, 0],
-#         'exam': [0, 0],
-#         'final': 0,
-#     }
-#     for assessment in all_assessments:
-#         for result in all_results:
-#             if result.assessment == assessment: ##we found a result for this assessment
-#                 if result.student == student: ##we found a result for this student
-#                     if result.assessment.type == 'E':
-#                         student_totals_tracker['exam'][0] += result.grade * result.assessment.weighting
-#                         student_totals_tracker['exam'][1] += result.assessment.weighting
-#                     else:
-#                         student_totals_tracker['coursework'][0] += result.grade * result.assessment.weighting
-#                         student_totals_tracker['coursework'][1] += result.assessment.weighting
+##TEST VIEWS
+def test_queries_view(request):
+    context = {}
+    all_students = Student.objects.all().prefetch_related("courses", "results")
+    
+    context["students"] = all_students
+    # result = HttpResponse("Hello!")
+    result = render(request, "general/test_queries.html", context)
+    return result
 
-#                     student_totals_tracker['final'] += (result.grade * result.assessment.weighting) / 100
-#                 else: ##we did not find a result for this student - means they get a 0 for this assessment
-#                     pass
+def test_queries_2_view(request):
+    context = {}
+    # all_courses = Course.objects.all().prefetch_related(
+    #     Prefetch(
+    #         "results",
+    #         queryset=AssessmentResult.objects.filter().select_related("student", "assessment")
+    #     ),
+    #     Prefetch("assessments"),
+    # )
+    all_courses = Course.objects.filter(academic_year=2020).prefetch_related("results", "results__student", "results__assessment", "assessments")
 
-#     student_grades.append([
-#         (student_totals_tracker['coursework'][0] / student_totals_tracker['coursework'][1]) if student_totals_tracker['coursework'][1] > 0 else 0,
-#         (student_totals_tracker['exam'][0] / student_totals_tracker['exam'][1]) if student_totals_tracker['exam'][1] > 0 else 0,
-#         student_totals_tracker['final'],
-#     ])
+    context["courses"] = all_courses
+    # result = HttpResponse("Hello!")
+    result = render(request, "general/test_queries_2.html", context)
+    return result  
+    
+def test_queries_3_view(request):  # This view fetches all Assessment Results, and creates a python dictionary, of all students, and their results, for each course.
+    context = {}
+    # all_assessment_results = AssessmentResult.objects.all().filter().select_related("student", "course", "assessment")
+    all_assessment_results = AssessmentResult.objects.filter(course__academic_year=2020)[:2000]
+    big_dict = {}
 
-# for student in student_grades:
-#     extra_data['coursework_avg'] += student[0]
-#     extra_data['exam_avg'] += student[1]
-#     extra_data['final_grade'] += student[2]
+    start_time = time.process_time()
+    for result in all_assessment_results:
+        student = result.student
+        student_id = str(student.id)
+        course = result.course
+        course_id = str(course.id)
+        assessment = result.assessment
+        assessment_id = str(assessment.id)
+        
+        if student_id not in big_dict:
+            big_dict[student_id] = {"student":{"GUID": student.GUID, "full_name": student.full_name, "degree_title": student.degree_title}, "courses": {}}
 
-# extra_data['coursework_avg'] = round(extra_data['coursework_avg'] / len(student_grades), 2)
-# extra_data['exam_avg'] = round(extra_data['exam_avg'] / len(student_grades), 2)
-# extra_data['final_grade'] = round(extra_data['final_grade'] / len(student_grades), 2)
-# return extra_data
+        if course_id not in big_dict[student_id]["courses"]:
+            big_dict[student_id]["courses"][course_id] = {"course": {"code": course.code, "name":course.name, "academic_year": course.academic_year}, "assessments": {}}
+        
+        if assessment_id not in big_dict[student_id]["courses"][course_id]["assessments"]:
+            big_dict[student_id]["courses"][course_id]["assessments"][assessment_id] = {"assessment": {"name": assessment.name, "weight": assessment.weighting}, "result": {"grade": result.grade, "preponderance": result.preponderance}}
+    
+    # context["student_data"] = big_dict
+    # context["student_data_json"] = json.dumps(big_dict)
+    print(f"Time taken to create full student data: {time.process_time() - start_time}")
+    print("n queries executed", len(connection.queries))
+    return HttpResponse('Greetings')
+    result = render(request, "general/test_queries_3.html", context)
+    return result
 
-# function percent_to_integer_band(percent, round_up=true) {
-#     //C3-B1, D1-E3, A5-A1, F1-H
-#     if (bound_check(percent, 49.5, 69.5)) {
-#         if (percent < 53.5)
-#             return 12
-#         else if (bound_check(percent, 53.5,56.5))
-#             return 13
-#         else if (bound_check(percent,56.5,59.5))
-#             return 14
-#         else if (bound_check(percent,59.5,63.5))
-#             return 15
-#         else if (bound_check(percent,63.5,66.5))
-#             return 16
-#         else if (bound_check(percent,66.5,69.5))
-#             return 17
-#     } else if (bound_check(percent, 29.5, 49.5)) {
-#         if (percent < 33.5)
-#             return 6
-#         else if (bound_check(percent,33.5,36.5))
-#             return 7
-#         else if (bound_check(percent,36.5,39.5))
-#             return 8
-#         else if (bound_check(percent,39.5,43.5))
-#             return 9
-#         else if (bound_check(percent,43.5,46.5))
-#             return 10
-#         else if (bound_check(percent,46.5,49.5))
-#             return 11
-#     } else if (percent >= 69.5) {
-#         if (percent < 73.5)
-#             return 18
-#         else if (bound_check(percent,73.5,78.5))
-#             return 19
-#         else if (bound_check(percent,78.5,84.5))
-#             return 20
-#         else if (bound_check(percent,84.5,91.5))
-#             return 21
-#         else if (percent >= 91.5)
-#             return 22
-#     } else if (percent < 29.5) {
-#         if (percent < 9.5)
-#             return 0
-#         else if (bound_check(percent,9.5,14.5))
-#             return 1
-#         else if (bound_check(percent,14.5,19.5))
-#             return 2
-#         else if (bound_check(percent,19.5,23.5))
-#             return 3
-#         else if (bound_check(percent,23.5,26.5))
-#             return 4
-#         else if (bound_check(percent,26.5,29.5))
-#             return 5
-#     }
-# }
+def test_queries_4_view(request):
+    context = {}
+    reset_queries()
+    start = time.process_time()
+    all_assessment_results = AssessmentResult.objects.filter().select_related("student", "course", "assessment")
+        
+    context["assessment_results"] = all_assessment_results
+    result = render(request, "general/test_queries_4.html", context)
+    print("n queries executed", len(connection.queries))
+    print("Time taken to query and render template: ", time.process_time() - start)
+    return result
