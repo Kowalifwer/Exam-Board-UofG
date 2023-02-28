@@ -129,14 +129,11 @@ function toggle_based_on_sidebar_state(sidebar, hardset_state=null) {
         }
     }
 
-    let main_area = document.querySelector(".main-area")
     let notification_wrapper = document.querySelector(".notification-wrapper")
     if (!sidebar_is_collapsed) {
-        main_area.classList.add("main-area-shrunk")
         notification_wrapper.classList.add("notification-wrapper-shrunk")
         sidebar.classList.remove("sidebar-collapsed")
     } else {
-        main_area.classList.remove("main-area-shrunk")
         notification_wrapper.classList.remove("notification-wrapper-shrunk")
         sidebar.classList.add("sidebar-collapsed")
     }
@@ -152,6 +149,23 @@ window.onload = function() {
             toggle_based_on_sidebar_state(sidebar, siderbar_collapsed)
         })
     }
+
+    let chart_blocks = document.querySelectorAll(".chart-block")
+    //iterate over all chart blocks and add event listener to the spans inside
+    for (let i = 0; i < chart_blocks.length; i++) {
+        let chart_block = chart_blocks[i]
+        let chart_canvas = chart_block.querySelector("canvas")
+        let chart_block_span = chart_block.querySelector("span")
+        if (chart_block_span) {
+            chart_block_span.addEventListener("click", function() {
+                let chart = Chart.getChart(chart_canvas)
+                chart.config.type = chart.config.type == "line" ? "bar" : "line" //bar, horizontalBar, pie, line, doughnut, radar, polarArea, bubble, scatter
+                // chart.config.type = "scatter" //line bar works, radar works but ulgy, pie/donut/polar area on single dataset works, but on multiple datasets, it doesn't work
+                chart.update()
+            }.bind(chart_canvas))
+        }
+    }
+
 
     let page_help_button = document.getElementById("page_help")
     if (page_help_button) {
@@ -249,6 +263,7 @@ const Popup = {
         let popup_wrapper = document.createElement("div")
         popup_wrapper.classList.add("popup-wrapper")
         popup_wrapper.style.zIndex = z_index
+        //account for any scrolling that has happened in the content body, so that the popup is always in the same place
         popup_wrapper.style.top = popup_parent.scrollTop + "px"
         
         let popup_inner = document.createElement("div")
@@ -259,9 +274,10 @@ const Popup = {
 
         let close_button = document.createElement("button")
         close_button.classList = "popup-close-button button_default"
-        close_button.innerHTML = "Close popup"
+        close_button.innerHTML = "Close"
         close_button.onclick = () => {this.close()} //use arrow function to bind this to the popup object
-        popup_inner.appendChild(close_button)
+        popup_wrapper.appendChild(close_button)
+        content.classList.add("popup-content")
         
         window.onclick = (e) => {
             let found_wrapper = document.querySelector(".popup-wrapper")

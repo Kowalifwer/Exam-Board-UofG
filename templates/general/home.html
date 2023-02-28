@@ -6,26 +6,9 @@
 {% endblock %}
 
 {% block body %}
-    <h1>Dashboard</h1>
+    <h1>Home</h1>
 
-    <div style="height: 25px"></div>
-
-    <h3>General Statistics (TODO: better and more data, more charts)</h3>
     <p>Total number of students: {{students.count}}</p>
     <p>Total number of courses: {{courses.count}}</p>
-
-    <div style="height: 25px"></div>
-
-    <h4>Student data for every level</h4>
-    <div id="students_table" class="tabulator_table" style="max-width: 1200px;"></div>
-    <script>
-        load_students_table()
-    </script>
-
-    <h3>Course breakdown</h3>
-    <h4>Course data for every level</h4>
-    <div id="courses_table" class="tabulator_table" style="max-width: 1200px;"></div>
-    <script>
-        load_courses_table(extra_constructor_params = {}, false)
-    </script>
+    <p>Total number of legacy/graduated students in system: {{graduated_students}}</p>
 {%endblock%}

@@ -43,65 +43,66 @@
     {%endfor%}
 
     <div class="body-inner-wrapper">
-      <nav class="sidebar {%if request.COOKIES.sidebar_collapsed == 'true'%}sidebar-collapsed{%endif%}">
-        <!-- home -->
-        <div class="toggle-sidebar-container">
-          <h2><b>Navigation menu</b></h2>
-          <div id="toggle-sidebar">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        </div>
+        <nav class="sidebar{%if request.COOKIES.sidebar_collapsed == 'true'%} sidebar-collapsed{%endif%}">
+            <div class="toggle-sidebar-container sidebar-entry">
+                <h2><b>Navigation menu</b></h2>
+                <div id="toggle-sidebar">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
 
-        <a href="{%url 'general:home'%}" title="Dashboard" {%if '/' == request.path%}class="selected-page"{%endif%}>
-          <span>Dashboard</span>
-          <img class="sidebar-icon color-icon-theme" src="{% static 'icons/home.svg'%}">
-        </a>
+            <div class="sidebar-sections">
+                <a class="sidebar-entry {%if '/' == request.path%} selected-page{%endif%}" href="{%url 'general:home'%}" title="Dashboard">
+                    <span>Home</span>
+                    <img class="sidebar-icon color-icon-theme" src="{% static 'icons/home.svg'%}">
+                </a>
 
-        <div class="sidebar-separator"></div>
+                <div class="sidebar-separator"></div>
 
-        <a href="{%url 'general:all_students'%}" title="All students page" {%if 'students' in request.path%}class="selected-page"{%endif%}>
-          <span>All students</span>
-          <img class="sidebar-icon color-icon-theme" src="{% static 'icons/students.svg'%}">
-        </a>
+                <a class="sidebar-entry {%if 'students' in request.path%} selected-page{%endif%}" href="{%url 'general:all_students'%}" title="All students page">
+                    <span>All students</span>
+                    <img class="sidebar-icon color-icon-theme" src="{% static 'icons/students.svg'%}">
+                </a>
 
-        <a href="{%url 'general:all_courses'%}" title="All courses" {%if 'courses' in request.path%}class="selected-page"{%endif%}>
-          <span>All courses</span>
-          <img class="sidebar-icon color-icon-theme" src="{% static 'icons/courses.svg'%}">
-        </a>
+                <a class="sidebar-entry {%if 'courses' in request.path%} selected-page{%endif%}" href="{%url 'general:all_courses'%}" title="All courses">
+                    <span>All courses</span>
+                    <img class="sidebar-icon color-icon-theme" src="{% static 'icons/courses.svg'%}">
+                </a>
 
-        <div class="sidebar-separator"></div>
+                <div class="sidebar-separator"></div>
 
-        <a href="{%url 'general:level_progression' 1%}" title="Level progression" {%if 'progression' in request.path%}class="selected-page"{%endif%}>
-          <span>Level progression</span>
-          <img class="sidebar-icon color-icon-theme" src="{% static 'icons/progression.svg'%}">
-        </a>
+                <a class="sidebar-entry {%if 'progression' in request.path%} selected-page{%endif%}" href="{%url 'general:level_progression' 1%}" title="Level progression">
+                    <span>Level progression</span>
+                    <img class="sidebar-icon color-icon-theme" src="{% static 'icons/progression.svg'%}">
+                </a>
 
-        <a href="{%url 'general:degree_classification' 4%}" title="Degree classification" {%if 'degree_classification' in request.path%}class="selected-page"{%endif%}>
-          <span>Degree Classification</span>
-          <img class="sidebar-icon color-icon-theme" src="{% static 'icons/degree_classification.svg'%}">
-        </a>
+                <a class="sidebar-entry {%if 'degree_classification' in request.path%} selected-page{%endif%}" href="{%url 'general:degree_classification' 4%}" title="Degree classification">
+                    <span>Degree Classification</span>
+                    <img class="sidebar-icon color-icon-theme" src="{% static 'icons/degree_classification.svg'%}">
+                </a>
 
-        <div class="sidebar-separator"></div>
+                <div class="sidebar-separator"></div>
 
-        <a href="{%url 'general:degree_grading_rules'%}" title="Degree classification rules" {%if 'setup/degree' in request.path%}class="selected-page"{%endif%}>
-          <span>Degree classification rules</span>
-          <img class="sidebar-icon color-icon-theme" src="{% static 'icons/grade_settings.svg'%}">
-        </a>
+                <a class="sidebar-entry {%if 'setup/degree' in request.path%} selected-page{%endif%}" href="{%url 'general:degree_grading_rules'%}" title="Degree classification rules">
+                    <span>Degree classification rules</span>
+                    <img class="sidebar-icon color-icon-theme" src="{% static 'icons/grade_settings.svg'%}">
+                </a>
 
-        <a href="{%url 'general:level_progression_rules' 1%}" title="Level progression rules" {%if 'setup/level' in request.path%}class="selected-page"{%endif%}>
-            <span>Level progression rules</span>
-            <img class="sidebar-icon color-icon-theme" src="{% static 'icons/grade_settings.svg'%}">
-        </a>
+                <a class="sidebar-entry {%if 'setup/level' in request.path%} selected-page{%endif%}" href="{%url 'general:level_progression_rules' 1%}" title="Level progression rules">
+                    <span>Level progression rules</span>
+                    <img class="sidebar-icon color-icon-theme" src="{% static 'icons/grade_settings.svg'%}">
+                </a>
 
-        <div class="sidebar-separator"></div>
-      </nav>
+                <div class="sidebar-separator"></div>
+            </div>
+        </nav>
 
-      <div class="main-area{%if request.COOKIES.sidebar_collapsed == 'false'%} main-area-shrunk{%endif%}">
+      <div class="main-area">
         <div class="header">
             <div class="header-main">
-                <a class="welcome-title" href="{%url 'general:home'%}"><img src="{%static 'images/UoG_keyline.png'%}"><h2><b>Welcome to Univeristy of Glasgow</b><br>Exam board management system</h2></a>
+                <a class="welcome-title" href="{%url 'general:home'%}"><img src="{%static 'images/UoG_keyline.png'%}"><h2><b>Univeristy of Glasgow</b><br>Exam board management system</h2></a>
                 <div class="header-sections">
                 </div>
                 <form class="header-search" action="{% url 'general:global_search'%}" method="POST">

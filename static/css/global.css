@@ -394,8 +394,7 @@ input[type=checkbox]:checked::after {
 
 .sidebar {
     transition: var(--transition);
-    /* width: var(--sidebar-width); */
-    min-height: 100%;
+    height: 100%;
     background-color: var(--secondary-color);
     box-shadow: inset -2px 0 0 0 rgba(var(--p-color), 0.25), 2px 0 6px rgba(var(--p-color), 0.25);
     border-left: 3px solid rgba(var(--p-color), 0.35);
@@ -411,22 +410,27 @@ input[type=checkbox]:checked::after {
     position: relative;
     display: flex;
     flex-direction: column;
-    /* min-width: calc(100vw - var(--sidebar)); */
     width: calc(100vw - var(--sidebar-width) - 3px);
 }
 
-.sidebar > * {
+.sidebar-sections {
+    height: calc(100% - var(--header-height));
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.sidebar-entry, .toggle-sidebar-container {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 10px;
     height: calc(var(--sidebar-icon-width) * 1.4);
     padding-right: calc((var(--sidebar-width-collapsed) - var(--sidebar-icon-width)) / 2);
     box-sizing: border-box;
     white-space: nowrap;
 }
 
-.sidebar > *:not(.toggle-sidebar-container):hover, .selected-page {
+.sidebar-entry:not(.toggle-sidebar-container):hover, .selected-page {
     background-color: var(--hover-color);
     border-right: 3px solid rgba(var(--p-color), 0.35);
 }
@@ -447,7 +451,6 @@ input[type=checkbox]:checked::after {
     border-top: 1px solid rgba(var(--p-color), 0.20);
     border-left: none;
     cursor: pointer;
-    margin-bottom: calc(var(--extra-header-height) - 3px);
     background-color: var(--secondary-color);
 }
 
@@ -455,7 +458,8 @@ input[type=checkbox]:checked::after {
     color:var(--text-themed);
 }
 
-.sidebar > * > :first-child {
+/* centers the text element of the sidebar entry */
+.sidebar-entry > :first-child, .toggle-sidebar-container > :first-child {
     display: flex;
     margin:auto;
 }
@@ -834,7 +838,6 @@ input[type=checkbox]:checked::after {
 
 .popup-wrapper {
     position: absolute;
-    /* top: 0; */
     left: 0;
     width: 100%;
     height: 100%;
@@ -842,7 +845,7 @@ input[type=checkbox]:checked::after {
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: auto;
+    overflow: hidden;
     backdrop-filter: blur(1px);
 }
 
@@ -863,27 +866,31 @@ input[type=checkbox]:checked::after {
 }
 
 .popup-inner {
-    /* position: relative; */
-    /* top: 20px; */
     background-color: white;
     border-radius: var(--border-radius);
     padding: 10px;
-    max-height: 80%;
-    max-width: 80%;
+    max-height: 90%;
+    max-width: 90%;
     z-index: 1000;
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: auto;
     border: 3px solid rgba(var(--p-color), 0.45);
     box-shadow: 0 0 10px 0 rgba(var(--p-color), 0.55);
+    
 }
+
+.popup-content {
+    display: relative;
+}
+
+/* make a close x top right of popup content */
 
 .popup-close-button {
     position: absolute;
     top: 0;
     right: 0;
-    padding: 10px 15px;
+    padding: 10px 10px;
     background: var(--secondary-color);
     z-index: 1001;
     cursor: pointer;
@@ -901,8 +908,8 @@ input[type=checkbox]:checked::after {
     color: var(--secondary-color);
 }
 
-.moderation-popup {
-
+.popup-content {
+    width: 100%;
 }
 
 .moderation-input-area {

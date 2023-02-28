@@ -14,6 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.http import Http404
 from django.contrib import messages
+from django.db.models import Avg
 
 ##View helper functions
 def is_fetching_table_data(request):
@@ -63,12 +64,29 @@ def update_context_with_extra_header_data(context, reverse_name, year=None, extr
 
 # Views start here
 def home_view(request):
+    current_academic_year = AcademicYear.objects.filter(is_current=True).first()
     all_students = Student.objects.all()
     all_courses = Course.objects.all()
-
+    graduated_students = [student for student in all_students if student.graduation_difference_from_now(current_academic_year.year) < 0]
+    # System overview:
+    # The system currently stores information about 600 students.
+    # x legacy/graduated students, and y active/current students.
+    # Additionally, there are z courses in the system, with an average of u courses offered per academic year.
+    # z courses with an average of u courses offered per year.
+    # The current Academic year is X (X/X+1)
+    # print(Course.assessments.through.objects.all().count())
+    print(AssessmentResult.objects.all().count())
+    print(AssessmentResult.objects.filter(assessment__type="E").count())
+    #get average grade for all assessment results
+    print(AssessmentResult.objects.all().aggregate(Avg('grade')))
+    ##get the averages grouped by assessment type
+    print(AssessmentResult.objects.values('assessment__type').annotate(Avg('grade')))
+    #get the averages grouped by assessment type, and then by course
+    print(AssessmentResult.objects.values('course__academic_year').annotate(Avg('grade')))
     context = {
         "students": all_students,
         "courses": all_courses,
+        "graduated_students": len(graduated_students),
         "page_info": json.dumps({ #Page specific help information
             "title": "Home",
             "points_list": [
@@ -80,17 +98,6 @@ def home_view(request):
             ]
         })
     }
-
-    if is_fetching_table_data(request):  
-        all_data_json = {}
-        if "students" in request.GET:   
-            all_data_json = [student.get_data_for_table() for student in all_students]
-        if "courses" in request.GET:
-            all_data_json = [course.get_data_for_table() for course in all_courses]
-            
-        return JsonResponse(all_data_json, safe=False)
-
-    AssessmentResult.objects.all()
 
     return render(request, "general/home.html", context)
 

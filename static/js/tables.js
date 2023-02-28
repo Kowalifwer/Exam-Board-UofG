@@ -611,7 +611,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     table.reloadCharts = function(){
         for (var link_data of table.chart_links) {
             let chart_setup = link_data[1](table)
-
             let default_setup = {
                 type: 'bar',
                 data: {},
@@ -620,9 +619,71 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                         y: {
                             beginAtZero: true
                         }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true
+                        },
                     }
                 },
                 responsive : true,            
+            }
+            if (chart_setup.extra_settings) {
+                if (chart_setup.extra_settings.x_title) {
+                    default_setup.options.scales.x = {
+                        title: {
+                            display: true,
+                            text: chart_setup.extra_settings.x_title,
+                            font: {
+                                size: 20,
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                }
+                if (chart_setup.extra_settings.y_title) {
+                    default_setup.options.scales.y.title = {
+                        display: true,
+                        text: chart_setup.extra_settings.y_title,
+                        font: {
+                            size: 14,
+                            // weight: 'bold'
+                        }
+                    }
+                }
+                if (chart_setup.extra_settings.tooltip_extra) {
+                    default_setup.options.plugins.tooltip = {
+                        callbacks: {
+                            label: function(context) {
+                                console.log(context)
+                                return `${context.dataset.label} (${context.label})`
+                            },
+                            footer: function(tooltipItems) {
+                                let title = (this.y_title ? this.y_title : "Count") + ": " + tooltipItems[0].parsed.y + "/" + this.table_data_length
+                                return title + "\n" + this.title + (tooltipItems[0].parsed.y / this.table_data_length * 100).toFixed(2) + "%"
+                            }.bind({
+                                table_data_length: table.getData().length,
+                                title: chart_setup.extra_settings.tooltip_extra,
+                                y_title: chart_setup.extra_settings.y_title
+                            }),
+                            title: function(context) {
+                                return ""
+                            }
+                        }
+                    }
+                }
+                if (chart_setup.extra_settings.legend_display) {
+                    default_setup.options.plugins.legend = {
+                        display: chart_setup.extra_settings.legend_display
+                    }
+                }
+                if (chart_setup.extra_settings.title) {
+                    default_setup.options.plugins.title = {
+                        display: true,
+                        text: chart_setup.extra_settings.title
+                    }
+                }
+                delete chart_setup.extra_settings
             }
             let final_setup = {...default_setup, ...chart_setup}
 
@@ -786,43 +847,19 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
                         labels: Object.values(boundaries),
                         datasets: [
                             {
-                                label: "Number of students",
+                                label: "Grade band",
                                 data: Object.values(chart_data),
                                 barPercentage: 0.90,
                                 backgroundColor: colors,
                             }
                         ]
                     },
-                    options: {
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: "Number of students",
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: "Final grade for course",
-                                }
-                            }
-                        },
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    footer: function(tooltipItems) {
-                                        return "Percentage of students: " + (tooltipItems[0].parsed.y / table_data.length * 100).toFixed(2) + "%"
-                                    }
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: "Final grade distribution for course",
-                            }
-
-                        }
+                    extra_settings: {
+                        y_title: "Number of students",
+                        x_title: "Final grade for course",
+                        tooltip_extra: "Percentage of students: ",
+                        legend_display: false,
+                        title: "Final grade distribution for course",
                     }
                 }   
             }
@@ -943,7 +980,7 @@ function load_level_progression_table(level){
 
     table.addChartLink([document.getElementById("level_progression_chart_success"), function(table_inner) {
         let table_data = table_inner.getData()
-        let classes = ["yes", "discretionary", "no"]
+        let classes = ["Guaranteed", "Discretionary", "No"]
         let colors = [c_good,c_mid,c_poor]
         let chart_data = []
         for (let x in classes) {
@@ -957,11 +994,17 @@ function load_level_progression_table(level){
                 labels: classes,
                 datasets: [
                     {
-                        label: "Number of students",
+                        label: "Progression?",
                         data: Object.values(chart_data),
                         backgroundColor: colors,
                     }
                 ]
+            },
+            extra_settings: {
+                x_title: "Progression to level "+ (level + 1),
+                y_title: "Number of students",
+                tooltip_extra: "Percentage of cohort: ",
+                legend_display: false,
             }
         }
     }])
@@ -969,6 +1012,7 @@ function load_level_progression_table(level){
     table.addChartLink([document.getElementById("level_progression_chart_all"), function(table_inner) {
         let table_data = table_inner.getData()
         let bands = ["A", "B", "C", "D", "E", "F", "G"]
+        let colors = [c_good,c_good,c_good,c_mid,c_poor,c_poor,c_poor]
         let chart_data = {}
 
         for (let x in bands) {
@@ -988,11 +1032,17 @@ function load_level_progression_table(level){
                 labels: bands,
                 datasets: [
                     {
-                        label: "Final band",
+                        label: "GPA band",
                         data: Object.values(chart_data).map(x => x.final_band),
-                        backgroundColor: chart_colors[5],
+                        backgroundColor: colors,
                     }
                 ]
+            },
+            extra_settings: {
+                x_title: "Level "+ level +" GPA",
+                y_title: "Number of students",
+                tooltip_extra: "Percentage of cohort: ",
+                legend_display: false,
             }
         }
     }])
@@ -1140,11 +1190,17 @@ function load_degree_classification_table(level) {
                 labels: classes,
                 datasets: [
                     {
-                        label: "Number of students",
+                        label: "Degree classification",
                         data: Object.values(chart_data),
                         backgroundColor: [c_good, c_good, c_good, c_mid, c_poor],
                     }
                 ]
+            },
+            extra_settings: {
+                y_title: "Number of students",
+                x_title: "Degree classification",
+                tooltip_extra: "Percentage of cohort: ",
+                legend_display: false,
             }
         }
     }])
@@ -1199,6 +1255,12 @@ function load_degree_classification_table(level) {
                         hidden: (i > 0),
                     }
                 })
+            },
+            extra_settings: {
+                y_title: "Number of students",
+                x_title: "Band",
+                tooltip_extra: "Percentage of cohort: ",
+                legend_display: true,
             }
         }
     }])
@@ -1481,38 +1543,17 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
                         label: "Average Coursework GPA",
                         data: Object.values(chart_data).map(x => x.coursework),
                         backgroundColor: chart_colors[4],
-                        hidden: true,
                     },
                     {
                         label: "Average Exam GPA",
                         data: Object.values(chart_data).map(x => x.exam),
                         backgroundColor: chart_colors[5],
-                        hidden: true,
                     },
                 ]
             },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: "Academic year",
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: "Final GPA",
-                        }
-                    }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: "Final GPA across all Academic years",
-                    }
-                }
+            extra_settings: {
+                y_title: "GPA",
+                x_title: "Academic year",
             }
         }
     }])
