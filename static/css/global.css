@@ -560,9 +560,9 @@ input[type=checkbox]:checked::after {
     color: var(--success-color) !important;
 }
 
-.old-year {
+/* .old-year {
     color: var(--warning-color) !important;
-}
+} */
 
 .notification-wrapper {
     position: fixed;
@@ -928,6 +928,14 @@ input[type=checkbox]:checked::after {
     color: var(--text-main);
 }
 
+.tabulator-columns-menu > h3 {
+    margin: 0;
+    margin-bottom: 10px;
+    color: var(--text-themed);
+    font-size: 20px;
+    font-weight: bold;
+}
+
 .tabulator-columns-menu > p {
     margin: 10px 0;
     color: var(--text-themed);
@@ -1264,7 +1272,7 @@ input[type=checkbox]:checked::after {
 /* END OF COURSE PAGE */
 .tabulator {
     max-height: 600px;
-    max-width: fit-content;
+    max-width: 1200px;
     overflow-x: auto;
     /* box-shadow: var(--shadow); */
     /* border: 1px solid rgba(var(--p-color), 0.55); */

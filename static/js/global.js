@@ -215,7 +215,7 @@ function api_factory(method) {
                 })
                 return
             } else if (method == "POST") {
-                fetch("/api/", {
+                fetch(`/api/general/${action}/`, {
                     method: method,
                     body: form_data,
                 }).then(response => {

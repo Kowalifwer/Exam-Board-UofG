@@ -183,7 +183,7 @@ def student_view(request, GUID):
         courses = student.courses.all()
         results = student.results.all()
 
-        ##note that this is heavily optimized for less executed queries.
+        ##note that this is optimized for less executed queries.
         def filter_results(course):
             return [result for result in results if result.course == course]
 
@@ -256,7 +256,7 @@ def course_view(request, code, year):
         "current_course": course.first(),
     }
     update_context_with_extra_header_data(context, 'general:course', year=year)
-    context["page_info"] = json.dumps({
+    context["page_info"] = json.dumps({ #Page specific help information
         "title": f"Individual course",
         "points_list": [
             f"This page provides all the information about the course: <b>'{context['current_course']}'</b> offered in <b>'{year}'</b>.",
@@ -277,7 +277,7 @@ def level_progression_view(request, level, year=None):
         'current_level': level,
     }
     update_context_with_extra_header_data(context, 'general:level_progression_exact', year=year, extra_level_iterator=degree_progression_levels)
-    context["page_info"] = json.dumps({
+    context["page_info"] = json.dumps({ #Page specific help information
         "title": f"Level progression",
         "points_list": [
             f"This page provides all the information about cohort <b>level {level}</b> in <b>'{context['selected_year'].year}'</b>.",
@@ -335,7 +335,7 @@ def degree_classification_view(request, level, year=None):
         'current_level': level,
     }
     update_context_with_extra_header_data(context, 'general:degree_classification_exact', year=year, extra_level_iterator=degree_classification_levels)
-    context["page_info"] = json.dumps({
+    context["page_info"] = json.dumps({ #Page specific help information
         "title": f"Degree classification",
         "points_list": [
             f"This page provides all the information about students who graduate at <b>level {level}</b> in <b>'{context['selected_year'].year}'</b>.",
@@ -412,7 +412,7 @@ def degree_classification_view(request, level, year=None):
 def degree_classification_grading_rules_view(request, year=None):
     context = {}
     update_context_with_extra_header_data(context, 'general:degree_grading_rules_exact', year=year)
-    context["page_info"] = json.dumps({
+    context["page_info"] = json.dumps({ #Page specific help information
         "title": f"Degree classification grading rules",
         "points_list": [
             f"This page showcases the rules used to calculate the degree classifications, for a given year. Currently: <b>'{context['selected_year'].year}'</b>.",
@@ -429,7 +429,7 @@ def level_progression_rules_view(request, level, year=None):
         'current_level': level,
     }
     update_context_with_extra_header_data(context, 'general:level_progression_rules_exact', year=year, extra_level_iterator=degree_progression_levels)
-    context["page_info"] = json.dumps({
+    context["page_info"] = json.dumps({ #Page specific help information
         "title": f"Level progression determining rules",
         "points_list": [
             f"This page showcases the rules used to determine the requirements for progression into the next level, for a given year and level. Currently: <b>'{context['selected_year'].year}'</b> and <b>'Level {level}'</b>.",
@@ -482,7 +482,6 @@ def fetch_assessment_moderation_table_data(request):
             ]
             return JsonResponse(data, safe=False)
     return None
-
 
 ###API SECTION###
 #API's to get table data

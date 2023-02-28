@@ -1,6 +1,7 @@
 from django.urls import path
 from general.views import home_view, login_view, logout_view, global_search_view, student_view, course_view, all_students_view, all_courses_view, degree_classification_view, degree_classification_grading_rules_view, level_progression_rules_view, api_view, api_table_view, level_progression_view
 
+#url names for views with different years/levels
 courses_verbose = 'all_courses'
 degree_classification_verbose = 'degree_classification'
 grading_rules_verbose = 'degree_grading_rules'

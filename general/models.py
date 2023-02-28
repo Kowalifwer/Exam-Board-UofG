@@ -166,11 +166,15 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
     def page_url(self):
         """Returns the url for the individual student view."""
         return reverse('general:student', args=[self.GUID])
+
+    def graduation_difference_from_now(self, current_academic_year):
+        """Returns the difference between the current academic year and the end academic year of the student."""
+        return current_academic_year - self.end_academic_year
     
     def graduation_info(self):
         """Returns a string with information about the student's graduation status and a link to the cohort in which they have graduated."""
         current_academic_year = AcademicYear.objects.filter(is_current=True).first().year
-        graduation_difference_from_now = current_academic_year - self.end_academic_year
+        graduation_difference_from_now = self.graduation_difference_from_now(current_academic_year)
         link_to_relevant = reverse('general:degree_classification_exact', args=[5 if self.is_masters else 4, self.end_academic_year])
         if graduation_difference_from_now > 0:
             return mark_safe(f"Graduated {graduation_difference_from_now} years ago. <br><a href='{link_to_relevant}'>View graduation cohort</a>")
@@ -676,7 +680,6 @@ class Assessment(UUIDModelMixin):
 
     def __str__(self):
         return f"{self.name}({self.weighting}%)"
-
 
 #possible lvl 1,2 subjects = [STATS, MATHS, PHYS, PSYCH, CHEM, GEOG, ECON, BIO, CSC, ENG, HIST, POLS]
 #when populating courses for a given student: check which years they should have courses in.

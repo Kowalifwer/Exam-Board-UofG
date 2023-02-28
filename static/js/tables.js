@@ -205,7 +205,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         paginationSize: 100, //number of rows to display per page by default
         paginationSizeSelector:[25, 50, 100, 1000], //allow user to select number of rows to be shown per page
 
-        layout: "fitDataStretch", //"fitColumns", //fitDataStretch //fitDataFill
+        layout: "fitDataFill", //"fitColumns", //fitDataStretch //fitDataFill
 
         movableColumns: true, //allow user to move columns around
 
@@ -473,7 +473,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
             let current_parent = null
             for (let column of columns){
-                if (!column.getDefinition().title || column.getDefinition().title == "hidden")
+                if (!column.getDefinition().title || column.getDefinition().title == "hidden" || column.getDefinition().formatter == "rowSelection")
                     continue
 
                 let parent_column = column.getParentColumn()
@@ -646,7 +646,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
 function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={'title': 'Students'}){
     let columns = [
-        {title:"Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
+        {title:"Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true, download:false},
         {title: "GUID", field: "GUID", headerFilter: "input", frozen:true},
         {title: "Full name", field: "name", headerFilter: "input"},
         {
@@ -660,7 +660,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
             "headerHozAlign": "center",
         },
         {
-            title: "Year data",
+            title: "Study year data",
             columns: [
                 {title: "Current level", field: "current_year", headerMenu: columnHeaderGroupBy},
                 {title: "Start year", field: "start_year", headerMenu: columnHeaderGroupBy},
@@ -860,7 +860,7 @@ function load_level_progression_table(level){
     }
 
     let columns = [
-        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
+        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true, download:false},
         {title: "GUID", field: "GUID", headerFilter: "input", frozen: true},
         {title: "Full name", field: "name", headerFilter: "input"},
         {
@@ -874,7 +874,7 @@ function load_level_progression_table(level){
             headerHozAlign: "center",
         },
         {
-            title: "Year data",
+            title: "Study year data",
             columns: [
                 {title: "Current level", field: "current_year", headerMenu: columnHeaderGroupBy},
                 {title: "Start year", field: "start_year", headerMenu: columnHeaderGroupBy},
@@ -1041,7 +1041,7 @@ function load_degree_classification_table(level) {
     }
 
     let columns = [
-        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
+        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true, download:false},
         {title: "GUID", field: "GUID", headerFilter: "input", "frozen": true},
         {title: "Full name", field: "name", headerFilter: "input"},
         {
@@ -1345,7 +1345,7 @@ function create_student_course_detailed_table_popup(student_data=null, course_id
 
 function load_courses_table(extra_constructor_params = {}, extra_cols=true, settings={}){
     let columns = [
-        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true},
+        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true, download:false},
         {title: "Code", field: "code", headerFilter: "input", frozen:true},
         {title: "Name", field: "name", headerFilter: "input"},
         {title: "Academic year", field: "academic_year", headerMenu: columnHeaderGroupBy},
@@ -1587,7 +1587,7 @@ function render_course_moderation_section(course_data, parent_table=null) {
     document.body.appendChild(wrapper)
     
     let columns = [
-        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerSort:false, frozen:true},
+        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerSort:false, frozen:true, download:false},
         {title: "Assessment type", field: "type"},
         {title: "Assessment name", field: "name"},
         {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},
