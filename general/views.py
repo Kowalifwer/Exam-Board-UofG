@@ -44,9 +44,13 @@ def update_context_with_extra_header_data(context, reverse_name, year=None, extr
     for academic_year in all_years:
         if year and year == academic_year.year: ##if year is provided, and matches the current year, set it as selected
             context['selected_year'] = academic_year
-        elif academic_year.is_current and 'selected_year' not in context: ##FALLBACK: if year is not provided, and the current year is the current year, set it as selected
-            context['selected_year'] = academic_year
-        
+        if academic_year.is_current:
+            if 'selected_year' not in context: ##FALLBACK: if year is not provided, and the current year is the current year, set it as selected
+                context['selected_year'] = academic_year
+            context['current_year'] = academic_year
+            context['difference_from_current_active_year'] = academic_year.year - context["selected_year"].year
+            print(context['difference_from_current_active_year'])
+
         args = [academic_year.year]
         if url_course: 
             args.insert(0, url_course.code)
@@ -67,7 +71,7 @@ def home_view(request):
     current_academic_year = AcademicYear.objects.filter(is_current=True).first()
     all_students = Student.objects.all()
     all_courses = Course.objects.all()
-    graduated_students = [student for student in all_students if student.graduation_difference_from_now(current_academic_year.year) < 0]
+    graduated_students = [student for student in all_students if not student.is_active(current_academic_year.year)]
     # System overview:
     # The system currently stores information about 600 students.
     # x legacy/graduated students, and y active/current students.
@@ -75,6 +79,9 @@ def home_view(request):
     # z courses with an average of u courses offered per year.
     # The current Academic year is X (X/X+1)
     # print(Course.assessments.through.objects.all().count())
+    # Year by year breakdown:
+    # 2015/2016: x students enrolled, x courses, a
+
     print(AssessmentResult.objects.all().count())
     print(AssessmentResult.objects.filter(assessment__type="E").count())
     #get average grade for all assessment results
@@ -114,8 +121,9 @@ def all_students_view(request):
                 "An additional header is provided which allows you to navigate across different years, to view all the courses offered."
             ]
         })}
+    current_academic_year = AcademicYear.objects.filter(is_current=True).first()
     if is_fetching_table_data(request):   
-        all_students_json = [student.get_data_for_table() for student in all_students]
+        all_students_json = [student.get_data_for_table(current_year=current_academic_year.year) for student in all_students]
         return JsonResponse(all_students_json, safe=False)
 
     return render(request, "general/all_students.html", context)
@@ -139,7 +147,7 @@ def all_courses_view(request, year=None):
         get_query_count("all_courses_view", True)
         all_courses_json = [course.get_data_for_table({
             "get_extra_data_general": [],
-        }) for course in all_courses.prefetch_related("assessments", "results", "results__assessment")]
+        }, enrolled_students=True) for course in all_courses.prefetch_related("assessments", "results", "results__assessment", "students")]
         get_query_count("Time to search finish")
         # return JsonResponse({'data': all_students_json, 'last_page': paginator.num_pages})
         return JsonResponse(all_courses_json, safe=False)
@@ -166,11 +174,11 @@ def global_search_view(request):
             "<b>How to access an individual course/student page?:</b> Right click on the student/course, and select 'View Student/Course' from the dropdown menu.",
         ]
     })
-    
+    current_year = AcademicYear.objects.filter(is_current=True).first()
     if is_fetching_table_data(request):
         search_term = request.GET["search_term"]
         if "students" in request.GET:
-            data = [student.get_data_for_table() for student in Student.objects.filter(Q(full_name__icontains=search_term) | Q(GUID__icontains=search_term))]
+            data = [student.get_data_for_table(current_year=current_year.year) for student in Student.objects.filter(Q(full_name__icontains=search_term) | Q(GUID__icontains=search_term))]
         elif "courses" in request.GET:
             #fast_m
             data = [course.get_data_for_table(extra_data=None, assessments_prefetched=True) for course in Course.objects.filter(
@@ -219,6 +227,7 @@ def student_view(request, GUID):
 
 def course_view(request, code, year):
     get_query_count("before fetching course", False)
+    current_year = AcademicYear.objects.filter(is_current=True).first()
     course = Course.objects.filter(code=code, academic_year=year)
     if is_fetching_table_data(request):
 
@@ -231,6 +240,7 @@ def course_view(request, code, year):
                 {
                     "get_extra_data_course": [course_assessments, course]
                 }
+            , current_year=current_year.year
             ) for student in students
         ]
         extra_col_grps = {}
@@ -297,12 +307,17 @@ def level_progression_view(request, level, year=None):
     })
     context["level_head"] = User.objects.filter(level_head__academic_year=context["selected_year"], level_head__level=level).first()
     get_query_count("before fetching level progression", True)
-    if is_fetching_table_data(request):
+    if is_fetching_table_data(request): #if course year = 2021 and 
         student_course_map = {}
+        # context["selected_year"]
+        #student.current_level == level
         courses = Course.objects.filter(academic_year=context["selected_year"].year).prefetch_related("assessments", "students", "results", "results__assessment", "results__student")
-        
         for course in courses:
-            enrolled_students = [student for student in course.students.all() if (student.current_level - (student.current_academic_year - context["selected_year"].year)) == level]
+            #eg. course of 2021, has students of various levels. We only want to show students of level = level
+            #2022 level 3 students -> start year = 2022 - 3 + 1 = 2020
+            # students__start_academic_year=context["selected_year"] - level
+            enrolled_students = [student for student in course.students.all() if student.current_level == (level + context["difference_from_current_active_year"])]
+            # enrolled_students = course.students.all()
             if not enrolled_students:
                 continue
 
@@ -327,7 +342,8 @@ def level_progression_view(request, level, year=None):
             student.get_data_for_table(
                 {
                     "get_extra_data_level_progression" : [context["selected_year"].level_progression_settings[str(context["current_level"])] ,course_map]
-                }
+                },
+                current_year=context["current_year"].year,
             ) for student, course_map in student_course_map.items()
         ]
         get_query_count("after fetching level progression")
@@ -356,7 +372,7 @@ def degree_classification_view(request, level, year=None):
     get_query_count("before fetching degree classification", False)
     if is_fetching_table_data(request):
         masters = (level == 5)
-        students = set(Student.objects.filter(end_academic_year=context['selected_year'].year, current_academic_year=context['selected_year'].year, is_masters=False if not masters else True).prefetch_related("results__course", "results__assessment", "courses", "courses__assessments"))
+        students = set(Student.objects.filter(end_academic_year=context['selected_year'].year, current_level=level, is_masters=False if not masters else True).prefetch_related("results__course", "results__assessment", "courses", "courses__assessments"))
         student_course_map_lvl5 = {}
         student_results_map_lvl5 = {}
         student_course_map_lvl4 = {}

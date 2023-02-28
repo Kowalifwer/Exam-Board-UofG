@@ -31,8 +31,8 @@ class CommentInline(admin.TabularInline):
 
 @admin.register(Student)
 class Student_Admin(admin.ModelAdmin):
-    list_display = ('GUID', 'full_name', 'degree_title', 'current_academic_year', 'is_faster_route', 'is_masters', 'start_academic_year', 'end_academic_year')
-    list_filter = ('degree_title', 'current_academic_year', 'start_academic_year', 'end_academic_year', 'is_faster_route', 'is_masters')
+    list_display = ('GUID', 'full_name', 'degree_title', 'current_level', 'is_faster_route', 'is_masters', 'start_academic_year', 'end_academic_year')
+    list_filter = ('degree_title', 'current_level', 'start_academic_year', 'end_academic_year', 'is_faster_route', 'is_masters')
     search_fields = ('GUID', 'full_name', 'degree_title')
     readonly_fields = ('course_data',)
     exclude = ('courses',)

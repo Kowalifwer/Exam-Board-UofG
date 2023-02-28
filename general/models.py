@@ -134,22 +134,17 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
     is_masters = models.BooleanField(default=False)
     start_academic_year = models.IntegerField()
     end_academic_year = models.IntegerField()
-    current_academic_year = models.IntegerField()
+    current_level = models.IntegerField()
 
     courses = models.ManyToManyField("Course", related_name="students")
 
     level_choices = {
-        0: 'No levels',
         1: 'Level 1',
         2: 'Level 2',
         3: 'Level 3',
         4: 'Level 4',
         5: 'Level 5(M)',
     }
-
-    @property
-    def current_level(self):
-        return self.current_academic_year - self.start_academic_year + (1 if not self.is_faster_route else 2)
 
     @property
     def current_level_verbose(self):
@@ -167,6 +162,11 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
         """Returns the url for the individual student view."""
         return reverse('general:student', args=[self.GUID])
 
+    def is_active(self, current_academic_year): ##current level 4, 2017-2020
+        """Returns whether the student is active or not."""
+        return self.end_academic_year >= current_academic_year
+
+    #current level, start academic year, end academic year, is faster route. can determine if graduated or not.
     def graduation_difference_from_now(self, current_academic_year):
         """Returns the difference between the current academic year and the end academic year of the student."""
         return current_academic_year - self.end_academic_year
@@ -177,14 +177,14 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
         graduation_difference_from_now = self.graduation_difference_from_now(current_academic_year)
         link_to_relevant = reverse('general:degree_classification_exact', args=[5 if self.is_masters else 4, self.end_academic_year])
         if graduation_difference_from_now > 0:
-            return mark_safe(f"Graduated {graduation_difference_from_now} years ago. <br><a href='{link_to_relevant}'>View graduation cohort</a>")
+            return mark_safe(f"Graduated {graduation_difference_from_now} years ago. (<a href='{link_to_relevant}'>View graduation cohort</a>)")
         elif graduation_difference_from_now == 0:
-            return mark_safe(f"Due to graduate this academic year. <br><a href='{link_to_relevant}'>View graduation cohort</a>")
+            return mark_safe(f"Due to graduate this academic year.(<a href='{link_to_relevant}'>View graduation cohort</a>)")
         else:
             link_to_relevant = reverse('general:level_progression_exact', args=[self.current_level, self.end_academic_year])
-            return mark_safe(f"Due to graduate in {abs(graduation_difference_from_now)} years. <br><a href='{link_to_relevant}'>View graduation cohort</a>")
+            return mark_safe(f"Due to graduate in {abs(graduation_difference_from_now)} years.")
     
-    def get_data_for_table(self, extra_data: dict=None):
+    def get_data_for_table(self, extra_data: dict=None, **kwargs):
         """Returns relevant data about the student object. Mostly used for tables.
         :param extra_data: An optional dictionary that can be used to fetch additional information about the model object, where necessary.
         :example use: obj.get_data_for_table(extra_data={"get_extra_data_FOO": [1, 2, 3]})
@@ -199,15 +199,18 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
             "degree_title": self.degree_title,
             "is_masters": self.is_masters,
             "is_faster_route": self.is_faster_route,
-            "current_year": self.current_level_verbose,
             "start_year": self.start_academic_year,
             "end_year": self.end_academic_year,
+            "current_level": self.current_level_verbose,
             "level": self.current_level,
 
             #extra hidden data
             "page_url": self.page_url,
             "count": 1
         }
+
+        if "current_year" in kwargs:
+            table_data["is_active"] = self.is_active(kwargs["current_year"])
 
         if extra_data:
             for method, args in extra_data.items():
@@ -230,7 +233,7 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
         :return dict: A dictionary of extra data."""
         
         extra_data = {
-            "progress_to_next_level": "no", #yes, discretionary, no
+            "progress_to_next_level": "No", #Yes, Discretionary, No
             "final_band": 0,
             "final_gpa": 0,
             "greater_than_a": 0,
@@ -466,8 +469,7 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
         return extra_data
     
     class Meta:
-        ordering = ['current_academic_year']
-
+        ordering = ['current_level']
 
 class Course(UUIDModelMixin, CommentsForTableMixin):
     """This is the model that represents a course table, and is used to store information about the course, such as the code, name, academic year, lecturer, credits, and any assessed content."""
@@ -529,7 +531,9 @@ class Course(UUIDModelMixin, CommentsForTableMixin):
 
         if "assessments_prefetched" in kwargs: #if we prefetched the assessments for the whole queryset - we can figure out if the course is moderated without making a query for this obejct.
             table_data["is_moderated"] = self.is_moderated_optimized
-
+        if "n_students":
+            table_data["n_students"] = len(self.students.all())
+        
         if extra_data: 
             for method, args in extra_data.items():
                 ##This will call the method with the given arguments, and update the table_data dictionary with the new data.

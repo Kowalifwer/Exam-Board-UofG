@@ -655,7 +655,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                     default_setup.options.plugins.tooltip = {
                         callbacks: {
                             label: function(context) {
-                                console.log(context)
                                 return `${context.dataset.label} (${context.label})`
                             },
                             footer: function(tooltipItems) {
@@ -723,7 +722,8 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
         {
             title: "Study year data",
             columns: [
-                {title: "Current level", field: "current_year", headerMenu: columnHeaderGroupBy},
+                {title: "Currently active?", field: "is_active", headerMenu: columnHeaderGroupBy, formatter: "tickCross"},
+                {title: "Current level", field: "current_level", headerMenu: columnHeaderGroupBy},
                 {title: "Start year", field: "start_year", headerMenu: columnHeaderGroupBy},
                 {title: "End year", field: "end_year", headerMenu: columnHeaderGroupBy},
             ],
@@ -762,8 +762,8 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
     let final_extra_constructor_params = { ...extra_constructor_params,
         ajaxParams: ajaxParams,
         rowContextMenu:rowContextMenu,
-        groupBy: 'current_year',
-        initialSort: [{column: 'current_year', dir: 'dsc'}],
+        groupBy: 'current_level',
+        initialSort: [{column: 'current_level', dir: 'dsc'}],
         placeholder: "Student data loading...",
     }
     let table = init_table("students_table", columns, null, final_extra_constructor_params, settings={...settings, ...{title: "Students"}})
@@ -890,7 +890,6 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
 
 function load_level_progression_table(level){
     level = parseInt(level)
-    console.log("Loading level progression table for level " + level)
     if(![1,2,3,4,5].includes(level)) {
         console.error("Invalid level passed to load_level_progression_table function")
         return
@@ -913,7 +912,8 @@ function load_level_progression_table(level){
         {
             title: "Study year data",
             columns: [
-                {title: "Current level", field: "current_year", headerMenu: columnHeaderGroupBy},
+                {title: "Currently active?", field: "is_active", headerMenu: columnHeaderGroupBy, formatter: "tickCross"},
+                {title: "Current level", field: "current_level", headerMenu: columnHeaderGroupBy},
                 {title: "Start year", field: "start_year", headerMenu: columnHeaderGroupBy},
                 {title: "End year", field: "end_year", headerMenu: columnHeaderGroupBy},
             ],
@@ -959,13 +959,12 @@ function load_level_progression_table(level){
         groupBy: "progress_to_next_level",
 
         groupHeader: function(value, count, data, group){
-            // console.log(data)
             let message = ""
-            if (value == "discretionary") {
+            if (value == "Discretionary") {
                 message = `Students who <span class="warning-text">might progress</span> at schools discretion (${count})`
-            } else if (value == "no") {
+            } else if (value == "No") {
                 message = `Students who <span class="error-text">will not</span> progress (${count})`
-            } else if (value == "yes") {
+            } else if (value == "Guaranteed") {
                 message = `Students who are <span class="success-text">guaranteed</span> to progress (${count})`
             }
             return message
@@ -1058,11 +1057,11 @@ function load_level_progression_table(level){
 
         for (let i = 0; i < n_rows; i++) {
             let student = table_data[i]
-            if (student.progress_to_next_level == "yes") {
+            if (student.progress_to_next_level == "Guaranteed") {
                 passed_students++
-            } else if (student.progress_to_next_level == "discretionary") {
+            } else if (student.progress_to_next_level == "Discretionary") {
                 discretionary++
-            } else if (student.progress_to_next_level == "no") {
+            } else if (student.progress_to_next_level == "No") {
                 failed_students++
             }
             if (student.final_gpa != null) {
@@ -1107,7 +1106,7 @@ function load_degree_classification_table(level) {
         {
             title: "Year data",
             columns: [
-                {title: "Current level", field: "current_year", headerMenu: columnHeaderGroupBy},
+                {title: "Current level", field: "current_level", headerMenu: columnHeaderGroupBy},
                 {title: "Start year", field: "start_year", headerMenu: columnHeaderGroupBy},
                 {title: "End year", field: "end_year", headerMenu: columnHeaderGroupBy},
             ],
@@ -1314,7 +1313,6 @@ function load_degree_classification_table(level) {
             }
 
             return `
-                <h3>Final statistics</h3>
                 <p><b>Total number of students:</b> ${n_rows}</p>
                 ${grades_breakdown_string}
                 <p><b>Number of students graduated succesfully:</b> ${passed_students} (${(passed_students/ n_rows * 100).toFixed(2)}%)</p>
@@ -1382,7 +1380,6 @@ function create_student_course_detailed_table_popup(student_data=null, course_id
                         if (response.data) {
                             parent_table_to_reload.reloadTable()
                             popup.close()
-                            console.log(student_data)
                             create_notification("Preponderance update", `Preponderance updated successfully for ${student_data.name}. Tables and charts are reloading.`, "success")
                         } else {
                             create_notification("Error", response.status, "error")
@@ -1393,7 +1390,6 @@ function create_student_course_detailed_table_popup(student_data=null, course_id
                 table.addNotification()
                 this.innerHTML = "Save changes!"
                 table.setColumns(columns)
-                console.log(columns)
                 table_element.dataset.edit_mode = 1
             }
         })
@@ -1431,6 +1427,7 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
         })
     } else {
         if (extra_cols) {
+            columns.push({title:"Enrolled students", field: "n_students"})
             columns.push({
                 title: "Cohort average performance",
                 headerHozAlign: "center",
