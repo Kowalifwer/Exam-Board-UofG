@@ -6,7 +6,6 @@ django.setup()
 
 import random
 from general.models import AcademicYear, User, Student, Course, Assessment, AssessmentResult, AcademicYear, LevelHead
-from django.utils import lorem_ipsum
 from django.db import connection, reset_queries
 import time
 import traceback
@@ -20,7 +19,8 @@ COMPUTER_SCIENCE_COURSE_CODE_PREFIX = 'COMPSCI'
 REQUIRED_CREDITS_PER_COURSE = 120
 
 TOTAL_NUMBER_OF_USERS = 20
-TOTAL_NUMBER_OF_COURSES = 7*12 #5 years of courses, 12 courses for lvl 1,2,5 and 24 for lvl 3,4
+TOTAL_NUMBER_OF_COURSES = 5*12 #5 years of courses, 12 courses for lvl 1,2,3,4,5
+LEVEL_PATTERN = [1,2,3,4,5]
 TOTAL_NUMBER_OF_STUDENTS = 600
 
 def decision(probability):
@@ -38,6 +38,11 @@ class Populator:
         if not academic_year:
             academic_year = AcademicYear.objects.create(year=CURRENT_YEAR, is_current=True)
         self.current_academic_year = academic_year.year
+
+        #extra randomization settings
+        #the 2 settings below are used to bias the start year of students, so that more students start closer towards the first year of courses.
+        self.range_of_start_years = range(FIRST_YEAR_OF_COURSES, self.current_academic_year + 1)
+        self.start_years_weights = [1/i for i in self.range_of_start_years]
     
     #https://catonmat.net/tools/generate-random-names - names generated from here
     first_names = """Mark,Menachem,Clinton,Suzanne,Juliann,Brook,Treyton,Brandi,Leroy,Manuel,Cristofer,Nathanael,Isaiah,Dahlia,Noa,Jaila,Hazel,Ireland,Jeniffer,Annabella,Brenton,Caroline,Dangelo,Chassidy,Jacklyn,Howard,Cali,Zachariah,Mariel,Keanu,Lawson,Tony,Elexis,Sydni,Jajuan,Juliette,Averi,Bobby,Oswaldo,Nicholas,Jennifer,Moses,Brea,April,Sienna,Nakia,Sara,Neil,Kaylea,Kenya,Chynna,Mariana,Christopher,Jaleel,Ambria,Harmony,Beatrice,Kole,August,Rianna,Francesco,Kent,Eugene,Devin,Dan,Adonis,Katharine,Maverick,Aidan,Elijah,Dara,Makena,Johnson,Gabriel,Leonard,Kaden,Connor,Raheem,Preston,Alesha,Ammon,Precious,Danny,Shirley,Chester,Sean,Hailie,Ryland,Theresa,Alecia,Astrid,Joselyn,Christen,Andrew,Dayton,Edmund,Adriel,Jaycie,Erik,Denis,Brynn,Kristofer,Ramon,Colleen,Syed,Mariela,Chyna,Robyn,Irene,Ellie,Deontae,Jamar,Gissell,Leanna,Victoria,Marilyn,Dianna,Arthur,Marquis,Brandon,Braedon,Conner,Arielle,Ari,Anaya,Mia,Efren,Jay,Rey,Patrick,Sarah,Kendell,Luiz,Alia,Antwan,Killian,Camilla,Arjun,Alonso,Justus,Kinsley,Amiyah,Desean,Logan,Javier,Zayne,Anita,Eddy,Alayna,Riley,Cloe,Stefan,Robin,Jacquelin,Clara,Sasha,Steven,Jakobe,Tai,Jonas,Bridgett,Harold,Esteban,Lynsey,Zion,Aliza,Kennedy,Perry,Alek,Mustafa,Jaqueline,Karlee,Keaton,Benito,Savanah,Deondre,Kara,Caylee,Rosario,Kellie,Calvin,Frankie,Luis,Maggie,Courtney,Dante,Gwyneth,Lauryn,Maxine,Yusuf,Darnell,Deshaun,Raven,Jarod,Quinton,Alyson,Isabelle,Reagan,Bruce,Frida,Katherine,Jensen,Eve,Alexia,Eliana,Mateo,Keisha,Adelaide,Thaddeus,Princess,Austen,Keyla,Dominick,Reilly,Dale,Federico,Wayne,Brad,Bobbie,Chris,Lori,Sequoia,Jordy,Alvaro,Camron,Shawn,Lionel,Tayler,Siena,Quintin,Bowen,Joselin,Ean,Fabiola,Kaya,Gavin,Jaylyn,Donovan,Rivka,Brett,Edwin,Alissa,Kathrine,Andreas,Danae,Adeline,Stefany,Bernadette,Roxanne,Brock,Sebastien,Nathalia,Herbert,Amiah,Gerald,Daria,Kyler,Sheila,Tyree,Marion,Bryson,Harper,Jessie,Jude,Dorothy,Jonah,Vera,Kerry,Adrian,Aubrey,Lacy,Kendal,Gordon,Kiarra,Abriana,Jasmyne,Alliyah,Blayne,Yehuda,Deonte,Mekhi,Gustavo,Kelton,Tylor,Addison,Paloma,Sam,Latrell,Travis,Camila,Emely,Yamilet,Yosef,Chaim,Dora,Kaliyah,Zackary,Jill,Janae,Anabelle,Nathaly,Misael,Raelynn,Mikel,Kianna,Norma,Immanuel,Octavio,Keri,Reina,Trystan,Alyssia,Jordyn,Grace,Nicolas,Demarco,Marla,Deion,Benny,Jackelyn,Arman,Rylie,Teagan,Iyanna,Mindy,Markus,Malaysia,Zariah,Vincent,Asia,Wesley,Tyreek,Aman,Alivia,Keyana,June,Rhett,Aysia,Alexys,Natasha,Cheyanne,Renee,Esther,Destin,Lorena,Elaine,Joan,Jamari,Jaylin,Trevion,Mitchell,Ananda,Amir,Kalvin,Josie,Susan,Fernanda,Shivani,Corina,Ryan,Janice,Alaina,Alina,Amia,Myron,Lance,Meagan,Elyssa,Simon,Yahaira,Alanna,Kallie,Keelan,Salma,Carli,Tianna,Quinlan,Ashtyn,Eden,Macy,Bronson,Kiera,Lilia,Tanisha,Kyara,Kamryn,Baby,Clifton,Enoch,Nick,Yasmeen,Dalila,Chase,Kaylee,Terri,Tyriq,Hailee,Joseph,Kory,Jovany,Mckenzie,Kelis,Gianni,Jalyn,Constance,Amari,Emilio,Moises,Keith,Ahmad,Santiago,Aric,Floyd,Damon,Lamar,Caden,Lena,Vaughn,Lisa,Alejandra,Mckinley,Makala,Abdul,Garett,Kori,Annette,Skye,Deon,Karleigh,Jarvis,Aylin,Vladimir,Jerimiah,Allen,Aaron,Bailey,Anastasia,Elias,Amirah,Aria,Maleah,Chelsey,Emmanuel,Keandre,Tessa,Leann,Madeline,Parker,Daniel,Blake,Jermaine,Yajaira,Pilar,Ashlin,Wyatt,Annalisa,Joaquin,Angeles,Anderson,China,Alonzo,Milan,Dillon,Jean,Christa,Lucinda,Donte,Enzo,Jamal,Muhammad,Glenn,Tate,Chad,Allan,Long,Valery,Elisha,Anastacia,Kierra,Graham,Jarrod,Ashlee,Kristian,Justyn,Johnathan,Franco,Hector,Brisa,Destiny,Ayla,Trae,Helen,Jarred,Jaret,Sydnee,Yulissa,Jerry,Dallas,Liana,Daquan""".split(",")
@@ -76,14 +81,22 @@ class Populator:
 
         is_masters = degree_title in ["Msc", "MEng"]
         is_faster_route = decision(0.1)
-        start_year_padding_for_more_frequent_higher_years = (1 if is_faster_route else 2)
-        start_academic_year = random.randint(FIRST_YEAR_OF_COURSES - start_year_padding_for_more_frequent_higher_years, LAST_YEAR_OF_COURSES)
+        ##earliest possible year should have at least some students who are in their final year (even masters.)
+        ##add courses for all their levels ? eks dee
+        start_year_padding = random.choices([0, 1, 2, 3], weights=[0.65, 0.20, 0.10, 0.05])[0]
+        start_academic_year = random.choices(self.range_of_start_years, weights=self.start_years_weights)[0] - start_year_padding
+
         end_academic_year = start_academic_year + 3
         if degree_title.startswith("M"):
             end_academic_year += 1
         if is_faster_route:
             end_academic_year -= 1
-        current_academic_year = min(random.randint(min(start_academic_year + start_year_padding_for_more_frequent_higher_years, self.current_academic_year), self.current_academic_year), end_academic_year)
+        
+        #if already graduated - current level is the level they graduated at. Otherwise, it's the level they're currently on
+        if self.current_academic_year >= end_academic_year: #if already graduated
+            current_level = end_academic_year - start_academic_year + (2 if is_faster_route else 1)
+        else: #eg. start 2020, end 2023, current 2022 -> level = 3 if normal, 4 if faster route
+            current_level = (self.current_academic_year - start_academic_year) + (2 if is_faster_route else 1)
         
         return {
             "full_name": f"{first_name} {last_name}",
@@ -94,7 +107,7 @@ class Populator:
             "is_masters": is_masters,
             "start_academic_year": start_academic_year,
             "end_academic_year": end_academic_year,
-            "current_academic_year": current_academic_year,
+            "current_level": current_level
         }
     
     def random_course_data(self, level):
@@ -102,7 +115,7 @@ class Populator:
         course_level = level
         course_code = f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}{course_level}{random.randint(100, 999)}"
         name = f"Computing Science {course_code[-4:]}"
-        lecturer_comment = f"Welcome to {name} !"
+        lecturer_comment = f"Welcome to {name}!"
         credits = random.choices([10, 20], weights=[0.80, 0.20])[0]
 
         if course_level == 5:
@@ -185,10 +198,9 @@ class Populator:
             courses.append(Course(academic_year=j, code=f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}4{random_numbers[1]}", name="Level 4 Individual project", credits=40, lecturer_comment="Welcome to the level 4 individual project!", is_taught_now=(j == self.current_academic_year), lecturer=lecturers[1]))
             courses.append(Course(academic_year=j, code=f"{COMPUTER_SCIENCE_COURSE_CODE_PREFIX}5{random_numbers[2]}", name="Level 5 (M) Individual project", credits=60, lecturer_comment="Welcome to the level 5 (M) individual project!", is_taught_now=(j == self.current_academic_year), lecturer=lecturers[2]))
 
-        level_pattern = [1,2,3,3,4,4,5] ##this pattern will determine the level of the course generated. this is to balance and make the courses more realistic.
         while i < n:
             i+=1
-            level = level_pattern[i%len(level_pattern) - 1]
+            level = LEVEL_PATTERN[i%len(LEVEL_PATTERN) - 1]
             course_data = self.random_course_data(level)
             if decision(0.95):
                 course_data["lecturer"] = random.choice(self.users)
@@ -272,9 +284,6 @@ class Populator:
             else:
                 attempts += 1
 
-            if (credits_total >= (3*REQUIRED_CREDITS_PER_COURSE/4) and decision(0.05)): # 5% chance of getting between 90-120 credits (incomplete course selection)
-                return course_set
-
             if credits_total == total_credits or len(candidate_courses) == 0:
                 return course_set
             attempt_course = random.choice(candidate_courses)
@@ -308,32 +317,37 @@ class Populator:
             for student in students:
                 if decision(0.01):  # 99% of students will be enrolled into courses.
                     continue
-                level = 0 if not student.is_faster_route else 1
                 final_courses_for_all_years = []
-                for i in range(student.start_academic_year, student.current_academic_year + 1): ##add 120 credits worth of courses, or less, for each year of study.
-                    level += 1
+
+                #2020, current lvl 3, at 2020 means lvl 3
+                for level, year in enumerate(range(student.start_academic_year, student.start_academic_year + student.current_level + 1), start=1): ##add 120 credits worth of courses, or less, for each year of study.
+                    if student.is_faster_route:
+                        level += 1
+                    if level > student.current_level:
+                        break
+
                     must_have_course = None
                     if level == 1:
                         allowed_levels = [1]
                     elif level == 2:
                         allowed_levels = [2] if not student.is_faster_route else [1,2]
                     elif level == 3:
-                        must_have_course = Course.objects.filter(academic_year=i, name__contains="Group", credits=40).first()
+                        must_have_course = Course.objects.filter(academic_year=year, name__contains="Group", credits=40).first()
                         allowed_levels = [3, 4]
                     elif level == 4:
                         allowed_levels = [3, 4, 5]
-                        must_have_course = Course.objects.filter(academic_year=i, name__contains="Individual", credits=40).first()
+                        must_have_course = Course.objects.filter(academic_year=year, name__contains="Individual", credits=40).first()
                     elif level == 5:
                         allowed_levels = [5]
-                        must_have_course = Course.objects.filter(academic_year=i, name__contains="Individual", credits=60).first()
-                    else:
-                        allowed_levels = [5]
+                        must_have_course = Course.objects.filter(academic_year=year, name__contains="Individual", credits=60).first()
 
                     required_credits = REQUIRED_CREDITS_PER_COURSE - must_have_course.credits if must_have_course else REQUIRED_CREDITS_PER_COURSE
                     if decision(0.08): ##small chance to enroll 10 or 20 extra credits worth of courses!
                         required_credits += random.choices([10,20], weights=[0.9,0.1], k=1)[0]
+                    elif decision(0.05): ##small chance to enroll 10-30 less credits worth of courses
+                        required_credits -= random.choices([10,20,30], weights=[0.50, 0.40, 0.10], k=1)[0]
                     course_setup = [must_have_course] if must_have_course else []
-                    candidate_courses_for_year = [course for course in candidate_courses if course.academic_year == i and course.level_integer in allowed_levels]
+                    candidate_courses_for_year = [course for course in candidate_courses if course.academic_year == year and course.level_integer in allowed_levels]
                     course_setup.extend(self.fetch_courses_total_credits(candidate_courses_for_year, required_credits))
 
                     final_courses_for_all_years.extend(course_setup)
