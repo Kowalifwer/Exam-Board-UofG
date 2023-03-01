@@ -93,7 +93,7 @@
                 </a>
 
                 <a class="sidebar-entry {%if 'degree_classification' in request.path%} selected-page{%endif%}" href="{%url 'general:degree_classification' 4%}" title="Degree classification">
-                    <span>Degree Classification</span>
+                    <span>Degree classification</span>
                     <img class="sidebar-icon color-icon-theme" src="{% static 'icons/degree_classification.svg'%}">
                 </a>
 
@@ -110,6 +110,15 @@
                 </a>
 
                 <div class="sidebar-separator"></div>
+                <div class="sidebar-separator"></div>
+                <div class="sidebar-separator"></div>
+                <div class="sidebar-separator"></div>
+
+                <a class="sidebar-entry" title="Click to get page-specific help" id="page_help">
+                    <span>Page assistant</span>
+                    <img class="sidebar-icon color-icon-theme" src="{% static 'icons/info.svg'%}">
+                </a>
+
             </div>
         </nav>
 
@@ -136,9 +145,6 @@
                         {%endif%}
                     </div>
                 </div>
-                <button id="page_help">
-                    page help
-                </button>
                 {%if request.user.is_authenticated%}
                     <a href="{%url 'general:logout' request.path%}"><button class="button-30">Logout</button></a>
                 {%else%}

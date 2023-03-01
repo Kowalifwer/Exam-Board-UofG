@@ -6,15 +6,19 @@
 {% endblock %}
 
 {% block body %}
-    Grading Rules page for the Academic year {{selected_year.year}}-{{selected_year.year|add:1}}
-    <p>Click <a target="_blank" rel="noopener noreferrer" href="{{preview_url}}">here</a> to see the Degree classification page for these settings</p>
-    <p>Classification Rules</p>
-
-    <div class="tabulator_table" id="grading_rules_table" style="max-width: 1100px;"></div>
-
     <input type="hidden" name="year_id" value="{{selected_year.id}}" class="api_prefill">
+    <div class="basic-page">
+        <h3>Grading Rules page for the Academic year <b class="primary-text">{{selected_year.year}}-{{selected_year.year|add:1}}</b></h3>
+        <p>You may view or edit the current rules used to determine progression from level {{current_level}} into level {{current_level|add:1}}.</p>
 
-    <script>
-        load_grading_rules_table(`{{selected_year.degree_classification_settings_for_table|safe}}`)
-    </script>
+        <div class="tabulator_table" id="grading_rules_table" style="max-width: 1100px;"></div>
+        
+        <p>Click <a class="a_fancy" target="_blank" rel="noopener noreferrer" href="{{preview_url}}">here</a> to see the actual Degree classification page, with these settings</p>
+
+        
+
+        <script>
+            load_grading_rules_table(`{{selected_year.degree_classification_settings_for_table|safe}}`)
+        </script>
+    </div>
 {%endblock%}

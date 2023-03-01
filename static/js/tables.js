@@ -203,7 +203,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         placeholder: "Table is empty", //placeholder when no data in the table
 
         paginationSize: 100, //number of rows to display per page by default
-        paginationSizeSelector:[25, 50, 100, 1000], //allow user to select number of rows to be shown per page
+        paginationSizeSelector:[50, 100, 250, 500, 1000], //allow user to select number of rows to be shown per page
 
         layout: "fitDataFill", //"fitColumns", //fitDataStretch //fitDataFill
 
@@ -219,6 +219,10 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             columnCalcs:false, //do not include column calcs in downloaded table
         },
         rowContextMenu: [], //intialize right-click row actions to be empty
+    }
+
+    if (settings.fitColumns) {
+        table_constructor.layout = "fitColumns"
     }
 
     if (prefil_data){ //if we are pre-filling the table with data, then we don't need to fetch data from the server
@@ -247,7 +251,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     }
 
     table_constructor = {...table_constructor, ...extra_constructor_params} //merge the settings with the table constructor
-    console.log(table_constructor.ajaxURL)
 
     if (!settings.no_multirow) { //determine if we add multi-row actions to the table (such as hiding or deleting rows)
         table_constructor.rowContextMenu.push({
@@ -312,11 +315,12 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     }
 
     //this creates a table heading, which is a message that is displayed at the top of the table
-    table.addHeading = function(message) {
+    table.heading = null
+    table.setHeading = function(message) {
         let heading = document.createElement('div')
         heading.classList.add('tabulator-heading')
         heading.innerHTML = message
-        table.getWrapper().prepend(heading)
+        table.heading = heading
     }
 
     table.dataFullyLoaded = false
@@ -379,161 +383,170 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         for (let i = 0; i < table.extra_cols.length; i++){ //add extra columns, if any were added from the server.
             table.addColumn(table.extra_cols[i])
         }
+        if (!table.settings.no_components) {
+            let table_components = document.createElement('div')
+            table_components.classList.add('tabulator-components')
+            wrapper.prepend(table_components)
 
-        let table_components = document.createElement('div')
-        table_components.classList.add('tabulator-components')
-        wrapper.prepend(table_components)
-        
-        table.reformatTable(default_formatter, "format_grade", custom_average_calculator) //format the table gradesr
+            if (table.heading)
+                wrapper.prepend(table.heading)
 
-        let select_element = string_to_html_element(
-            `
-                <select>
-                    <option selected="selected" disabled="disabled">grade format</option>
-                    <option value="I">band integer</option>
-                    <option value="B">band letter</option>
-                </select>
-            `
-        )
-        select_element.classList.add('tabulator-format-select')
+            table.reformatTable(default_formatter, "format_grade", custom_average_calculator) //format the table gradesr
 
-        let select_download = string_to_html_element(
-            `
-                <select>
-                    <option value=0 selected="selected" disabled="disabled">export table</option>
-                    <option value="xlsx">Excel</option>
-                    <option value="pdf">PDF</option>
-                    <option value="csv">CSV</option>
-                    <option value="json">JSON</option>
-                </select>
-            `
-        )
+            let select_element = string_to_html_element(
+                `
+                    <select>
+                        <option selected="selected" disabled="disabled">grade format</option>
+                        <option value="I">band integer</option>
+                        <option value="B">band letter</option>
+                    </select>
+                `
+            )
+            select_element.classList.add('tabulator-format-select')
 
-        select_element.addEventListener("change", function(e){
-            if (this.value == "B") {
-                table.reformatTable(formatter_to_band_letter, "format_grade", custom_average_calculator)
-            } else if (this.value == "I") {
-                table.reformatTable(formatter_to_band_integer, "format_grade", custom_average_calculator)
-            }
-        })
+            let select_download = string_to_html_element(
+                `
+                    <select>
+                        <option value=0 selected="selected" disabled="disabled">export table</option>
+                        <option value="xlsx">Excel</option>
+                        <option value="pdf">PDF</option>
+                        <option value="csv">CSV</option>
+                        <option value="json">JSON</option>
+                    </select>
+                `
+            )
 
-        select_download.addEventListener("change", function(e){
-            if (this.value == "xlsx") {
-                table.download("xlsx", "data.xlsx", {});
-                this.value = 0
-            } else if (this.value == "pdf") {
-                table.downloadToTab("pdf", "data.pdf", {
-                    orientation:"landscape", //set page orientation to landscape
-                });
-                this.value = 0
-            } else if (this.value == "csv") {
-                table.download("csv", "data.csv", {});
-                this.value = 0
-            } else if (this.value == "json") {
-                table.download("json", "data.json", {});
-                this.value = 0
-            }   
-        })
-
-        let unhide_rows = string_to_html_element(`<button id="unhide-rows" class="hidden">Unhide rows</button>`)
-        let undelete_rows = string_to_html_element(`<button id="undelete-rows" class="hidden">Add back deleted rows</button>`)
-        let column_manager = string_to_html_element(`<button class="column-manager">column manager</button>`)
-        let help_button = string_to_html_element(`<button class="help-button">help</button>`)
-        let remove_row_groups = string_to_html_element(`<button class="remove-row-groups">remove row groups</button>`)
-
-        remove_row_groups.addEventListener("click", function(){
-            table.setGroupBy([])
-        })
-
-        help_button.addEventListener("click", function(){
-            let help_points = [
-                "<b>Sort columns:</b> Click on a column header to sort the table by that column. (Ascending or descending order is determined by the arrow next to the column header). Click again to change the order.",
-                "<b>Rearrange column order:</b> Click on a column header and drag it to the left or right to move it. This way you can reorder the columns to your liking.",
-                "<b>Resize columns:</b> Resize a column by dragging left/right edge of the column",
-                "<b>Row actions:</b> Right-click on a row, to get a menu with options relevant to that object.",
-                "<b>Show/hide columns:</b> Click on the 'Column manager' button to manage what columsn will be shown/hidden",
-                "<b>Download table data:</b> Tables can be exported to Excel, PDF, CSV, and JSON. Click on the 'Export' button to export the table to one of these formats. Note that the export will be formatted according to the state of the table (accounting for hidden columns, grade format and deleted rows).",
-                "<b>Format grades:</b> Tables can be reformatted to show grades as band letters or band integers. Click on the 'Format' button to change the formatting of the table.",
-                "<b>Search for rows:</b> Some column headers have a text input box. Type in the box to search for rows that contain the text you typed.",
-                "<b>Group rows by column:</b> Some column headers have 3 vertical dots. Clicking the dots will open a menu that allows you to group the table rows by that column. Note that most tables load pre-grouped, but you are free to regroup however you wish.",
-                "<b>Remove all row groups:</b> Click on the 'Remove all row groups' button to remove all row groups."
-            ]
-            create_notification("Table help", bullet_list_to_html_string(help_points), "info", 20000)
-        })
-
-        column_manager.addEventListener("click", function(){
-            var columns = table.getColumns();
-            var menu_container = document.createElement("div");
-            menu_container.classList = "tabulator-columns-menu";
-
-            //add title to menu
-            var title = document.createElement("h3");
-            title.textContent = "Column manager";
-            menu_container.appendChild(title);
-
-            let current_parent = null
-            for (let column of columns){
-                if (!column.getDefinition().title || column.getDefinition().title == "hidden" || column.getDefinition().formatter == "rowSelection")
-                    continue
-
-                let parent_column = column.getParentColumn()
-                let parent_title = document.createElement("p")
-                parent_title.textContent = ""
-                if (parent_column && parent_column != current_parent) {
-                    parent_title.textContent = parent_column.getDefinition().title
-                    menu_container.appendChild(parent_title)
-                    current_parent = parent_column
-                } else if (!parent_column && current_parent) {
-                    menu_container.appendChild(parent_title)
-                    current_parent = null
+            select_element.addEventListener("change", function(e){
+                if (this.value == "B") {
+                    table.reformatTable(formatter_to_band_letter, "format_grade", custom_average_calculator)
+                } else if (this.value == "I") {
+                    table.reformatTable(formatter_to_band_integer, "format_grade", custom_average_calculator)
                 }
-
-                let checkbox = document.createElement("input");
-                checkbox.type = "checkbox";
-                checkbox.checked = column.isVisible();
-
-                //build label
-                let label = document.createElement("label");
-                let title = document.createElement("span");
-
-                title.textContent = " " + column.getDefinition().title;
-
-                label.appendChild(title);
-                label.appendChild(checkbox);
-
-                //create menu item
-                menu_container.appendChild(label);
-
-                checkbox.addEventListener("change", function() {
-                    //toggle current column visibility
-                    column.toggle();
-                })
-            }
-            Popup.init(menu_container)
-        })
-            
-
-        unhide_rows.addEventListener("click", function(e){
-            table.getElement().querySelectorAll(".hidden-row").forEach(function(row){
-                row.classList.remove("hidden-row")
             })
-            table.hidden_rows = []
-            unhide_rows.classList.add("hidden")
-        })
 
-        undelete_rows.addEventListener("click", function(e){
-            table.addData(table.deleted_rows)
-            table.deleted_rows = []
-            undelete_rows.classList.add("hidden")
-        })
+            select_download.addEventListener("change", function(e){
+                if (this.value == "xlsx") {
+                    table.download("xlsx", "data.xlsx", {});
+                    this.value = 0
+                } else if (this.value == "pdf") {
+                    table.downloadToTab("pdf", "data.pdf", {
+                        orientation:"landscape", //set page orientation to landscape
+                    });
+                    this.value = 0
+                } else if (this.value == "csv") {
+                    table.download("csv", "data.csv", {});
+                    this.value = 0
+                } else if (this.value == "json") {
+                    table.download("json", "data.json", {});
+                    this.value = 0
+                }   
+            })
 
-        let table_wrapper = table.getWrapper()
+            let unhide_rows = string_to_html_element(`<button id="unhide-rows" class="hidden">Unhide rows</button>`)
+            let undelete_rows = string_to_html_element(`<button id="undelete-rows" class="hidden">Add back deleted rows</button>`)
+            let column_manager = string_to_html_element(`<button class="column-manager">column manager</button>`)
+            let help_button = string_to_html_element(`<button class="help-button">help</button>`)
+            let remove_row_groups = string_to_html_element(`<button class="remove-row-groups">remove row groups</button>`)
 
-        table_wrapper.querySelector(".tabulator-components").prepend(select_element)
-        table_wrapper.querySelector(".tabulator-components").prepend(select_download)
-        table_wrapper.querySelector(".tabulator-components").appendChild(column_manager)
-        table_wrapper.querySelector(".tabulator-components").appendChild(remove_row_groups)
-        table_wrapper.querySelector(".tabulator-components").appendChild(help_button)
+            remove_row_groups.addEventListener("click", function(){
+                table.setGroupBy([])
+            })
+
+            help_button.addEventListener("click", function(){
+                let help_points = [
+                    "<b>Sort columns:</b> Click on a column header to sort the table by that column. (Ascending or descending order is determined by the arrow next to the column header). Click again to change the order.",
+                    "<b>Rearrange column order:</b> Click on a column header and drag it to the left or right to move it. This way you can reorder the columns to your liking.",
+                    "<b>Resize columns:</b> Resize a column by dragging the left/right edge of the column",
+                    "<b>Row actions:</b> Right-click on a row, to get a menu with options relevant to that object. Non-multirow actions will be executed only on the clicked row. Multirow actions will be executed on all selected rows.",
+                    "<b>Show/hide columns:</b> Click on the 'Column manager' button to manage what columns will be shown/hidden",
+                    "<b>Download table data:</b> Tables can be exported to Excel, PDF, CSV, and JSON. Click on the 'export table' button to export the table to one of these formats. Note that the export will be formatted according to the state of the table (accounting for hidden columns, grade format and deleted rows). 'pdf' exports are not advisable for tables with many columns.",
+                    "<b>Format grades:</b> Tables can be reformatted to show grades as band letters or band integers. Click on the 'grade format' button to change the formatting of the table.",
+                    "<b>Search for rows:</b> Some column headers have a text input box. Type in the box to search for rows that contain the text you typed.",
+                    "<b>Group rows by column:</b> Some column headers have 3 vertical dots. Clicking the dots will open a menu that allows you to group the table rows by that column. Note that most tables load pre-grouped, but you are free to regroup however you wish.",
+                    "<b>Remove all row groups:</b> Click on the 'Remove all row groups' button to remove all row groups.",
+                ]
+                create_notification("Table help", bullet_list_to_html_string(help_points), "info", 20000)
+            })
+
+            column_manager.addEventListener("click", function(){
+                var columns = table.getColumns();
+                var menu_container = document.createElement("div");
+                menu_container.classList = "tabulator-columns-menu";
+
+                //add title to menu
+                var title = document.createElement("h3");
+                title.textContent = "Column manager";
+                menu_container.appendChild(title);
+
+                let current_parent = null
+                for (let column of columns){
+                    if (!column.getDefinition().title || column.getDefinition().title == "hidden" || column.getDefinition().formatter == "rowSelection")
+                        continue
+
+                    let parent_column = column.getParentColumn()
+                    let parent_title = document.createElement("p")
+                    parent_title.textContent = ""
+                    if (parent_column && parent_column != current_parent) {
+                        parent_title.textContent = parent_column.getDefinition().title
+                        menu_container.appendChild(parent_title)
+                        current_parent = parent_column
+                    } else if (!parent_column && current_parent) {
+                        menu_container.appendChild(parent_title)
+                        current_parent = null
+                    }
+
+                    let checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.checked = column.isVisible();
+
+                    //build label
+                    let label = document.createElement("label");
+                    let title = document.createElement("span");
+
+                    title.textContent = " " + column.getDefinition().title;
+
+                    label.appendChild(title);
+                    label.appendChild(checkbox);
+
+                    //create menu item
+                    menu_container.appendChild(label);
+
+                    checkbox.addEventListener("change", function() {
+                        //toggle current column visibility
+                        column.toggle();
+                    })
+                }
+                Popup.init(menu_container)
+            })
+                
+
+            unhide_rows.addEventListener("click", function(e){
+                table.getElement().querySelectorAll(".hidden-row").forEach(function(row){
+                    row.classList.remove("hidden-row")
+                })
+                table.hidden_rows = []
+                unhide_rows.classList.add("hidden")
+            })
+
+            undelete_rows.addEventListener("click", function(e){
+                table.addData(table.deleted_rows)
+                table.deleted_rows = []
+                undelete_rows.classList.add("hidden")
+            })
+
+            let table_wrapper = table.getWrapper()
+
+            table_wrapper.querySelector(".tabulator-components").prepend(select_element)
+            table_wrapper.querySelector(".tabulator-components").prepend(select_download)
+            table_wrapper.querySelector(".tabulator-components").appendChild(column_manager)
+            if (table_constructor.groupBy && table_constructor.groupBy.length > 0)
+                table_wrapper.querySelector(".tabulator-components").appendChild(remove_row_groups)
+
+            table_wrapper.querySelector(".tabulator-components").appendChild(help_button)
+
+            table_wrapper.querySelector(".tabulator-components").appendChild(unhide_rows)
+            table_wrapper.querySelector(".tabulator-components").appendChild(undelete_rows)
+        }
 
         if (settings.course) {
             let moderate_course_button = string_to_html_element(`<button class="tabulator-moderate">moderate course</button>`)
@@ -542,8 +555,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
             })
             table_wrapper.querySelector(".tabulator-components").appendChild(moderate_course_button)
         }
-        table_wrapper.querySelector(".tabulator-components").appendChild(unhide_rows)
-        table_wrapper.querySelector(".tabulator-components").appendChild(undelete_rows)
     })
 
     table.on("dataProcessed", function(){
@@ -631,7 +642,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
 function load_students_table(extra_constructor_params = {}, extra_cols=true, settings={'title': 'Students'}){
     let columns = [
-        {title:"Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true, download:false},
+        {title:"Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true, download:false, maxWidth: 25, hozAlign: "center"},
         {title: "GUID", field: "GUID", headerFilter: "input", frozen:true},
         {title: "Full name", field: "name", headerFilter: "input"},
         {
@@ -687,19 +698,25 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
     let final_extra_constructor_params = { ...extra_constructor_params,
         ajaxParams: ajaxParams,
         rowContextMenu:rowContextMenu,
-        groupBy: 'current_level',
         initialSort: [{column: 'current_level', dir: 'dsc'}],
         placeholder: "Student data loading...",
     }
+
+    if (!settings.noGroupBy) {
+        final_extra_constructor_params.groupBy = "current_level"
+    }
+
     let table = init_table("students_table", columns, null, final_extra_constructor_params, settings={...settings, ...{title: "Students"}})
 
     table.setReloadFunction(load_students_table, [extra_constructor_params, extra_cols, settings])
 
-    table.on("tableBuilt", function() {
-        table.setGroupHeader(function(value, count, data, group){
-            return `Number of <span class='info-text'>${value}</span> students: <span class='success-text'>${count}</span>`; //return the header contents
-        });
-    })
+    if (!settings.noGroupBy) {
+        table.on("tableBuilt", function() {
+            table.setGroupHeader(function(value, count, data, group){
+                return `Number of <span class='info-text'>${value}</span> students: <span class='success-text'>${count}</span>`; //return the header contents
+            });
+        })
+    }
 
     if (settings.course) {
         table.addContentLink([
@@ -801,7 +818,7 @@ function load_level_progression_table(level){
     }
 
     let columns = [
-        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true, download:false},
+        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true, download:false, maxWidth: 25, hozAlign: "center"},
         {title: "GUID", field: "GUID", headerFilter: "input", frozen: true},
         {title: "Full name", field: "name", headerFilter: "input"},
         {
@@ -997,7 +1014,7 @@ function load_degree_classification_table(level) {
     }
 
     let columns = [
-        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true, download:false},
+        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true, download:false, maxWidth: 25, hozAlign: "center"},
         {title: "GUID", field: "GUID", headerFilter: "input", "frozen": true},
         {title: "Full name", field: "name", headerFilter: "input"},
         {
@@ -1266,7 +1283,7 @@ function create_student_course_detailed_table_popup(student_data=null, course_id
             return {...col, editor: false, cssClass: (col.cssClass=="format_grade" ? "format_grade" : "")}
         }), null, final_extra_constructor_params, settings = {'title': "Student course data", 'api_table_fetch': 'course_assessments'})
 
-        table.addHeading(`Viewing assessment breakdown for <b>${student_data.name}</b>`)
+        table.setHeading(`Viewing assessment breakdown for <b>${student_data.name}</b>`)
         
         let wrapper = table.getWrapper()
         let popup = Popup.init(wrapper)
@@ -1302,6 +1319,7 @@ function create_student_course_detailed_table_popup(student_data=null, course_id
                 table_element.dataset.edit_mode = 1
             }
         })
+        popup.content.classList.add("preponderance-popup")
         popup.content.appendChild(edit_button)
     
     } else {
@@ -1312,7 +1330,7 @@ function create_student_course_detailed_table_popup(student_data=null, course_id
 
 function load_courses_table(extra_constructor_params = {}, extra_cols=true, settings={}){
     let columns = [
-        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true, download:false},
+        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerHozAlign:"center", headerSort:false, frozen:true, download:false, maxWidth: 25, hozAlign: "center"},
         {title: "Code", field: "code", headerFilter: "input", frozen:true},
         {title: "Name", field: "name", headerFilter: "input"},
         {title: "Academic year", field: "academic_year", headerMenu: columnHeaderGroupBy},
@@ -1350,6 +1368,9 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
             initialSort = [{column: 'credits', dir: 'dsc'}]
         }
     }
+
+    if (settings.noGroupBy)
+        groupBy = []
 
     let ajaxParams = {
         "fetch_table_data": true,
@@ -1464,7 +1485,6 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
         }
     }])
     }
-    
 
     table.setReloadFunction(load_courses_table, [extra_constructor_params, extra_cols, settings])
 
@@ -1534,7 +1554,7 @@ function render_course_moderation_section(course_data, parent_table=null) {
     document.body.appendChild(wrapper)
     
     let columns = [
-        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerSort:false, frozen:true, download:false},
+        {title: "Row selector", formatter:"rowSelection", titleFormatter:"rowSelection", headerSort:false, frozen:true, download:false, maxWidth: 25, hozAlign: "center"},
         {title: "Assessment type", field: "type"},
         {title: "Assessment name", field: "name"},
         {title: "Weighting", field: "weighting", bottomCalc: "sum", formatter: "money", formatterParams: {precision: 0, symbol: "%", symbolAfter: true}},

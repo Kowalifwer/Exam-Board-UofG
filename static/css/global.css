@@ -157,7 +157,7 @@ p, h1, h2, h3, h4, h5, h6, a, li {
 
 /* HELPER */
 .primary-text {
-    color: var(--primary-color) !important;
+    color: var(--text-themed) !important;
 }
 
 .bold {
@@ -603,7 +603,7 @@ input[type=checkbox]:checked::after {
 }
 
 .notification-visible {
-    max-height: 425px;
+    max-height: 440px;
     /* make the cuic bezier to animate a slow opening of the notification */
     transition: max-height 1.75s ease-in;
 }
@@ -777,6 +777,12 @@ input[type=checkbox]:checked::after {
     width: 40px;
 }
 
+.header-user-profile  h3 {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text-themed);
+}
+
 /* TABLE CUSTOMIZATION */
 .disabled {
     opacity: 0.5;
@@ -792,8 +798,8 @@ input[type=checkbox]:checked::after {
 }
 
 .tabulator-components {
-    --border-color: rgba(var(
-    --p-color), 0.45);
+    --border-color: rgba(var(--p-color), 0.45);
+    position: relative;
     display: flex;
     padding: 10px 5px;
     margin-left: -2px;
@@ -817,7 +823,7 @@ input[type=checkbox]:checked::after {
 .tabulator-components::after {
     content: "Table actions";
     position: absolute;
-    top: -11px;
+    top: -12px;
     font-size: 15px;
     background: linear-gradient(to bottom, transparent 50%, var(--secondary-color) 50%);
     padding: 0 3px;
@@ -884,6 +890,14 @@ input[type=checkbox]:checked::after {
     display: relative;
 }
 
+.preponderance-popup .tabulator {
+    margin-bottom: 25px;
+}
+
+.basic-page h3 {
+    margin: 0;
+    margin-bottom: 20px;
+}
 /* make a close x top right of popup content */
 
 .popup-close-button {
@@ -972,16 +986,8 @@ input[type=checkbox]:checked::after {
     cursor: not-allowed;
 }
 
-.edit-mode.tabulator-col {
-    /* animation: tilt-shaking 0.75s infinite; */
-    /* border-radius: var(--border-radius); */
-    /* background-color: rgba(9, 9, 248, 0.782) !important; */
-}
-
 .tabulator-editable {
-    /* border: 0.5px solid rgba(var(--p-color), 1) !important; */
     box-shadow: inset 1px 1px 2px 1px rgba(var(--p-color), 1) !important;
-    /* animation: tilt-shaking 0.5s infinite; */
     cursor: pointer;
 }
 
@@ -994,15 +1000,16 @@ input[type=checkbox]:checked::after {
     max-width: 80%;
     margin: 0 auto 10px auto;
     /* transform: translateX(-50%) translateY(-100%); */
-    outline: 1px solid rgba(var(--p-color), 1);
+    outline: 2px solid rgba(var(--p-color), 1);
     padding: 10px;
     border-radius: var(--border-radius);
     z-index: 1000;
-    box-shadow: var(--shadow);
+    /* box-shadow: var(--shadow); */
 }
 
 .tabulator-notification-hint {
     color: rgba(var(--p-color), 1);
+    font-weight: bold;
 }
 
 .inline-icon {
@@ -1176,13 +1183,13 @@ input[type=checkbox]:checked::after {
     min-height: 380px;
 }
 
-.collapsable-section a {
+.collapsable-section a, .a_fancy {
     cursor: pointer;
     color: var(--text-themed);
     font-weight: bold;
 }
 
-.collapsable-section a:hover {
+.collapsable-section a:hover, .a_fancy:hover {
     color: var(--text-themed);
     text-decoration: underline;
 }
@@ -1359,6 +1366,10 @@ input[type=checkbox]:checked::after {
 
 .tabulator-heading {
     margin: 10px 0 20px 0;
+}
+
+.tabulator-heading b {
+    color: var(--text-themed);
 }
 
 .tabulator-linked-section {

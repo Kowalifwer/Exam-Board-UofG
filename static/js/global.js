@@ -274,7 +274,7 @@ const Popup = {
 
         let close_button = document.createElement("button")
         close_button.classList = "popup-close-button button_default"
-        close_button.innerHTML = "Close"
+        close_button.innerHTML = "Close popup"
         close_button.onclick = () => {this.close()} //use arrow function to bind this to the popup object
         popup_wrapper.appendChild(close_button)
         content.classList.add("popup-content")
@@ -341,7 +341,6 @@ function defaultChartSetup(chart_setup) {
                 text: chart_setup.extra_settings.y_title,
                 font: {
                     size: 14,
-                    // weight: 'bold'
                 }
             }
         }
@@ -349,7 +348,7 @@ function defaultChartSetup(chart_setup) {
             default_setup.options.plugins.tooltip = {
                 callbacks: {
                     label: function(context) {
-                        return `${context.dataset.label} (${context.label})`
+                        return `${context.dataset.label} - ${context.label}`
                     },
                     footer: function(tooltipItems) {
                         let title = (this.y_title ? this.y_title : "Count") + ": " + tooltipItems[0].parsed.y + "/" + this.table_data_length
