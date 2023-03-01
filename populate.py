@@ -21,7 +21,7 @@ REQUIRED_CREDITS_PER_COURSE = 120
 TOTAL_NUMBER_OF_USERS = 20
 TOTAL_NUMBER_OF_COURSES = 5*12 #5 years of courses, 12 courses for lvl 1,2,3,4,5
 LEVEL_PATTERN = [1,2,3,4,5]
-TOTAL_NUMBER_OF_STUDENTS = 600
+TOTAL_NUMBER_OF_STUDENTS = 1000
 
 def decision(probability):
     return random.random() < probability

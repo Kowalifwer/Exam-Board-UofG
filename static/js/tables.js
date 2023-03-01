@@ -383,6 +383,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         for (let i = 0; i < table.extra_cols.length; i++){ //add extra columns, if any were added from the server.
             table.addColumn(table.extra_cols[i])
         }
+        let table_wrapper = table.getWrapper()
         if (!table.settings.no_components) {
             let table_components = document.createElement('div')
             table_components.classList.add('tabulator-components')
@@ -534,7 +535,6 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
                 undelete_rows.classList.add("hidden")
             })
 
-            let table_wrapper = table.getWrapper()
 
             table_wrapper.querySelector(".tabulator-components").prepend(select_element)
             table_wrapper.querySelector(".tabulator-components").prepend(select_download)
