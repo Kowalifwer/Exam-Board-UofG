@@ -14,8 +14,9 @@
                 </h3>
                 <div>
                     <p><b>Head of level {{current_level}}:</b> {{level_head.get_name_verbose}}</p>
+                    <p><b>Rules used to determine progression:</b><a target="_blank" rel="noopener noreferrer" href="{{edit_rules_url}}"> click here</a></p>
                     <div class="tabulator-linked-section">
-                        <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+                        <div class="loading-animation"><div></div><div></div><div></div><div></div></div>
                     </div>
                 </div>
             </div>
@@ -25,7 +26,7 @@
                 <h3><b>Overall cohort performance distribution</b></h3>
                 <div>
                     <div class="chart-block">
-                        <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+                        <div class="loading-animation"><div></div><div></div><div></div><div></div></div>
                         <canvas id="level_progression_chart_all"></canvas>
                     </div>
                 </div>
@@ -33,7 +34,7 @@
             <div class="collapsable-section">
                 <h3><b>Progression into level {{current_level|add:1}} breakdown</b></h3>
                 <div class="chart-block">
-                    <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+                    <div class="loading-animation"><div></div><div></div><div></div><div></div></div>
                     <canvas id="level_progression_chart_success"></canvas>
                 </div>
             </div>

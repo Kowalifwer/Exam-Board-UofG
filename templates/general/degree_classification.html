@@ -6,8 +6,6 @@
 {% endblock %}
 
 {% block body %}
-    
-
     <div class="student-page-top-section">
         <div>
             <div class="collapsable-section student-information-panel">
@@ -19,8 +17,9 @@
                     {%endif%}
                 </h3>
                 <div>
+                    <p><b>Rules used to determine final degree classification:</b><a target="_blank" rel="noopener noreferrer" href="{{edit_rules_url}}"> click here</a></p>
                     <div class="tabulator-linked-section">
-                        <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+                        <div class="loading-animation"><div></div><div></div><div></div><div></div></div>
                     </div>
                 </div>
             </div>
@@ -31,7 +30,7 @@
                 <div>
                     <div class="chart-block">
                         <!-- <span>click to toggle chart style</span> -->
-                        <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+                        <div class="loading-animation"><div></div><div></div><div></div><div></div></div>
                         <canvas id="degree_classification_chart_all"></canvas>
                     </div>
                 </div>
@@ -39,7 +38,7 @@
             <div class="collapsable-section">
                 <h3><b>Final degree classification distribution</b></h3>
                 <div class="chart-block">
-                    <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+                    <div class="loading-animation"><div></div><div></div><div></div><div></div></div>
                     <canvas id="degree_classification_chart_class"></canvas>
                 </div>
             </div>

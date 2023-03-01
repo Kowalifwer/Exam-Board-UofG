@@ -65,6 +65,7 @@ class Populator:
             "first_name": first_name,
             "last_name": last_name,
             "title": random.choices(["Dr", "Prof"], weights=[0.65, 0.35])[0],
+            "is_superuser": decision(0.05),
         }
     
     @property

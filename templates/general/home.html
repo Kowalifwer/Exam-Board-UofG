@@ -6,10 +6,146 @@
 {% endblock %}
 
 {% block body %}
-    <h1>Home</h1>
+    <script>
+        let assessment_count_distribution_data = `{{assessment_count_distribution|safe}}`
+        let assessment_avg_distribution_data = `{{assessment_avg_distribution|safe}}`
+        assessment_count_distribution_data = JSON.parse(assessment_count_distribution_data)
+        assessment_avg_distribution_data = JSON.parse(assessment_avg_distribution_data)
+        window.onload = function() {
+            let chart_data = {};
+            let boundaries = ["A","B","C","D","E","F","G","H","MV","CW","CR"]
+            for (let x in boundaries) {
+                chart_data[boundaries[x]] = 0
+            }
+            let total = 0
+            let colors = [c_good,c_good,c_good,c_mid,c_poor,c_poor,c_poor,c_poor, chart_colors[1], chart_colors[3], chart_colors[6]]
+            assessment_count_distribution_data.forEach(function(row){
+                if (row.grade != undefined) {
+                    band_grade = boundary_map[Math.round(row.grade)][0]
+                    chart_data[band_grade] = (chart_data[band_grade] || 0) + row.count
+                    total += row.count
+                } else {
+                    if (row.preponderance != "NA")
+                        chart_data[row.preponderance] = row.count
+                }
+            })
 
-    <p>Total number of students: {{students.count}}</p>
-    <p>Total number of courses: {{courses.count}}</p>
-    <p>Total number of legacy/graduated students in system: {{graduated_students}}</p>
-    <p>Total number of active/non-graduated students in system: 230</p>
+            let data = {
+                data: {
+                    labels: Object.keys(chart_data),
+                    datasets: [
+                        {
+                            label: "Grade band",
+                            data: Object.values(chart_data),
+                            barPercentage: 0.90,
+                            backgroundColor: colors,
+                        }
+                    ]
+                },
+                extra_settings: {
+                    y_title: "Number of grades",
+                    x_title: "Final assessment band",
+                    tooltip_extra: "Percentage across all: ",
+                    tooltip_extra_data_size: total,
+                    legend_display: false,
+                }
+            }
+            new Chart(document.getElementById("assessment_count_distribution"), defaultChartSetup(data))
+
+            chart_data = {}
+            for (let row of assessment_avg_distribution_data) {
+                let year = row.course__academic_year
+                let type = row.assessment__type
+                let avg = row.grade__avg
+                if (chart_data[year] == undefined) {
+                    chart_data[year] = {}
+                }
+                chart_data[year][type] = Math.round(avg * 100) / 100
+            }
+
+            data = { 
+                data: {
+                    labels: Object.keys(chart_data),
+                    datasets: [
+                        {
+                            label: "Average Coursework GPA",
+                            data: Object.values(chart_data).map(x => x.C),
+                            barPercentage: 0.90,
+                            backgroundColor: chart_colors[1],
+                        },
+                        {
+                            label: "Average of all Exam results",
+                            data: Object.values(chart_data).map(x => x.E),
+                            backgroundColor: chart_colors[4],
+                        },
+                        {
+                            label: "Average of all Group project assessed work",
+                            data: Object.values(chart_data).map(x => x.G),
+                            backgroundColor: chart_colors[3],
+                            hidden: true,
+                        },
+                        {
+                            label: "Average of all Individual project assessed work",
+                            data: Object.values(chart_data).map(x => x.I),
+                            backgroundColor: chart_colors[5],
+                            hidden: true,
+                        },
+                    ]
+                },
+                extra_settings: {
+                    y_title: "GPA",
+                    x_title: "Academic Year",
+                }
+            }
+        new Chart(document.getElementById("assessment_avg_distribution"), defaultChartSetup(data))
+    }
+    </script>
+    
+    <div class="student-page-top-section">
+        <div>
+            <div class="collapsable-section home-information-panel">
+                <h3><b>Overall system overview</b></h3>
+                <div>
+                    <b><h4>Students</h4></b>
+                    <p>There is a total of {{students.count}} students in the system.</p>
+                    <p>Where {{active_students}} of them are currently active/non-graduated</p>
+                    <p>And {{graduated_students}} are legacy/graduated students</p>
+                    <h4>Courses</h4>
+                    <p>There is a total of {{courses.count}} courses in the system.</p>
+                    <p>And an average of {{courses_per_year}} courses offered every year</p>
+                    <h4>Assessments</h4>
+                    <p>There is a total of {{total_number_of_assessments}} assessments in the system.</p>
+                    <p>With an average of {{average_assessments_per_course}} assessed pieces of work per course</p>
+                    <h4>Assessed results</h4>
+                    <p>There is a total of {{results.count}} assessed pieces of work stored in the system.</p>
+                    <p>With an average grade of {{average_grade}}/22 across all of them</p>
+                    <h4>Years</h4>
+                    <p>The system stores data across the following years:
+                        {%for year in years%}
+                            {{year}}{%if not forloop.last%}, {%endif%}
+                        {%endfor%}
+                    </p>
+                    <h4>Users breakdown</h4>
+                    <p>There is a total of {{users.count}} users with access to the system.</p>
+                    <p>{{admins}} of those accounts have administrator privilidges</p>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="collapsable-section">
+                <h3><b>Grade distribution across {{results.count}} assessed works</b></h3>
+                <div>
+                    <div class="chart-block">
+                        <canvas id="assessment_count_distribution"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="collapsable-section">
+                <h3><b>Average metrics across {{results.count}} assessed works</b> <img class='color-img-dark-blue-uofg icon' title="You may hover over the chart elements to see more details. Additionally, you may toggle which data the chart shows, by left-clicking the legend elements." class="icon" src="{% static 'icons/info.svg'%}"></h3>
+                <div class="chart-block">
+                    <canvas id="assessment_avg_distribution"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 {%endblock%}

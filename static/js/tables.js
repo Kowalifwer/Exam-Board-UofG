@@ -5,7 +5,7 @@ const c_good = chart_colors[5]
 const c_mid = good_to_bad[4]
 const c_poor = good_to_bad[7]
 
-const loading_spinner = `<div class="lds-ring"><div></div><div></div><div></div><div></div></div>`
+const loading_spinner = `<div class="loading-animation"><div></div><div></div><div></div><div></div></div>`
 
 const preponderance_list = ["NA", "MV", "CW", "CR"]
 const boundary_map = {
@@ -87,7 +87,7 @@ const preponderance_formatter = function (cell) {
             element.classList.add("preponderance")
             element.title = "Medical void"
         } else if (value == "CW"){
-            element.style.backgroundColor = good_to_bad[4]
+            element.style.backgroundColor = good_to_bad[3]
             element.classList.add("preponderance")
             element.title = "Credit witheld"
         } else if (value == "CR"){
@@ -550,7 +550,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         if (table.dataFullyLoaded) {
             table.reloadCharts()
             table.reloadContent()
-            document.querySelectorAll(".lds-ring").forEach(function(select){
+            document.querySelectorAll(".loading-animation").forEach(function(select){
                 select.classList.add("hidden")
             })
         }
@@ -591,7 +591,7 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
         table.destroyCharts()
         table.destroyContent()
 
-        document.querySelectorAll(".lds-ring").forEach(function(select){
+        document.querySelectorAll(".loading-animation").forEach(function(select){
             select.classList.remove("hidden")
         })
         
@@ -610,83 +610,8 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
 
     table.reloadCharts = function(){
         for (var link_data of table.chart_links) {
-            let chart_setup = link_data[1](table)
-            let default_setup = {
-                type: 'bar',
-                data: {},
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: true
-                        },
-                    }
-                },
-                responsive : true,            
-            }
-            if (chart_setup.extra_settings) {
-                if (chart_setup.extra_settings.x_title) {
-                    default_setup.options.scales.x = {
-                        title: {
-                            display: true,
-                            text: chart_setup.extra_settings.x_title,
-                            font: {
-                                size: 20,
-                                weight: 'bold'
-                            }
-                        }
-                    }
-                }
-                if (chart_setup.extra_settings.y_title) {
-                    default_setup.options.scales.y.title = {
-                        display: true,
-                        text: chart_setup.extra_settings.y_title,
-                        font: {
-                            size: 14,
-                            // weight: 'bold'
-                        }
-                    }
-                }
-                if (chart_setup.extra_settings.tooltip_extra) {
-                    default_setup.options.plugins.tooltip = {
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label} (${context.label})`
-                            },
-                            footer: function(tooltipItems) {
-                                let title = (this.y_title ? this.y_title : "Count") + ": " + tooltipItems[0].parsed.y + "/" + this.table_data_length
-                                return title + "\n" + this.title + (tooltipItems[0].parsed.y / this.table_data_length * 100).toFixed(2) + "%"
-                            }.bind({
-                                table_data_length: table.getData().length,
-                                title: chart_setup.extra_settings.tooltip_extra,
-                                y_title: chart_setup.extra_settings.y_title
-                            }),
-                            title: function(context) {
-                                return ""
-                            }
-                        }
-                    }
-                }
-                if (chart_setup.extra_settings.legend_display) {
-                    default_setup.options.plugins.legend = {
-                        display: chart_setup.extra_settings.legend_display
-                    }
-                }
-                if (chart_setup.extra_settings.title) {
-                    default_setup.options.plugins.title = {
-                        display: true,
-                        text: chart_setup.extra_settings.title
-                    }
-                }
-                delete chart_setup.extra_settings
-            }
-            let final_setup = {...default_setup, ...chart_setup}
-
-            let chart = new Chart(link_data[0], final_setup)
+            //link_data[1] is a function that returns the chart setup. We pass it through defaultChartSetup to add some default settings.
+            let chart = new Chart(link_data[0], defaultChartSetup(link_data[1](table), table))
             
             table.charts.push(chart)
         }
@@ -858,34 +783,14 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
                         y_title: "Number of students",
                         x_title: "Final grade for course",
                         tooltip_extra: "Percentage of students: ",
+                        tooltip_extra_data_size: table_data.length,
                         legend_display: false,
                         title: "Final grade distribution for course",
                     }
-                }   
+                }
             }
         ])
     }
-    
-    table.on("dataLoaded", function(data){
-        // page_count += 1
-        // api(page_count, pagination_size).then(server_data => {
-        //     table.addData(server_data.data)
-        //     if (page_count < server_data.last_page) {
-        //         table.dispatchEvent("dataLoaded") 
-        //     } else {
-        //         table.dispatchEvent("dataLoadedAll")
-        //     }
-        // })
-        // if (typeof chart !== 'undefined') {
-        //     var chart_data = {};
-        //     for (var i = 0; i < data.length; i++) {
-        //         chart_data[data[i].start_year] = (chart_data[data[i].start_year] || 0) + 1;
-        //     }
-        //     chart.data.labels = Object.keys(chart_data);
-        //     chart.data.datasets[0].data = Object.values(chart_data);
-        //     chart.update('active');
-        // }
-    })
 }
 
 function load_level_progression_table(level){
@@ -1003,6 +908,7 @@ function load_level_progression_table(level){
                 x_title: "Progression to level "+ (level + 1),
                 y_title: "Number of students",
                 tooltip_extra: "Percentage of cohort: ",
+                tooltip_extra_data_size: table_data.length,
                 legend_display: false,
             }
         }
@@ -1041,6 +947,7 @@ function load_level_progression_table(level){
                 x_title: "Level "+ level +" GPA",
                 y_title: "Number of students",
                 tooltip_extra: "Percentage of cohort: ",
+                tooltip_extra_data_size: table_data.length,
                 legend_display: false,
             }
         }
@@ -1136,9 +1043,9 @@ function load_degree_classification_table(level) {
             ],
             "headerHozAlign": "center",
         },
-        {title: "Team (lvl 3 Hons)", field: "team", bottomCalc: custom_average_calculator},
-        {title: "Individual (lvl 4 Hons)", field: "project", bottomCalc: custom_average_calculator},
-        {title: "Individual (lvl 5 M)", field: "project_masters", bottomCalc: custom_average_calculator},
+        {title: "Team (lvl 3)", field: "team", bottomCalc: custom_average_calculator},
+        {title: "Individual (lvl 4)", field: "project", bottomCalc: custom_average_calculator},
+        {title: "Individual (lvl 5)", field: "project_masters", bottomCalc: custom_average_calculator},
     ]
 
     if (level != 5) {
@@ -1199,6 +1106,7 @@ function load_degree_classification_table(level) {
                 y_title: "Number of students",
                 x_title: "Degree classification",
                 tooltip_extra: "Percentage of cohort: ",
+                tooltip_extra_data_size: table_data.length,
                 legend_display: false,
             }
         }
@@ -1214,15 +1122,15 @@ function load_degree_classification_table(level) {
             ["l5_band", "L5 band"],
             ["l4_band", "L4 band"],
             ["l3_band", "L3 band"],
-            ["team", "Team (lvl 3 Hons)"],
-            ["project", "Individual (lvl 4 Hons)"],
-            ["project_masters", "Individual (lvl 5 M)"],
+            ["team", "Team (lvl 3)"],
+            ["project", "Individual (lvl 4)"],
+            ["project_masters", "Individual (lvl 5)"],
         ] : [
             ["final_band", "Final band"],
             ["l4_band", "L4 band"],
             ["l3_band", "L3 band"],
-            ["team", "Team (lvl 3 Hons)"],
-            ["project", "Individual (lvl 4 Hons)"],
+            ["team", "Team (lvl 3)"],
+            ["project", "Individual (lvl 4)"],
         ]
         for (let x in bands) {
             chart_data[bands[x]] = {};
@@ -1259,6 +1167,7 @@ function load_degree_classification_table(level) {
                 y_title: "Number of students",
                 x_title: "Band",
                 tooltip_extra: "Percentage of cohort: ",
+                tooltip_extra_data_size: table_data.length,
                 legend_display: true,
             }
         }

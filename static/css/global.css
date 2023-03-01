@@ -574,7 +574,7 @@ input[type=checkbox]:checked::after {
     top: var(--header-height);
     width: calc(100vw - var(--sidebar-width-collapsed));
     background-color: transparent;
-    z-index: 1100;
+    z-index: 2500;
     transition: var(--transition);
 }
 
@@ -1132,9 +1132,9 @@ input[type=checkbox]:checked::after {
 
 .collapsable-section > :first-child {
     margin: 0;
-    /* margin-bottom: 3px; */
     display: flex;
     flex-direction: row;
+    justify-content: space-between;
     align-items: center;
     padding: 5px 25px;
     min-height: var(--extra-header-height);
@@ -1250,22 +1250,50 @@ input[type=checkbox]:checked::after {
     margin-top: 20px;
 }
 
-.student-information-panel {
+.student-information-panel, .home-information-panel {
     height: 100%;
 }
 
-.student-information-panel > div {
+.student-information-panel > div, .home-information-panel > div {
     height: 100%;
     padding: 15px 25px;
 }
 
-.student-information-panel p {
+.student-information-panel p, .home-information-panel p {
     margin: 15px 0;
 }
 
 .student-information-panel .tabulator-linked-section p {
     margin-bottom: 30px;
 }
+
+.home-information-panel h4 {
+    margin: 0;
+    margin-top: 15px;
+    font-weight: bold;
+    color: var(--text-themed);
+}
+
+.home-information-panel p {
+    margin: 5px 0;
+}
+
+.home-information-panel p::before {
+    content: "• ";
+    margin-right: 5px;
+    color: var(--text-themed);
+
+}
+
+/* add numbered list */
+/* .home-information-panel p::before {
+    content: counter(h4) ". ";
+    counter-increment: h4;
+    margin-right: 10px;
+    font-weight: bold;
+} */
+
+
 
 /* END OF STUDENT PAGE */
 
@@ -1479,13 +1507,13 @@ input[type=checkbox]:checked::after {
 
 /* animated loading screen */
 
-.lds-ring {
+.loading-animation {
     display: inline-block;
     position: relative;
     width: 80px;
     height: 80px;
   }
-  .lds-ring div {
+  .loading-animation div {
     box-sizing: border-box;
     display: block;
     position: absolute;
@@ -1494,19 +1522,19 @@ input[type=checkbox]:checked::after {
     margin: 8px;
     border: 8px solid var(--primary-color);
     border-radius: 50%;
-    animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    animation: loading-animation 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
     border-color: var(--primary-color) transparent transparent transparent;
   }
-  .lds-ring div:nth-child(1) {
+  .loading-animation div:nth-child(1) {
     animation-delay: -0.45s;
   }
-  .lds-ring div:nth-child(2) {
+  .loading-animation div:nth-child(2) {
     animation-delay: -0.3s;
   }
-  .lds-ring div:nth-child(3) {
+  .loading-animation div:nth-child(3) {
     animation-delay: -0.15s;
   }
-  @keyframes lds-ring {
+  @keyframes loading-animation {
     0% {
       transform: rotate(0deg);
     }

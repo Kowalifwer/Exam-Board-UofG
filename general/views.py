@@ -14,7 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.http import Http404
 from django.contrib import messages
-from django.db.models import Avg
+from django.db.models import Avg, Count
 
 ##View helper functions
 def is_fetching_table_data(request):
@@ -71,30 +71,37 @@ def home_view(request):
     current_academic_year = AcademicYear.objects.filter(is_current=True).first()
     all_students = Student.objects.all()
     all_courses = Course.objects.all()
-    graduated_students = [student for student in all_students if not student.is_active(current_academic_year.year)]
-    # System overview:
-    # The system currently stores information about 600 students.
-    # x legacy/graduated students, and y active/current students.
-    # Additionally, there are z courses in the system, with an average of u courses offered per academic year.
-    # z courses with an average of u courses offered per year.
-    # The current Academic year is X (X/X+1)
-    # print(Course.assessments.through.objects.all().count())
-    # Year by year breakdown:
-    # 2015/2016: x students enrolled, x courses, a
+    all_results = AssessmentResult.objects.all()
+    all_years = AcademicYear.objects.all()
+    all_users = User.objects.all()
+    course_assessment_m2m = Assessment.courses.through.objects.all()
+    total_number_of_assessments = course_assessment_m2m.count()
+    average_assessments_per_course = int(round(total_number_of_assessments / all_courses.count(), 0))
 
-    print(AssessmentResult.objects.all().count())
-    print(AssessmentResult.objects.filter(assessment__type="E").count())
-    #get average grade for all assessment results
-    print(AssessmentResult.objects.all().aggregate(Avg('grade')))
-    ##get the averages grouped by assessment type
-    print(AssessmentResult.objects.values('assessment__type').annotate(Avg('grade')))
-    #get the averages grouped by assessment type, and then by course
-    print(AssessmentResult.objects.values('course__academic_year').annotate(Avg('grade')))
+    graduated_students = [student for student in all_students if not student.is_active(current_academic_year.year)]
+    average_grade = all_results.aggregate(Avg('grade'))['grade__avg']
+
+    courses_per_year = int(round(all_courses.count() / all_years.count(), 0))
+
+    assessment_count_distribution = list(all_results.values('grade').annotate(count=Count('grade')))
+    assessment_count_distribution.extend(list(all_results.values('preponderance').annotate(count=Count('preponderance'))))
     context = {
         "students": all_students,
         "courses": all_courses,
+        "results": all_results,
+        "years": all_years,
+        "users": all_users,
+        "admins": all_users.filter(is_superuser=True).count(),
         "graduated_students": len(graduated_students),
-        "page_info": json.dumps({ #Page specific help information
+        "active_students": len(all_students) - len(graduated_students),
+        "average_grade": round(average_grade, 1),
+        "assessment_count_distribution": json.dumps(assessment_count_distribution),
+        "assessment_avg_distribution": json.dumps(list(all_results.values('course__academic_year', 'assessment__type').annotate(Avg('grade')))),
+
+        "total_number_of_assessments": total_number_of_assessments,
+        "average_assessments_per_course": average_assessments_per_course,
+        "courses_per_year": courses_per_year,
+        "page_info": json.dumps({
             "title": "Home",
             "points_list": [
                 "This is the homepage/dashboard",
@@ -114,11 +121,10 @@ def all_students_view(request):
         "page_info" :json.dumps({ #Page specific help information
             "title": f"All students",
             "points_list": [
-                "This page allows you to view and access all the Students across all academic years.",
-                "Whilst this page can be useful for comparing the cohort averages, note that much more data is available on the individual course pages.",
-                "<b>How to access a given course page?:</b> Right click on the course, and select 'View Course' from the dropdown menu.",
-                "You have the option to moderate courses directly in this page, <b>however</b> it might be more clear to do so from the individual course page.",
-                "An additional header is provided which allows you to navigate across different years, to view all the courses offered."
+                "This page gives a very general overview of <b>all</b> the information the system stores.",
+                "These metrics can be useful to get a general idea of the system's state and scale",
+                "Note that the metrics here are not intended to be used for any serious analysis, as they are not very specific.",
+                "Feel free to visit other pages, to get more specific metrics across different years, levels, courses, etc.",
             ]
         })}
     current_academic_year = AcademicYear.objects.filter(is_current=True).first()
@@ -303,9 +309,10 @@ def level_progression_view(request, level, year=None):
             "The panel on the left provides some aggregate cohort statistics, such as number of students, and the average grade across all courses.",
             "An additional header is provided which allows you to navigate across different academic years and levels (1,2,3 or 4)"
             "You may also jump to any Student of interest, by right-clicking on the student row and selecting 'View Student page' from the dropdown menu.",
-        ]
+        ],
     })
     context["level_head"] = User.objects.filter(level_head__academic_year=context["selected_year"], level_head__level=level).first()
+    context["edit_rules_url"] = reverse("general:level_progression_rules_exact", kwargs={"level": level, "year": context["selected_year"].year})
     get_query_count("before fetching level progression", True)
     if is_fetching_table_data(request): #if course year = 2021 and 
         student_course_map = {}
@@ -369,6 +376,7 @@ def degree_classification_view(request, level, year=None):
             "You may also jump to any Student of interest, by right-clicking on the student row and selecting 'View Student page' from the dropdown menu.",
         ]
     })
+    context["edit_rules_url"] = reverse("general:degree_grading_rules_exact", kwargs={"year": context["selected_year"].year})
     get_query_count("before fetching degree classification", False)
     if is_fetching_table_data(request):
         masters = (level == 5)
@@ -443,6 +451,7 @@ def degree_classification_grading_rules_view(request, year=None):
             "An additional header is provided which allows you to navigate across different academic years"
         ]
     })
+    context["preview_url"] = reverse("general:degree_classification_exact", kwargs={"year": context["selected_year"].year, "level": 4})
     return render(request, "general/degree_grading_rules.html", context)
 
 def level_progression_rules_view(request, level, year=None):
@@ -460,6 +469,7 @@ def level_progression_rules_view(request, level, year=None):
             "An additional header is provided which allows you to navigate across different academic years and levels"
         ]
     })
+    context["preview_url"] = reverse("general:level_progression_exact", kwargs={"year": context["selected_year"].year, "level": level})
     context['table_settings'] = context['selected_year'].level_progression_settings_for_table(str(level))
     return render(request, "general/level_progression_rules.html", context)
 
@@ -482,7 +492,7 @@ def fetch_student_course_table_data(request):
                 'result_id': result.id if result else "Not completed",
             })
     else:
-        return None
+        return JsonResponse([], safe=False)
     
     return JsonResponse(data_for_student_course_table, safe=False)
 
@@ -504,7 +514,7 @@ def fetch_assessment_moderation_table_data(request):
                 for assessment in course.assessments.all().order_by("weighting").select_related("moderated_by")
             ]
             return JsonResponse(data, safe=False)
-    return None
+    return JsonResponse([], safe=False)
 
 ###API SECTION###
 #API's to get table data
