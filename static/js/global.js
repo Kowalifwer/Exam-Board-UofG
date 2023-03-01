@@ -303,54 +303,83 @@ const Popup = {
     },
 }
 
-//chart to chart handler map. say table is reloaded - chart needs to be reloaded.
-//as soon as table has data - chart needs to be initialized.
 
-//a function that takes a tables data, and returns chart data object.
-
-const Charts = {
-    init: function(chart_or_chart_id=null, type=null, data={}, options={}) {
-        let chart = chart_or_chart_id
-        if (chart == null) {
-            chart = document.createElement("canvas")
-        } else {
-            chart = (isElement(chart)) ? chart : document.getElementById(chart)
-        }
-        
-        this.chart = new Chart(chart, {
-            type: (type) ? type : 'bar',
-            data: (data) ? data : {
-                labels: [],
-                datasets: [
-                    {
-                        label: 'Number of courses offered in a given year',
-                        data: [],
-                    }
-                ]
-            },
-            options: {
-              scales: {
+function defaultChartSetup(chart_setup) {
+    let default_setup = {
+        type: (chart_setup.extra_settings.type) ? chart_setup.extra_settings.type : 'bar',
+        data: {},
+        options: {
+            scales: {
                 y: {
-                  beginAtZero: true
+                    beginAtZero: true
                 }
-              }
+            },
+            plugins: {
+                legend: {
+                    display: true
+                },
             }
-          });
-        
-        return this
-    },
-    chart: null,
-    load_with_table_data: function(table, population_function) {
-        let data = population_function(table)
-        //population_function is a function that takes a table data object, and returns chart data object.
-        this.chart.data = population_function(table)
-        this.chart.update('active')
-    },
-    destroy: function() {
-        this.chart.destroy()
+        },
+        responsive : true,            
     }
+    if (chart_setup.extra_settings) {
+        if (chart_setup.extra_settings.x_title) {
+            default_setup.options.scales.x = {
+                title: {
+                    display: true,
+                    text: chart_setup.extra_settings.x_title,
+                    font: {
+                        size: 20,
+                        weight: 'bold'
+                    }
+                }
+            }
+        }
+        if (chart_setup.extra_settings.y_title) {
+            default_setup.options.scales.y.title = {
+                display: true,
+                text: chart_setup.extra_settings.y_title,
+                font: {
+                    size: 14,
+                    // weight: 'bold'
+                }
+            }
+        }
+        if (chart_setup.extra_settings.tooltip_extra) {
+            default_setup.options.plugins.tooltip = {
+                callbacks: {
+                    label: function(context) {
+                        return `${context.dataset.label} (${context.label})`
+                    },
+                    footer: function(tooltipItems) {
+                        let title = (this.y_title ? this.y_title : "Count") + ": " + tooltipItems[0].parsed.y + "/" + this.table_data_length
+                        return title + "\n" + this.title + (tooltipItems[0].parsed.y / this.table_data_length * 100).toFixed(2) + "%"
+                    }.bind({
+                        table_data_length: chart_setup.extra_settings.tooltip_extra_data_size,
+                        title: chart_setup.extra_settings.tooltip_extra,
+                        y_title: chart_setup.extra_settings.y_title
+                    }),
+                    title: function(context) {
+                        return ""
+                    }
+                }
+            }
+        }
+        if (chart_setup.extra_settings.legend_display != undefined) {
+            default_setup.options.plugins.legend = {
+                display: chart_setup.extra_settings.legend_display
+            }
+        }
+        if (chart_setup.extra_settings.title) {
+            default_setup.options.plugins.title = {
+                display: true,
+                text: chart_setup.extra_settings.title
+            }
+        }
+        delete chart_setup.extra_settings
+    }
+    return {...default_setup, ...chart_setup}
 }
-
 
 //MOSCOW CHARTS PLAN.
 
