@@ -11,6 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.alert import Alert
 from time import sleep
+from django.test import tag
 
 print("RUNNING DJANGO VIEW TESTS")
 
@@ -57,6 +58,7 @@ class MySeleniumTests(StaticLiveServerTestCase):
         cls.selenium.quit()
         super().tearDownClass()
     
+    @tag('selenium')
     def test_login(self):
         self.selenium.get('%s%s' % (self.live_server_url, reverse('general:home')))
         with self.subTest("login"):

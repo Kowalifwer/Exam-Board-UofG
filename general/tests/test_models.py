@@ -1,13 +1,12 @@
 from django.test import TestCase
-from django.db import connection, reset_queries
 from general.models import AcademicYear, User, Student
-import json
 
 # Create your tests here.
 print("RUNNING DJANGO MODELS TESTS")
 class BaseModelTestCase(TestCase):
-    def setUp(self):
-        super().setUp()
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
         AcademicYear.objects.create(year=2022, is_current=True)
 
 class AcademicYearTest(BaseModelTestCase):
