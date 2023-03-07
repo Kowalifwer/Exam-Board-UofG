@@ -1314,18 +1314,14 @@ input[type=checkbox]:checked::after {
 /* END OF COURSE PAGE */
 .tabulator {
     max-height: 600px;
-    max-width: 1200px;
+    max-width: 1400px;
     overflow-x: auto;
-    /* box-shadow: var(--shadow); */
-    /* border: 1px solid rgba(var(--p-color), 0.55); */
-    /* background-color: rgba(var(--p-color), 0.1); */
     background-color: white;
     box-shadow: 0 0 0 2px rgba(var(--p-color), 0.45), 0px 2px 20px 1px rgba(var(--p-color), 0.30);
 }
 
 .tabulator-tableholder {
     background-color: rgba(var(--p-color), 0.25);
-    /* max-height: 600px !important; */
 }
 
 .tabulator-wrapper {

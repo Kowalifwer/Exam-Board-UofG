@@ -63,7 +63,7 @@ class AcademicYear(UUIDModelMixin):
     level_progression_settings = models.JSONField(null=False, blank=False, default=default_level_progression_settings)
     
     def save(self, *args, **kwargs): #on-save constraint that ensures that there can only be one is_current=true year at a time
-        if self.is_current and AcademicYear.objects.filter(is_current=True).exists():
+        if not self.is_current and AcademicYear.objects.filter(is_current=True).exists():
             raise Exception("There can only be one is_current=True academic year at a time.")
         super().save(*args, **kwargs)
 
@@ -109,7 +109,7 @@ class User(AbstractUser, UUIDModelMixin):
         """Returns the full name of the user, with the title if it exists."""
         full_name_string = self.get_full_name()
         if self.title:
-            full_name_string = f"{self.title}. {full_name_string}"
+            full_name_string = f"{self.title.title()}. {full_name_string}"
         
         if not full_name_string:
             if self.is_superuser:
@@ -187,9 +187,9 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
     def get_data_for_table(self, extra_data: dict=None, **kwargs):
         """Returns relevant data about the student object. Mostly used for tables.
         :param extra_data: An optional dictionary that can be used to fetch additional information about the model object, where necessary.
-        :example use: obj.get_data_for_table(extra_data={"get_extra_data_FOO": [1, 2, 3]})
-        :This will call the "get_extra_data_FOO" method with the arguments [1, 2, 3]
-        :note that for this to work, the method MUST be defined within this model class.
+        Example use: obj.get_data_for_table(extra_data={"get_extra_data_FOO": [1, 2, 3]})
+        This will call the "get_extra_data_FOO" method with the arguments [1, 2, 3]
+        For extra_data parameter to work correctly, the provided method(s) MUST be defined within this model class.
         :return dict: A dictionary of data that can be used to populate a table.
         """
         table_data = {
@@ -684,23 +684,6 @@ class Assessment(UUIDModelMixin):
 
     def __str__(self):
         return f"{self.name}({self.weighting}%)"
-
-#possible lvl 1,2 subjects = [STATS, MATHS, PHYS, PSYCH, CHEM, GEOG, ECON, BIO, CSC, ENG, HIST, POLS]
-#when populating courses for a given student: check which years they should have courses in.
-#steps - generate some lvl 1 courses, then generate lvl 2 courses, then lvl 3, then lvl 4, then lvl 5
-#lvl 1 courses should be 
-
-#steps to moderate a course/assessment.
-##lvl 1 - 12 courses, across 3 subjects
-##lvl 2 - 12 courses, across 2 or 3 subjects (40,40,40) or (60,60)
-##lvl 3 - 8 courses, 1 group project (10x8,40)
-##lvl 4 - 8 courses, 1 individual project (10x8, 40)
-##lvl 5 - 8 courses, 1 group project (10x8, 60)
-##8 courses 1 project
-##12 courses
-##course_assessments_json = {
-#    "CSC101": {
-# }
 
 class AssessmentResult(UUIDModelMixin):
     """An AssessmentResult is a single result for a student on a given assessment."""

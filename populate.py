@@ -22,6 +22,7 @@ TOTAL_NUMBER_OF_USERS = 20
 TOTAL_NUMBER_OF_COURSES = 5*12 #5 years of courses, 12 courses for lvl 1,2,3,4,5
 LEVEL_PATTERN = [1,2,3,4,5]
 TOTAL_NUMBER_OF_STUDENTS = 1000
+VERBOSE = True
 
 def decision(probability):
     return random.random() < probability
@@ -135,7 +136,8 @@ class Populator:
     
     def generate_users(self, n):
         self.users = [User(**self.random_user_data) for _ in range(n)]
-        print(f"Generated {len(self.users)} users")
+        if VERBOSE:
+            print(f"Generated {len(self.users)} users")
     
     def generate_assessment_groups(self):
         self.assessment_groups.append([   
@@ -174,19 +176,20 @@ class Populator:
         ])
         self.assessment_groups.append([ #Individual project
             Assessment(name="Dissertation", type="I", weighting=85),
-            Assessment(name="Profesional conduct", type="I", weighting=10),
+            Assessment(name="Professional conduct", type="I", weighting=10),
             Assessment(name="Presentation", type="I", weighting=5),
         ])
         self.assessment_groups.append([ #Group project
             Assessment(name="Dissertation", type="G", weighting=70),
-            Assessment(name="Profesional conduct", type="G", weighting=20),
+            Assessment(name="Professional conduct", type="G", weighting=20),
             Assessment(name="Presentation", type="G", weighting=10),
         ])
         # exam grade = grade of all Assessments with type E, including their weightings
 
     def generate_students(self, n):
         self.students.extend([Student(**self.random_student_data) for _ in range(n)])
-        print(f"Generated {n} students")
+        if VERBOSE:
+            print(f"Generated {n} students")
     
     def generate_courses(self, n):
         i = 0
@@ -217,7 +220,8 @@ class Populator:
                     courses.append(Course(**course_data_copy))
         
         self.courses=courses
-        print(f"Generated {i} courses")
+        if VERBOSE:
+            print(f"Generated {i} courses")
 
     def create_admin(self):
         if not User.objects.filter(username="admin").exists():
@@ -236,37 +240,41 @@ class Populator:
         start = time.process_time()
         reset_queries()
         courses = Course.objects.all().prefetch_related("students").order_by("code")
-        prev_course_code = courses[0].code
-        assessment_list = get_assessment_list(courses[0])
+        if courses:
+            prev_course_code = courses[0].code
+            assessment_list = get_assessment_list(courses[0])
 
-        grade_range = [i for i in range(23)]
-        good_grade_dist = [i**2.6 for i in range(23)]
-        avg_grade_dist = [1 for _ in range (5)] + [2 for _ in range (5)] + [10 for _ in range (9)] + [3 for _ in range (4)]
-        bad_grade_dist = [i**1.2 for i in range(7)] + [i for i in range(10, -1, -1)] + [0.5 for _ in range(5)]
-        peformance_choices = [bad_grade_dist, avg_grade_dist, good_grade_dist]
+            grade_range = [i for i in range(23)]
+            good_grade_dist = [i**2.6 for i in range(23)]
+            avg_grade_dist = [1 for _ in range (5)] + [2 for _ in range (5)] + [10 for _ in range (9)] + [3 for _ in range (4)]
+            bad_grade_dist = [i**1.2 for i in range(7)] + [i for i in range(10, -1, -1)] + [0.5 for _ in range(5)]
+            peformance_choices = [bad_grade_dist, avg_grade_dist, good_grade_dist]
 
-        student_performance_map = {student.id: random.choices(peformance_choices, weights=[0.20, 0.525, 0.275], k=1)[0] for student in self.students}
-        for course in courses:
-            if course.code != prev_course_code: #new course found!
-                prev_course_code = course.code
-                assessment_list = get_assessment_list(course)
-            
-            course_students = course.students.all()
-            
-            course.assessments.set(assessment_list)  # course_assessment_m2m table has been populated
-            for student in course_students:
-                all_mv = decision(0.025) #2.5% chance of all assessments being marked as MV (the course grade is voided medical)
-                for assessment in assessment_list:
-                    self.assessment_results.append(AssessmentResult(
-                        student=student,
-                        course=course,
-                        assessment=assessment,
-                        grade=random.choices(grade_range, weights=student_performance_map.get(student.id, avg_grade_dist), k=1)[0], #grade is weighted towards higher grades
-                        preponderance=random.choices(['NA', 'MV', 'CW', 'CR'], weights=[0.85, 0.1, 0.025, 0.025])[0] if not all_mv else 'MV', ## 85% chance of NA, 10% chance of MV, 2.5% chance of CW, 2.5% chance of CR, OR all MV if all_mv is True
+            student_performance_map = {student.id: random.choices(peformance_choices, weights=[0.20, 0.525, 0.275], k=1)[0] for student in self.students}
+            for course in courses:
+                if course.code != prev_course_code: #new course found!
+                    prev_course_code = course.code
+                    assessment_list = get_assessment_list(course)
+                
+                course_students = course.students.all()
+                
+                course.assessments.set(assessment_list)  # course_assessment_m2m table has been populated
+                for student in course_students:
+                    all_mv = decision(0.025) #2.5% chance of all assessments being marked as MV (the course grade is voided medical)
+                    for assessment in assessment_list:
+                        self.assessment_results.append(AssessmentResult(
+                            student=student,
+                            course=course,
+                            assessment=assessment,
+                            grade=random.choices(grade_range, weights=student_performance_map.get(student.id, avg_grade_dist), k=1)[0], #grade is weighted towards higher grades
+                            preponderance=random.choices(['NA', 'MV', 'CW', 'CR'], weights=[0.85, 0.1, 0.025, 0.025])[0] if not all_mv else 'MV', ## 85% chance of NA, 10% chance of MV, 2.5% chance of CW, 2.5% chance of CR, OR all MV if all_mv is True
+                        )
                     )
-                )
-        
-        print(f"Generated {len(self.assessment_results)} assessment results in {time.process_time() - start} seconds and {len(connection.queries)} queries")
+            if VERBOSE:
+                print(f"Generated {len(self.assessment_results)} assessment results in {time.process_time() - start} seconds and {len(connection.queries)} queries")
+        else:
+            if VERBOSE:
+                print("No courses found in database. Skipping assessment result generation")
 
     def fetch_courses_total_credits(self, candidate_courses, total_credits):
         if not candidate_courses:
@@ -294,23 +302,27 @@ class Populator:
     #iterate over all students, 
 
     def populate_database(self):
-        print("Transferring current state into database")
+        if VERBOSE:
+            print("Transferring current state into database")
         try:
             User.objects.bulk_create(self.users, ignore_conflicts=True)
-            print(f"Transferred {len(self.users)} users succesfully")
+            if VERBOSE:
+                print(f"Transferred {len(self.users)} users succesfully")
             level_heads = []
             for i in range(FIRST_YEAR_OF_COURSES, LAST_YEAR_OF_COURSES + 1):
                 year = AcademicYear.objects.create(year=i, is_current=i==self.current_academic_year)
                 for j, user in enumerate(random.choices(self.users, k=5), start=1):##5 random users are level heads for each year
                     level_heads.append(LevelHead(user=user, academic_year=year, level=j))
             LevelHead.objects.bulk_create(level_heads, ignore_conflicts=True)
-            print("Populated level heads and academic years")
+            
+            if VERBOSE:
+                print("Populated level heads and academic years")
 
             students = Student.objects.bulk_create(self.students, ignore_conflicts=True)
-            print(f"Transferred {len(students)} students succesfully")
             courses = Course.objects.bulk_create(self.courses, ignore_conflicts=True)
-
-            print(f"Transferred {len(courses)} courses succesfully")
+            if VERBOSE:
+                print(f"Transferred {len(students)} students succesfully")
+                print(f"Transferred {len(courses)} courses succesfully")
             
             reset_queries()
             start = time.process_time()
@@ -354,26 +366,33 @@ class Populator:
                     final_courses_for_all_years.extend(course_setup)
                 
                 student.courses.add(*final_courses_for_all_years)
-            print(f"Ran {len(connection.queries)} queries and took {time.process_time() - start} seconds to enroll {len(self.students)} students to {len(self.courses)} courses")
+            
+            if VERBOSE:
+                print(f"Ran {len(connection.queries)} queries and took {time.process_time() - start} seconds to enroll {len(self.students)} students to {len(self.courses)} courses")
 
             #remove courses that have no students enrolled in them.
             courses_no_students = Course.objects.filter(students=None)
-            print(f"Number of courses deleted, with no students enrolled in them: {courses_no_students.count()}")
+            if VERBOSE:
+                print(f"Number of courses deleted, with no students enrolled in them: {courses_no_students.count()}")
             courses_no_students.delete()
             
             assessments = Assessment.objects.bulk_create([assessment for assessment_group in self.assessment_groups for assessment in assessment_group], ignore_conflicts=True)
-            print(f"Transferred {len(assessments)} assessments succesfully")
+            if VERBOSE:
+                print(f"Transferred {len(assessments)} assessments succesfully")
 
             self.generate_assessment_results() ##generate assessment results for all students, necessary here since it requires students to already be in the database
             assessment_results = AssessmentResult.objects.bulk_create(self.assessment_results, ignore_conflicts=True)
-            print(f"Transferred {len(assessment_results)} assessment results succesfully")
+            if VERBOSE:
+                print(f"Transferred {len(assessment_results)} assessment results succesfully")
         except Exception as e:
-            print("Failed to populate database", e)
+            if VERBOSE:
+                print("Failed to populate database", e)
             traceback.print_exc()
             return
     
     def wipe_database(self):
-        print("Wiping database...")
+        if VERBOSE:
+            print("Wiping database...")
         try:
             User.objects.all().delete()
             AcademicYear.objects.all().delete()
@@ -381,14 +400,17 @@ class Populator:
             Course.objects.all().delete()
             Assessment.objects.all().delete()
             AssessmentResult.objects.all().delete()
-            
-            print("Wiped database succesfully")
+            if VERBOSE:
+                print("Wiped database succesfully")
         except Exception as e:
-            print("Failed to wipe database", e)
+            if VERBOSE:
+                print("Failed to wipe database", e)
             return
 
 def main():
-    print("Generating population data...")
+    if VERBOSE:
+        print("Generating population data...")
+    
     populator = Populator()
     populator.wipe_database()
     populator.create_admin()
@@ -398,6 +420,38 @@ def main():
     populator.generate_assessment_groups()
 
     populator.populate_database()
+
+def unit_test(**kwargs):
+    global TOTAL_NUMBER_OF_USERS
+    global TOTAL_NUMBER_OF_STUDENTS
+    global TOTAL_NUMBER_OF_COURSES
+    global LEVEL_PATTERN
+    global FIRST_YEAR_OF_COURSES
+    global LAST_YEAR_OF_COURSES
+    global CURRENT_YEAR
+    global REQUIRED_CREDITS_PER_COURSE
+    global VERBOSE
+
+    TOTAL_NUMBER_OF_USERS = 2
+    TOTAL_NUMBER_OF_STUDENTS = kwargs.get('students', 2)
+    FIRST_YEAR_OF_COURSES = 2022 - kwargs.get('years', 0)
+    LAST_YEAR_OF_COURSES = 2022
+    CURRENT_YEAR = 2022
+
+    REQUIRED_CREDITS_PER_COURSE = 40
+    TOTAL_NUMBER_OF_COURSES = kwargs.get('years', 1) * 12 #5 years of courses, 12 courses for lvl 1,2,3,4,5
+    LEVEL_PATTERN = kwargs.get('levels', [3, 4])
+    
+    VERBOSE = False
+
+    populator = Populator()
+    populator.wipe_database()
+    populator.generate_users(TOTAL_NUMBER_OF_USERS)
+    populator.generate_students(TOTAL_NUMBER_OF_STUDENTS)
+    populator.generate_courses(TOTAL_NUMBER_OF_COURSES)
+    populator.generate_assessment_groups()
+    populator.populate_database()
+    # main()
 
 if __name__ == "__main__":
     main()
