@@ -6,6 +6,10 @@ from general.models import Student, Course, User, AcademicYear
 from django.contrib.messages import get_messages
 import warnings
 import json
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.webdriver import WebDriver
+from time import sleep
 
 print("RUNNING DJANGO VIEW TESTS")
 
@@ -37,6 +41,37 @@ def BaseViewTestCaseWithDBPopulate(**kwargs):
             populate_for_tests(**kwargs)
       
     return BaseTestCase
+
+class MySeleniumTests(StaticLiveServerTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        populate_for_tests()
+        cls.selenium = WebDriver()
+        cls.selenium.implicitly_wait(10)
+
+    @classmethod
+    def tearDownClass(cls):
+        # cls.selenium.quit()
+        super().tearDownClass()
+    
+    def test_login(self):
+        self.selenium.get('%s%s' % (self.live_server_url, reverse('general:home')))
+        with self.subTest("login"):
+            self.selenium.find_element(By.ID, 'login').click()
+            self.assertEqual(self.selenium.current_url, self.live_server_url + reverse('general:home'))
+            assert 'Logout' in self.selenium.page_source
+        
+        with self.subTest("logout"):
+            sleep(1)
+            self.selenium.find_element(By.ID, 'logout').click()
+            self.assertEqual(self.selenium.current_url, self.live_server_url + reverse('general:home'))
+            assert 'Login' in self.selenium.page_source
+        
+        with self.subTest("student page"):
+            sleep(1)
+            self.selenium.get('%s%s' % (self.live_server_url, reverse('general:student', kwargs={'GUID': Student.objects.first().id})))
+            
 
 # Create your tests here.
 class UnitTestHomeView(BaseViewTestCaseWithDBPopulate()):

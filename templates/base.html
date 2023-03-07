@@ -138,16 +138,16 @@
                     <img class="color-icon-theme" src="{% static 'icons/profile.svg' %}">
                     <div>
                         {%if request.user.is_authenticated%}
-                        <h3>{{request.user.get_name_verbose}}</h3>
+                            <h3>{{request.user.get_name_verbose}}</h3>
                         {%else%}
-                        <h3>Anonymous user</h3>
+                            <h3>Anonymous user</h3>
                         {%endif%}
                     </div>
                 </div>
                 {%if request.user.is_authenticated%}
-                    <a href="{%url 'general:logout' request.path%}"><button class="button-30">Logout</button></a>
+                    <a id="logout" href="{%url 'general:logout' request.path%}"><button class="button-30">Logout</button></a>
                 {%else%}
-                    <a href="{%url 'general:login' request.path%}"><button class="button-30">Login</button></a>
+                    <a id="login" href="{%url 'general:login' request.path%}"><button class="button-30">Login</button></a>
                 {%endif%}
             </div>
             {%if all_years and request.user.is_authenticated%}
