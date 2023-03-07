@@ -292,6 +292,11 @@ function init_table(table_id, columns, prefil_data = null, extra_constructor_par
     let table_element = (isElement(table_id)) ? table_id : document.getElementById(table_id)
     table_element.dataset.edit_mode = 0
     let table = new Tabulator(table_element, table_constructor)
+    if (prefil_data) {
+        setTimeout(function(){ //we need to wait a bit before we dispatch the event, otherwise the event listener might not be attached yet
+            table.dispatchEvent("dataFetchedFromServer")
+        }, 10)
+    }
     
     //attaching some extra properties and methods to the table object
     table.settings = settings
@@ -672,9 +677,6 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
         "fetch_table_data": true,
         "students": true,
     }
-    if (typeof search_term !== "undefined") {
-        ajaxParams.search_term = search_term
-    }
 
     let rowContextMenu = [
         {
@@ -706,7 +708,7 @@ function load_students_table(extra_constructor_params = {}, extra_cols=true, set
         final_extra_constructor_params.groupBy = "current_level"
     }
 
-    let table = init_table("students_table", columns, null, final_extra_constructor_params, settings={...settings, ...{title: "Students"}})
+    let table = init_table("students_table", columns, settings.prefillData, final_extra_constructor_params, settings={...settings, ...{title: "Students"}})
 
     table.setReloadFunction(load_students_table, [extra_constructor_params, extra_cols, settings])
 
@@ -1376,9 +1378,6 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
         "fetch_table_data": true,
         "courses": true,
     }
-    if (typeof search_term !== "undefined") {
-        ajaxParams.search_term = search_term
-    }
 
     let rowContextMenu = [
         {
@@ -1415,7 +1414,7 @@ function load_courses_table(extra_constructor_params = {}, extra_cols=true, sett
         initialSort: initialSort,
         placeholder: "Course data loading...",
     }
-    let table = init_table("courses_table", columns, null, final_extra_constructor_params, settings)
+    let table = init_table("courses_table", columns, settings.prefillData, final_extra_constructor_params, settings)
 
     table.on("tableBuilt", function() {
         table.setGroupHeader(function(value, count, data, group){
@@ -1643,7 +1642,7 @@ function load_grading_rules_table(data_json, level=null){
         col => {
             return {...col, editor: false, cssClass: ""}
         }
-    ), data_json, final_extra_constructor_params)
+    ), data_json, final_extra_constructor_params, {no_components:true})
 
     table.on("dataLoaded", function(data){
         let wrapper = table.getWrapper()
@@ -1716,7 +1715,7 @@ function load_comments_table(data_json){
         "renderVertical": "basic", //render 20 rows in buffer
         "placeholder":"There are no comments right now. Feel free to add the first comment!",
     }
-    let table = init_table("comments_table", columns, data_json, final_extra_constructor_params, {no_multirow: true})
+    let table = init_table("comments_table", columns, data_json, final_extra_constructor_params, {no_multirow: true, no_components:true})
     table.on("rowSelectionChanged", function(data, rows){
         if (rows.length >= 1) {
             document.getElementById('delete_comments_button').classList.remove("hidden")

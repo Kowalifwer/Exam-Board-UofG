@@ -432,15 +432,14 @@ def unit_test(**kwargs):
     global REQUIRED_CREDITS_PER_COURSE
     global VERBOSE
 
-    TOTAL_NUMBER_OF_USERS = 2
     TOTAL_NUMBER_OF_STUDENTS = kwargs.get('students', 2)
     FIRST_YEAR_OF_COURSES = 2022 - kwargs.get('years', 0)
     LAST_YEAR_OF_COURSES = 2022
     CURRENT_YEAR = 2022
 
-    REQUIRED_CREDITS_PER_COURSE = 40
+    REQUIRED_CREDITS_PER_COURSE = kwargs.get('credits', 40)
     TOTAL_NUMBER_OF_COURSES = kwargs.get('years', 1) * 12 #5 years of courses, 12 courses for lvl 1,2,3,4,5
-    LEVEL_PATTERN = kwargs.get('levels', [3, 4])
+    LEVEL_PATTERN = kwargs.get('levels', [1, 2])
     
     VERBOSE = False
 

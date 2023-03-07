@@ -164,12 +164,18 @@ def global_search_view(request):
     context = {}
 
     get_query_count("global_search_view")
-    #TODO: refactor to do an ajax request for each table, not all at once (better lazy load)
+    current_year = AcademicYear.objects.filter(is_current=True).first()
     if request.method == "POST" and "global_search" in request.POST:
         search_term = request.POST["global_search"]
         context["search_term"] = search_term
-        context["students"] = Student.objects.filter(Q(full_name__icontains=search_term) | Q(GUID__icontains=search_term)).exists()
-        context["courses"] = Course.objects.filter(Q(code__icontains=search_term) | Q(name__icontains=search_term)).exists()
+
+        student_data = [student.get_data_for_table(current_year=current_year.year if current_year else None) for student in Student.objects.filter(Q(full_name__icontains=search_term) | Q(GUID__icontains=search_term))]
+        context["student_data"] = json.dumps(student_data) if student_data else None
+        
+        course_data = [course.get_data_for_table(extra_data=None, assessments_prefetched=True) for course in Course.objects.filter(
+            Q(code__icontains=search_term) | Q(name__icontains=search_term)
+        ).prefetch_related("assessments")]
+        context["course_data"] = json.dumps(course_data) if course_data else None
     
     context["page_info"] = json.dumps({
         "title": f"course/student search",
@@ -181,18 +187,6 @@ def global_search_view(request):
         ]
     })
 
-    current_year = AcademicYear.objects.filter(is_current=True).first()
-    if is_fetching_table_data(request):
-        search_term = request.GET["search_term"]
-        if "students" in request.GET:
-            data = [student.get_data_for_table(current_year=current_year.year) for student in Student.objects.filter(Q(full_name__icontains=search_term) | Q(GUID__icontains=search_term))]
-        elif "courses" in request.GET:
-            data = [course.get_data_for_table(extra_data=None, assessments_prefetched=True) for course in Course.objects.filter(
-                Q(code__icontains=search_term) | Q(name__icontains=search_term)
-            ).prefetch_related("assessments")]
-        get_query_count("Time to search finish")
-        return JsonResponse(data, safe=False)
-
     return render(request, "general/global_search.html", context)
 
 
@@ -201,6 +195,9 @@ def student_view(request, GUID):
     get_query_count("before student query")
     student = Student.objects.filter(GUID=GUID)
     if is_fetching_table_data(request):
+        if not student:
+            return JsonResponse([], safe=False, status=404)
+        
         student = student.prefetch_related("results__assessment", "results__course").first()
         courses = student.courses.all()
         results = student.results.all()
@@ -367,12 +364,13 @@ def level_progression_view(request, level, year=None):
         ]
         get_query_count("after fetching level progression")
         return JsonResponse(all_students_json, safe=False)
-
     return render(request, "general/level_progression.html", context)
 
 def degree_classification_view(request, level, year=None):
     if level not in degree_classification_levels.keys():
+        messages.error(request, "Invalid level")
         raise Http404("Invalid level")
+    
     context = {
         'current_level': level,
     }
@@ -433,9 +431,6 @@ def degree_classification_view(request, level, year=None):
             student_results_map_lvl3[student] = [result for result in student.results.all() if result.course.academic_year == base_year]
 
         final_students = students.difference(no_course_students)
-        
-        if not final_students:
-            return JsonResponse([], safe=False)
         
         all_students_json = [
             student.get_data_for_table(
@@ -532,7 +527,6 @@ def fetch_assessment_moderation_table_data(request):
 #API's to get table data
 def api_table_view(request, table_name):
     if request.method == "GET":
-        print("table_name", table_name)
         if table_name == "assessment_moderation":
             return fetch_assessment_moderation_table_data(request)
 

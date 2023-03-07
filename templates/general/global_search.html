@@ -9,25 +9,23 @@
     <div class="basic-page">
         <h3>You are currently searching for: <b class="primary-text">"{{search_term}}"</b></h3>
 
-        {%if students%}
+        {%if student_data%}
             <h3>Below is a table of all the relevant <b class="primary-text">students</b></h3>
             <div id="students_table" class="tabulator_table"></div>
             <script>
-                search_term = '{{search_term}}'
-                load_students_table({}, true, {"noGroupBy": true})
+                load_students_table({}, true, {"noGroupBy": true, "prefillData": JSON.parse(`{{student_data|safe}}`)})
             </script>
         {%endif%}
 
-        {%if courses%}
+        {%if course_data%}
             <h3>Below is a table of all the relevant <b class="primary-text">courses</b></h3>
             <div id="courses_table" class="tabulator_table"></div>
             <script>
-                search_term = '{{search_term}}'
-                load_courses_table(extra_constructor_params = {}, false, {"noGroupBy": true, "fitColumns": true})
+                load_courses_table(extra_constructor_params = {}, false, {"noGroupBy": true, "fitColumns": true, "prefillData": JSON.parse(`{{course_data|safe}}`)})
             </script>
         {%endif%}
 
-        {%if not courses and not students%}
+        {%if not student_data and not course_data%}
             <h3>No results found in the database</h3>
         {%endif%}
     </div>

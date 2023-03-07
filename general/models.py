@@ -171,6 +171,7 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
         """Returns the difference between the current academic year and the end academic year of the student."""
         return current_academic_year - self.end_academic_year
     
+    @property
     def graduation_info(self):
         """Returns a string with information about the student's graduation status and a link to the cohort in which they have graduated."""
         current_academic_year = AcademicYear.objects.filter(is_current=True).first().year
@@ -209,7 +210,7 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
             "count": 1
         }
 
-        if "current_year" in kwargs:
+        if kwargs.get("current_year"):
             table_data["is_active"] = self.is_active(kwargs["current_year"])
 
         if extra_data:
@@ -234,8 +235,8 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
         
         extra_data = {
             "progress_to_next_level": "No", #Yes, Discretionary, No
-            "final_band": 0,
-            "final_gpa": 0,
+            "final_band": "N/A",
+            "final_gpa": "N/A",
             "greater_than_a": 0,
             "greater_than_b": 0,
             "greater_than_c": 0,
@@ -264,10 +265,7 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
 
             grade_adder_tuples[0] += course_grade * credits
             grade_adder_tuples[1] += credits
-        if grade_adder_tuples[1] == 0: ##no courses taken at level 4
-            extra_data["final_gpa"] = "N/A"
-            extra_data["final_band"] = "N/A"
-        else:
+        if grade_adder_tuples[1] != 0:
             final_gpa = grade_adder_tuples[0] / grade_adder_tuples[1]
             extra_data["final_gpa"] = round(final_gpa, 1)
             extra_data["final_band"] = band_integer_to_band_letter_map[int(round(extra_data["final_gpa"], 0))]
@@ -290,12 +288,12 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
 
         extra_data = {
             "class": "N/A",
-            "final_band": 0,
-            "final_gpa": 0,
-            "l4_band": 0,
-            "l4_gpa": 0,
-            "l3_band": 0,
-            "l3_gpa": 0,
+            "final_band": "N/A",
+            "final_gpa": "N/A",
+            "l4_band": "N/A",
+            "l4_gpa": "N/A",
+            "l3_band": "N/A",
+            "l3_gpa": "N/A",
             "greater_than_a": 0,
             "greater_than_b": 0,
             "greater_than_c": 0,
@@ -304,8 +302,8 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
             "greater_than_f": 0,
             "greater_than_g": 0,
             "greater_than_h": 0,
-            "project": 0,
-            "team": 0,
+            "project": "N/A",
+            "team": "N/A",
             "n_credits": 0,
         }
         classification_data = extra_data.copy() #used to calculate the class. key difference is it stores data across all levels, rather than just the final level.
@@ -366,58 +364,40 @@ class Student(UUIDModelMixin, CommentsForTableMixin):
         final_gpa = 0
 
         if masters:
-            if final_l5_grade_adder_tuples[1] == 0: ##no courses taken at level 5
-                extra_data["l5_gpa"] = "N/A"
-                extra_data["l5_band"] = "N/A"
-            else:
+            if final_l5_grade_adder_tuples[1] != 0: ##courses taken at level 5
                 final_l5_grade = final_l5_grade_adder_tuples[0] / final_l5_grade_adder_tuples[1]
                 extra_data["l5_gpa"] = round(final_l5_grade, 1) #round to 1 decimal place since we calculate gpa to 1 decimal place
                 extra_data["l5_band"] = band_integer_to_band_letter_map[int(round(final_l5_grade, 0))]
                 final_gpa += final_l5_grade * 0.4 ##level 5 is worth 40% of the final gpa for masters students
 
-        if final_l4_grade_adder_tuples[1] == 0: ##no courses taken at level 4
-            extra_data["l4_gpa"] = "N/A"
-            extra_data["l4_band"] = "N/A"
-        else:
+        if final_l4_grade_adder_tuples[1] != 0: ##courses taken at level 4
             final_l4_grade = final_l4_grade_adder_tuples[0] / final_l4_grade_adder_tuples[1]
             extra_data["l4_gpa"] = round(final_l4_grade, 1) #round to 1 decimal place since we calculate gpa to 1 decimal place
             extra_data["l4_band"] = band_integer_to_band_letter_map[int(round(final_l4_grade, 0))]
             final_gpa += final_l4_grade * (0.6 if not masters else 0.36) #level 4 is worth 60% of the final gpa for undergraduates and 36% for masters students
         
-        if final_l3_grade_adder_tuples[1] == 0: ##no courses taken at level 3
-            extra_data["l3_gpa"] = "N/A"
-            extra_data["l3_band"] = "N/A"
-        else:
+        if final_l3_grade_adder_tuples[1] != 0: ##courses taken at level 3
             final_l3_grade = final_l3_grade_adder_tuples[0] / final_l3_grade_adder_tuples[1]
             extra_data["l3_gpa"] = round(final_l3_grade, 1) #round to 1 decimal place since we calculate gpa to 1 decimal place
             extra_data["l3_band"] = band_integer_to_band_letter_map[int(round(final_l3_grade, 0))]
             final_gpa += final_l3_grade * (0.4 if not masters else 0.24) #level 3 is worth 40% of the final gpa for undergraduates and 24% for masters students
         
         ##calculate final band and final gpa: level3 is worth 40% and level 4 is worth 60%
-        if final_gpa == 0:
-            extra_data["final_gpa"] = "N/A"
-            extra_data["final_band"] = "N/A"
-        else:
+        if final_gpa != 0:
             classification_data["final_gpa"] = final_gpa
             extra_data["final_gpa"] = round(final_gpa, 1) #round to 1 decimal place since we calculate gpa to 1 decimal place
             extra_data["final_band"] = band_integer_to_band_letter_map[int(round(final_gpa, 0))]
             
             extra_data["class"] = gpa_to_class_converter(classification_data, degree_classification_settings)
 
-        if extra_data["project"] == 0:
-            extra_data["project"] = "N/A"
-        else:
+        if extra_data["project"] != 0:
             extra_data["project"] = round(extra_data["project"], 1)
         
-        if extra_data["team"] == 0:
-            extra_data["team"] = "N/A"
-        else:
+        if extra_data["team"] != 0:
             extra_data["team"] = round(extra_data["team"], 1)
         
         if masters:
-            if extra_data["project_masters"] == 0:
-                extra_data["project_masters"] = "N/A"
-            else:
+            if extra_data["project_masters"] != 0:
                 extra_data["project_masters"] = round(extra_data["project_masters"], 1)
 
         return extra_data
