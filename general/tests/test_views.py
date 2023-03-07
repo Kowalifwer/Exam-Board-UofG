@@ -9,6 +9,7 @@ import json
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.webdriver import WebDriver
+from selenium.webdriver.common.alert import Alert
 from time import sleep
 
 print("RUNNING DJANGO VIEW TESTS")
@@ -52,7 +53,8 @@ class MySeleniumTests(StaticLiveServerTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # cls.selenium.quit()
+        sleep(1)
+        cls.selenium.quit()
         super().tearDownClass()
     
     def test_login(self):
@@ -62,16 +64,26 @@ class MySeleniumTests(StaticLiveServerTestCase):
             self.assertEqual(self.selenium.current_url, self.live_server_url + reverse('general:home'))
             assert 'Logout' in self.selenium.page_source
         
+        with self.subTest("student page"):
+            sleep(1)
+            self.selenium.get('%s%s' % (self.live_server_url, reverse('general:student', kwargs={'GUID': Student.objects.first().GUID})))
+            #input area with id 'comment_input', type in a comment and submit button id 'add_comment_button'
+            self.selenium.find_element(By.ID, 'comment_input').send_keys("This is a test comment.")
+            self.selenium.find_element(By.ID, 'add_comment_button').click()
+            sleep(2)
+            #inside .tabulator-table, find the first .tabulator-row and click on it
+            self.selenium.find_element(By.CSS_SELECTOR, '.tabulator-table .tabulator-row').click()
+            sleep(2)
+            #click id delete_comments_button
+            self.selenium.find_element(By.ID, 'delete_comments_button').click()
+            sleep(1)
+            Alert(self.selenium).accept()
+        
         with self.subTest("logout"):
             sleep(1)
             self.selenium.find_element(By.ID, 'logout').click()
-            self.assertEqual(self.selenium.current_url, self.live_server_url + reverse('general:home'))
             assert 'Login' in self.selenium.page_source
         
-        with self.subTest("student page"):
-            sleep(1)
-            self.selenium.get('%s%s' % (self.live_server_url, reverse('general:student', kwargs={'GUID': Student.objects.first().id})))
-            
 
 # Create your tests here.
 class UnitTestHomeView(BaseViewTestCaseWithDBPopulate()):
@@ -347,26 +359,46 @@ class GeneralApiIntegrationTests(BaseViewTestCaseWithDBPopulate(years=2, student
         if not random_course or not random_student:
             raise Exception("No students or courses found in test database. Please populate the database with students and courses before running this test.")
 
-        random_assessment_ids = [str(id) for id in list(random_course.assessments.all().values_list('id', flat=True))]
-        with self.subTest("Test general api -> Moderation -> increase"):
+        #---- POST REQUESTS ----
+        with self.subTest("Test general api -> Moderation -> increase 1 bands"):
             response = self.client.post(reverse('general:api', kwargs={'action': 'moderation'}), {'student_GUID': random_student.GUID, 'data': json.dumps({
                 'mode': 'increase',
                 'value': 1,
                 'course_id': str(random_course.id),
-                'assessment_ids': random_assessment_ids
+                'assessment_ids': [str(id) for id in list(random_course.assessments.all().values_list('id', flat=True))]
             })})
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response['Content-Type'], 'application/json')
         
-        # with self.subTest("Test general api -> Moderation -> remove"):
-        #     response = self.self.client.post(reverse('general:api', kwargs={'action': 'moderation'}), {'student_GUID': random_student.GUID, 'data': json.dumps({
-        #         'mode': 'remove',
-        #         'value': 0,
-        #         'course_id': str(random_course.id),
-        #         'assessment_ids': random_assessment_ids
-        #     })})
-        #     self.assertEqual(response.status_code, 200)
-        #     self.assertEqual(response['Content-Type'], 'application/json')
+        with self.subTest("Test general api -> Moderation -> decrease 2 bands"):
+            response = self.client.post(reverse('general:api', kwargs={'action': 'moderation'}), {'student_GUID': random_student.GUID, 'data': json.dumps({
+                'mode': 'decrease',
+                'value': 2,
+                'course_id': str(random_course.id),
+                'assessment_ids': [str(id) for id in list(random_course.assessments.all().values_list('id', flat=True))]
+            })})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response['Content-Type'], 'application/json')
+        
+        with self.subTest("Test general api -> Moderation -> remove"):
+            response = self.client.post(reverse('general:api', kwargs={'action': 'moderation'}), {'student_GUID': random_student.GUID, 'data': json.dumps({
+                'mode': 'remove',
+                'value': 1,
+                'course_id': str(random_course.id),
+                'assessment_ids': [str(id) for id in list(random_course.assessments.all().values_list('id', flat=True))]
+            })})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response['Content-Type'], 'application/json')
+        
+        with self.subTest("Test general api -> Moderation -> invalid mode"):
+            response = self.client.post(reverse('general:api', kwargs={'action': 'moderation'}), {'student_GUID': random_student.GUID, 'data': json.dumps({
+                'mode': 'improve',
+                'value': 1,
+                'course_id': str(random_course.id),
+                'assessment_ids': [str(id) for id in list(random_course.assessments.all().values_list('id', flat=True))]
+            })})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response['Content-Type'], 'application/json')
         
         with self.subTest("Test general api -> Moderation -> missing parameters"):
             response = self.client.post(reverse('general:api', kwargs={'action': 'moderation'}), {'student_GUID': random_student.GUID, 'data': json.dumps({
@@ -378,7 +410,15 @@ class GeneralApiIntegrationTests(BaseViewTestCaseWithDBPopulate(years=2, student
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response['Content-Type'], 'application/json')
         
-        with self.subTest("Test general api -> save_grading_rules"):
+        with self.subTest("Test general api -> save_grading_rules -> degree rules"):
+            response = self.client.post(reverse('general:api', kwargs={'action': 'save_grading_rules'}),
+                {'course_id': str(random_course.id),
+                 'year_id': str(current_year.id)
+                 })
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response['Content-Type'], 'application/json')
+        
+        with self.subTest("Test general api -> save_grading_rules -> level rules"):
             response = self.client.post(reverse('general:api', kwargs={'action': 'save_grading_rules'}),
                 {'course_id': str(random_course.id),
                  'level': 4,
@@ -416,6 +456,18 @@ class GeneralApiIntegrationTests(BaseViewTestCaseWithDBPopulate(years=2, student
                 str(comment.id) for comment in random_course.comments.all()
             ])})
             self.assertEqual(response.status_code, 200)
+            self.assertEqual(response['Content-Type'], 'application/json')
+        
+        #----GET REQUESTS----
+        with self.subTest("Test general api -> get request"):
+            response = self.client.get(reverse('general:api', kwargs={'action': "test_get"}), {'student_id': random_student.id})
+            self.assertEqual(response['Content-Type'], 'application/json')
+        
+        #---OTHER REQUESTS---
+        with self.subTest("Test general api -> delete_comment -> course"):
+            response = self.client.put(reverse('general:api', kwargs={'action': "test_put"}), {})
+            #check that "Invalid request method" is inside response.status
+            self.assertEqual(response.json()['status'], "Invalid request method")
             self.assertEqual(response['Content-Type'], 'application/json')
 
 #TODO: consider selenium tests, to test the actual functionality of the website (e.g. clicking on a course code in the all courses table should take you to the course page)

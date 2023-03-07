@@ -539,20 +539,31 @@ def api_table_view(request, table_name):
 
 #Any general api request can be made here.
 def api_view(request, action):
+    """Handles all api requests.
+    
+    An 'action' parameter will be passed in the url, which will determine what action to take.
+    All actions must be explicitly defined in this view, or else an error will be returned.
+    Handle any specific action from the frontend below, via action == "action_name" checks.
+    """
     response = {"status": "Uknown error occurred.", "data": None}
     student_id = request.POST.get("student_id", None)
     course_id = request.POST.get("course_id", None)
 
+    #handles api POST requests
     if request.method == "POST":
         if action:
+            #data is going to be accessible from the scope of any action == "" handler. This data is sent from the frontend.
             data = json.loads(request.POST.get("data", "{}"))
             #HANDLE MODERATION
             if action == "moderation":
                 mode = data.get("mode", None)
+                if mode not in ["increase", "decrease", "remove"]:
+                    return JsonResponse({"status": "Server error. Invalid data recieved.", "data": None}, safe=False)
+                
                 value = data.get("value", 0)
                 assessment_ids = data.get("assessment_ids", None)
                 course_id = data.get("course_id", None)
-                ##need to create new assessments, and update course_assessment_map, and all the grade results
+
                 assessments_db = Assessment.objects.filter(id__in=assessment_ids)
                 new_assessment_refs = []
                 new_to_create = []
@@ -571,10 +582,7 @@ def api_view(request, action):
                         return value*-1 + existing_value
                     elif mode == "remove":
                         return 0
-
-                    assert True == False, "Invalid mode. Should be increase, decrease or remove."
     
-                ##think about REPLACEMENT edge case. we can only delete if assessment is not used in any other course.
                 for assessment_db in assessments_db:
                     instance = Assessment.objects.filter(name=assessment_db.name, weighting=assessment_db.weighting, type=assessment_db.type, moderation=value_conversion_based_on_mode(value, assessment_db.moderation)).first()
                     if not instance:
@@ -604,13 +612,28 @@ def api_view(request, action):
 
             #HANDLE GRADING RULES
             if action == "save_grading_rules":
+                #TODO: make it separate for the level rules and degree classification rules
+                #TODO: add validation -> to make sure new rules have expected fields and values
                 year_id = request.POST.get("year_id", None)
                 level = request.POST.get("level", None)
                 if year_id:
                     year = AcademicYear.objects.filter(id=year_id).first()
                     if year:
+                        # complex logic below will handle both level and degree classification rules. They have a different structure.
+                        # if level is None, then we are dealing with degree classification rules. These rules are a list of dicts.
+                        # alternatively, we are dealing with level rules. Examples of current structure below:
+                        # degree classification rules (single list of settings) -> [{first_class...}, {second_class_settings...}, {third_class_settings...}]
+                        # level progression rules -> (map of settings for each level) {
+                        #   1: [{pass...}, {discretionary...}],
+                        #   2: [{pass...}, {discretionary...}],
+                        #   3: [{pass...}, {discretionary...}],
+                        # }
+                        # for degree classification, we can take the rules from the clientside and save them directly into our structure.
+                        # for level progression, we need to make sure we are saving the rules into the correct level in the map, hence the complex logic below.
+
                         attribute = "level_progression_settings" if level else "degree_classification_settings"
                         existing_state = getattr(year, attribute)
+                        
                         if (existing_state if not level else existing_state[level]) != data:
                             if level:
                                 existing_state[level] = data
@@ -698,7 +721,7 @@ def api_view(request, action):
         pass
 
     else:
-        response["status"] = "Invalid request method."
+        response["status"] = "Invalid request method"
     
     return JsonResponse(response)
 
