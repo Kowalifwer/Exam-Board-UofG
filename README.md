@@ -21,7 +21,7 @@ Go to the project directory
 Install dependencies
 
 ```bash
-  pip install requirements.txt
+  pip3 install -r requirements.txt
 ```
 
 Populate the database using the population script
